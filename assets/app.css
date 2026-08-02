@@ -51,8 +51,13 @@
      standen dort zwei Abschriften, die auseinandergelaufen sind. Steht
      bewusst im gemeinsamen :root und nicht im hellen Block: --seal, --verify
      und --paper darin lösen sich erst beim Einsetzen auf und folgen dem
-     gewählten Modus von selbst. */
+     gewählten Modus von selbst.
+     Zuoberst liegt das Korn von entrosana.com: feTurbulence-Rauschen als
+     160er-Kachel, per soft-light eingeblendet, in der hellen Fassung per
+     overlay. Die background-Langformen an beiden body-Stellen zählen die
+     Schichten hier — wer eine ergänzt oder streicht, zählt dort nach. */
   --schimmer:
+    url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27160%27%20height%3D%27160%27%3E%3Cfilter%20id%3D%27n%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.82%27%20numOctaves%3D%272%27%20seed%3D%2711%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D%27100%25%27%20height%3D%27100%25%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"),
     radial-gradient(130% 90% at 12% -10%, color-mix(in srgb, var(--seal) 16%, transparent), transparent 68%),
     radial-gradient(90% 70% at 92% 0%, color-mix(in srgb, var(--verify) 11%, transparent), transparent 70%),
     radial-gradient(140% 120% at 50% 118%, color-mix(in srgb, var(--seal) 8%, transparent), transparent 74%),
@@ -82,7 +87,15 @@ body{
      Untergrund flachlegt. Zwei Abschriften sind auseinandergelaufen, darum
      jetzt eine Fassung an einer Stelle. */
   background:var(--schimmer);
+  background-repeat:repeat,no-repeat,no-repeat,no-repeat,no-repeat;
+  background-size:160px 160px,auto,auto,auto,auto;
+  background-blend-mode:soft-light,normal,normal,normal,normal;
   background-attachment:fixed;
+}
+/* Auf hellem Grund trägt soft-light kaum auf; overlay hält das Korn sichtbar,
+   wie auf entrosana.com in der hellen Fassung. */
+:root[data-theme="light"] body{
+  background-blend-mode:overlay,normal,normal,normal,normal;
 }
 a{ color:var(--seal); text-decoration:none }
 p{ margin:0 0 var(--pad-para) }
@@ -153,21 +166,23 @@ p{ margin:0 0 var(--pad-para) }
 }
 .rail__item{
   position:relative; display:flex; align-items:center; gap:.65rem;
-  padding:.42rem .55rem; color:var(--ink-2); font-size:.95rem; border-radius:var(--radius);
+  padding:.42rem .55rem; color:var(--ink-2); font-size:.95rem;
+  border-radius:10px; transition:background-color .12s, color .12s;
 }
-.rail__item:hover{ color:var(--ink) }
-/* Der gewählte Reiter bekommt seinen Strich, aber mit Luft darunter, damit er
-   nicht zwischen zwei Linien eingeklemmt steht. */
+.rail__item:hover{ color:var(--ink); background:color-mix(in srgb, var(--ink) 6%, transparent) }
+/* Der gewählte Reiter: ruhige Füllung im Sealton, dazu ein kurzer Balken an
+   der linken Kante. Der frühere Unterstrich mit Schimmer machte den Eintrag
+   höher als seine Nachbarn und las sich als Provisorium. Der Radius folgt
+   konzentrisch der 26px-Rundung der Leiste, gilt in jeder Breite und ersetzt
+   auch die mobile Punkt-Ersatzform aus §4. */
 .rail__item.is-active{
-  color:var(--ink); padding-bottom:.62rem; margin-bottom:.42rem;
-  background:linear-gradient(180deg,
-    color-mix(in srgb, var(--seal) 10%, transparent), transparent 78%);
+  color:var(--ink);
+  background:color-mix(in srgb, var(--seal) 13%, transparent);
 }
 .rail__item.is-active::after{
-  content:""; position:absolute; left:.55rem; bottom:0; height:2px; width:calc(100% - 3.2rem);
-  background:linear-gradient(90deg,
-    color-mix(in srgb, var(--seal) 65%, transparent), transparent);
-  filter:drop-shadow(0 0 4px color-mix(in srgb, var(--seal) 55%, transparent));
+  content:""; position:absolute; left:0; top:50%; transform:translateY(-50%);
+  width:3px; height:1.15rem; border-radius:999px; background:var(--seal);
+  box-shadow:0 0 6px color-mix(in srgb, var(--seal) 55%, transparent);
 }
 .rail__glyph{
   width:1.4rem; height:1.4rem; flex:none; display:grid; place-items:center;
@@ -454,14 +469,8 @@ p{ margin:0 0 var(--pad-para) }
 .toggle input:checked+.toggle__track .toggle__dot{ transform:translate(16px); background:var(--seal) }
 .toggle__label{ font-size:var(--step--1); color:var(--ink-2) }
 
-@media (max-width:759.98px){
-  /* §4 Mobile Ersatzform: Punkt statt Strich. */
-  .rail__item.is-active::after{
-    left:0; bottom:auto; top:50%; width:6px; height:6px; border-radius:50%;
-    background:var(--seal); filter:none; transform:translateY(-50%);
-  }
-  .rail__item{ padding-left:1.1rem }
-}
+/* Die mobile Punkt-Ersatzform aus §4 entfällt: Füllung und Balken des
+   gewählten Reiters tragen in jeder Breite. */
 @media (prefers-reduced-motion:reduce){
   *{ animation:none !important; transition:none !important }
 }
@@ -519,6 +528,8 @@ p{ margin:0 0 var(--pad-para) }
     border-radius:var(--radius); cursor:pointer;
   }
   .rail__burger:hover{ color:var(--ink) }
+  /* Fitts: Fingerziele in der offenen Leiste mindestens 44 px hoch. */
+  .rail__item, .nav__projects .navitem{ min-height:2.75rem }
   .rail__burger::before{ content:"☰" }
   .rail.is-open .rail__burger::before{ content:"✕" }
   /* aufgeklappt: die volle senkrechte Leiste, der Knopf wandert in die Ecke */
@@ -565,11 +576,11 @@ p{ margin:0 0 var(--pad-para) }
   display:flex; align-items:center; gap:.65rem; width:100%; min-width:0;
   padding:.42rem .55rem; border:0; background:transparent; text-align:left;
   text-decoration:none; color:var(--ink-2); font:inherit; font-size:.95rem;
-  letter-spacing:normal; border-radius:var(--radius); cursor:pointer;
-  white-space:nowrap; overflow:hidden;
+  letter-spacing:normal; border-radius:10px; cursor:pointer;
+  white-space:nowrap; overflow:hidden; transition:background-color .12s, color .12s;
 }
-.nav__projects .navitem:hover{ color:var(--ink) }
-.nav__projects .navitem.is-on{ color:var(--ink) }
+.nav__projects .navitem:hover{ color:var(--ink); background:color-mix(in srgb, var(--ink) 6%, transparent) }
+.nav__projects .navitem.is-on{ color:var(--ink); background:color-mix(in srgb, var(--seal) 13%, transparent) }
 /* Der Punkt sitzt im selben 1.4rem-Feld wie die Zeichen der Reiter darüber,
    damit alle Beschriftungen der Leiste auf einer Kante stehen. */
 .nav__projects .pdot{ width:1.4rem; height:1.4rem; flex:none; display:grid; place-items:center }
@@ -1112,8 +1123,15 @@ p{ margin:0 0 var(--pad-para) }
 :root{
   --paper:#21252C; --paper-2:#272C34;
   --card-bg:#2A2F39; --field-bg:#242932;
-  --line:#39404C; --line-2:#434B58; --line-ui:#68707F;
+  --line:#39404C; --line-2:#434B58; --line-ui:#78808F;
 }
+
+/* ---------- Kleintext und Ränder lesbarer ----------
+   Gemessen gegen --card-bg #2A2F39: --muted stand bei 4.46:1 (AA verlangt
+   4.5:1 für Fliesstext), --warn bei 3.76:1, --line-ui als Komponentenrand
+   bei 2.69:1 (Soll 3:1). Drei Töne angehoben, der Farbcharakter bleibt;
+   die helle Fassung erfüllt AA bereits und bleibt unangetastet. */
+:root{ --muted:#9CA4B2; --warn:#DC7A6E }
 
 /* Der Rollbalken bekommt seine Bahn immer reserviert. Sonst springt die Breite
    je nachdem, ob eine Seite genug Inhalt zum Rollen hat, und die Kopfpille

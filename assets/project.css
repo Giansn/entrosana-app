@@ -50,7 +50,7 @@
 :root[data-theme="light"]{
   --bg:#fff; --bg-2:#fafafa; --bg-3:#f5f5f5;
   --bg-hover:#f3f3f3; --bg-active:#ececec;
-  --ink:#202020; --ink-2:#666; --muted:#808080; --line:#e5e5e5;
+  --ink:#202020; --ink-2:#666; --muted:#6C7078; --line:#e5e5e5;
 }
 *{ box-sizing:border-box }
 html,body{ height:100%; margin:0; background:var(--bg); color:var(--ink); font:14px/1.4 var(--font) }

@@ -149,6 +149,9 @@ body{ font-size:var(--step-0); line-height:1.55 }
 html{ background:none }
 body{
   background:var(--schimmer);
+  background-repeat:repeat,no-repeat,no-repeat,no-repeat,no-repeat;
+  background-size:160px 160px,auto,auto,auto,auto;
+  background-blend-mode:soft-light,normal,normal,normal,normal;
   background-attachment:fixed;
 }
 .main{ background:transparent }
@@ -160,7 +163,8 @@ body{
 :root{
   --paper:#21252C; --paper-2:#272C34;
   --card-bg:#2A2F39; --field-bg:#242932;
-  --line:#39404C; --line-2:#434B58; --line-ui:#68707F;
+  --line:#39404C; --line-2:#434B58; --line-ui:#78808F;
+  --e-muted:#9CA4B2; --warn:#DC7A6E;
   --bg:var(--paper); --bg-2:var(--card-bg); --bg-3:var(--paper-2);
   --bg-hover:color-mix(in srgb, var(--seal) 8%, var(--card-bg));
   --bg-active:color-mix(in srgb, var(--seal) 15%, var(--card-bg));
