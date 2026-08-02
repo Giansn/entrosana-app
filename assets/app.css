@@ -734,7 +734,7 @@ p{ margin:0 0 var(--pad-para) }
 .tile__glyph .ico{ width:1.7rem; height:1.7rem }
 /* Derselbe Schimmer wie am laufenden Verweis und unter der Marke. */
 .ico{ filter:drop-shadow(0 0 4px color-mix(in srgb, var(--seal) 55%, transparent)) }
-.rail__glyph .ico{ filter:drop-shadow(0 0 3px color-mix(in srgb, var(--seal) 50%, transparent)) }
+.rail__glyph .ico{ filter:drop-shadow(0 0 2px color-mix(in srgb, var(--seal) 45%, transparent)) }
 .tile__glyph .ico{ filter:drop-shadow(0 0 6px color-mix(in srgb, var(--seal) 55%, transparent)) }
 
 /* Das Eingabefeld wurde vom Hinweis erdrückt: ohne Umbruch teilen sich beide
