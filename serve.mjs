@@ -26,7 +26,11 @@ const INDEXABLE = false;
 // Was in die sitemap.xml gehört: die inhaltlichen Seiten. /records, /projects
 // und /services zeigen, was auf dem jeweiligen Gerät liegt, /project ist noch
 // nicht gebaut — nichts davon hat in einem Suchindex etwas verloren.
-const SITEMAP = ["/", "/tools", "/modules", "/contribute"];
+const SITEMAP = ["/", "/tools", "/modules", "/contribute",
+  "/modules/plan-a-module", "/modules/take-a-group-outdoors",
+  "/modules/how-a-machine-works", "/tools/lehrplan21-citation",
+  "/tools/lehrplan21-stand-in", "/tools/auditable-back-office",
+  "/tools/payroll-run", "/tools/second-opinion"];
 
 const HTML = "text/html; charset=utf-8";
 const CSS = "text/css; charset=utf-8";
@@ -40,6 +44,22 @@ const ROUTES = new Map([
   ["/records",    { file: "records.html",    type: HTML }],
   ["/projects",  { file: "projects.html",  type: HTML }],
   ["/services",   { file: "services.html",   type: HTML }],
+  // Je Modul ein eigener Eintrag, alle auf dieselbe Datei: die Allowlist
+  // bleibt, und module.js liest den Slug aus dem Pfad.
+  // Je Katalogeintrag ein eigener Eintrag, alle auf dieselbe Datei: die
+  // Allowlist bleibt, und detail.js liest Abteilung und Slug aus dem Pfad.
+  ["/modules/plan-a-module",         { file: "detail.html", type: HTML }],
+  ["/modules/take-a-group-outdoors", { file: "detail.html", type: HTML }],
+  ["/modules/how-a-machine-works",   { file: "detail.html", type: HTML }],
+  ["/tools/lehrplan21-citation",     { file: "detail.html", type: HTML }],
+  ["/tools/lehrplan21-stand-in",     { file: "detail.html", type: HTML }],
+  ["/tools/auditable-back-office",   { file: "detail.html", type: HTML }],
+  ["/tools/payroll-run",             { file: "detail.html", type: HTML }],
+  ["/tools/second-opinion",          { file: "detail.html", type: HTML }],
+  ["/assets/catalogue.js",   { file: "assets/catalogue.js",   type: JS }],
+  ["/assets/cards.js",       { file: "assets/cards.js",       type: JS }],
+  ["/assets/detail.js",      { file: "assets/detail.js",      type: JS }],
+  ["/assets/services-ui.js", { file: "assets/services-ui.js", type: JS }],
   ["/assets/app.css",     { file: "assets/app.css",     type: CSS }],
   ["/assets/app.js",      { file: "assets/app.js",      type: JS }],
   ["/assets/overview.js", { file: "assets/overview.js", type: JS }],

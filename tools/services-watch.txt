@@ -1,0 +1,22 @@
+# Eigene Dienste, die mitgemessen werden sollen.
+#
+# services-snapshot.sh liest diese Datei und prüft jede Zeile so, wie es die
+# entrosana-eigenen Dienste prüft. Ohne Eintrag hier gibt es keinen grünen
+# Punkt: ein Dienst, den niemand abgefragt hat, steht auf der Seite als
+# «awaiting first check» und nicht als «ok».
+#
+# Eine Zeile je Dienst, Felder mit | getrennt:
+#
+#   name | was er bedient | Gruppe | wo | prüfung | herkunft
+#
+#   name      wie er auf der Seite heisst
+#   Gruppe    Public | LAN and tailnet | Data | Jobs
+#   wo        via tunnel | cloudflared | LAN | tailnet | container only | oneshot
+#             Nur dieses Wort geht nach draussen. Adressen und Ports bleiben
+#             hier in der Datei — /services ist öffentlich erreichbar.
+#   prüfung   url:<URL>  |  unit:<name.service>  |  docker:<container>
+#   herkunft  own (Voreinstellung) oder module, wenn der Dienst mit einem
+#             Modul dazugekommen ist
+#
+# Beispiel, absichtlich auskommentiert:
+# schulserver.local | file share in the staff room | LAN and tailnet | LAN | url:http://schulserver.local:8080/ | own

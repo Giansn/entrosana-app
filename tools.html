@@ -80,55 +80,23 @@
       <section class="block hair">
         <span class="eyebrow">Tools</span>
         <h1 class="work__h">What actually runs, starting with the Lehrplan 21 citation tool.</h1>
-        <p class="work__sub" style="max-width:62ch">Routine work handed to a machine, on the condition that every figure stays traceable to where it came from. Two tools run today. Everything else in this section is a checklist, and says so.</p>
+        <p class="work__sub measure">Routine work handed to a machine, on the condition that every
+          figure stays traceable to where it came from. Two tools run today. Everything else in this
+          section is a checklist, and says so.</p>
       </section>
 
       <section class="block hair">
         <span class="eyebrow">What actually runs</span>
-        <p class="work__sub" style="max-width:62ch">Only tools that are running are listed here. Anything
-          still being talked about is not on this page.</p>
-        <div class="grid grid--2">
-          <article class="card">
-            <div class="tool__head"><p class="h3">Lehrplan 21 — citation and navigation</p>
-              <span class="note note--ok"><span class="led"></span> running</span></div>
-            <span class="tool__who">reads the Bern cantonal edition, resolves a competence code to its exact wording</span>
-            <p>Builds a local index of be.lehrplan.ch and answers from it, so a citation can be checked against the source instead of being trusted. Python, standard library only, no dependencies.</p>
-            <p class="muted" style="font-size:.88rem;margin:0">Not published yet. Once it is on GitHub it becomes reachable as an MCP tool, so an assistant can cite the curriculum without a human copying text across.</p>
-          </article>
-          <article class="card">
-            <div class="tool__head"><p class="h3">Lehrplan 21 data interface — stand-in</p>
-              <span class="note note--ok"><span class="led"></span> running</span></div>
-            <span class="tool__who">lets the import be built before access to the official interface is granted</span>
-            <p>A stand-in for the official data interface, with fixed test data and an acceptance script that says plainly whether the import still matches.</p>
-            <p class="muted" style="font-size:.88rem;margin:0">Access to the official interface has been requested. The stand-in stays afterwards, as the thing the real interface is measured against.</p>
-          </article>
-        </div>
+        <p class="work__sub measure">Only tools that are running are listed here. Anything still
+          being talked about is not on this page.</p>
+        <div class="cards cards--2" data-cards="tools" data-track="running"></div>
       </section>
 
       <section class="block hair">
         <span class="eyebrow">Checklists you can start from</span>
-        <p class="work__sub">These are checklists, not software. Every visitor opens the same one, and
-          opening it makes a copy that is yours.</p>
-        <div class="grid">
-          <article class="card">
-            <p class="h3">Set up an auditable back-office</p>
-            <span class="tool__who">for administrative responsibilities and process efficiency</span>
-            <p class="muted" style="font-size:.9rem">5 steps &middot; seed <span class="mono">tools/000</span></p>
-            <a class="btn" href="/project?p=tools/000">Open project</a>
-          </article>
-          <article class="card">
-            <p class="h3">Prepare a payroll run</p>
-            <span class="tool__who">for payroll runs, contracts, and attestations</span>
-            <p class="muted" style="font-size:.9rem">4 steps &middot; seed <span class="mono">tools/001</span></p>
-            <a class="btn" href="/project?p=tools/001">Open project</a>
-          </article>
-          <article class="card">
-            <p class="h3">Ask for a second opinion</p>
-            <span class="tool__who">for second opinions that show their work</span>
-            <p class="muted" style="font-size:.9rem">4 steps &middot; seed <span class="mono">tools/002</span></p>
-            <a class="btn" href="/project?p=tools/002">Open project</a>
-          </article>
-        </div>
+        <p class="work__sub measure">These are checklists, not software. Every visitor opens the
+          same one, and opening it makes a copy that is yours.</p>
+        <div class="cards" data-cards="tools" data-track="checklist"></div>
       </section>
     </div>
   </main>
@@ -154,7 +122,9 @@
 </dialog>
 
 <script src="/assets/seeds.js"></script>
+<script src="/assets/catalogue.js"></script>
 <script src="/assets/services.js"></script>
 <script src="/assets/app.js"></script>
+<script src="/assets/cards.js"></script>
 </body>
 </html>

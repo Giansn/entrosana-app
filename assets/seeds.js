@@ -1,3 +1,10 @@
+/* Die Checklisten, aus denen ein Projekt entsteht. Eine Kopie je Besucher;
+   geändert wird hier, nicht in den Kopien.
+
+   Jede Liste endet mit dem Schritt, der sie aus dem Browser herausführt: an
+   wen sie in der eigenen Organisation geht, und wie entrosana erreichbar ist
+   (info@entrosana.com oder das Formular auf entrosana.com/request-access).
+   Ohne diesen Schritt bleibt eine Checkliste eine Übung. */
 window.__seeds = {
  "tools/000": {
   "section": "tools",
@@ -23,6 +30,14 @@ window.__seeds = {
    {
     "t": "Run it once by hand and keep the record",
     "n": "The manual run is the reference the machine is measured against."
+   },
+   {
+    "t": "Name who owns it once it runs",
+    "n": "One person in your organisation and a deputy. A routine without an owner drifts back to where it came from."
+   },
+   {
+    "t": "Send the checklist to entrosana",
+    "n": "Export the trail and mail it to info@entrosana.com, or use the form on entrosana.com/request-access. The answer comes from a person, not a queue."
    }
   ]
  },
@@ -46,6 +61,14 @@ window.__seeds = {
    {
     "t": "Agree who signs the run off",
     "n": "One person, before the payment date."
+   },
+   {
+    "t": "Agree the correction path before you pay",
+    "n": "Who is told, and by when, if a figure turns out wrong afterwards."
+   },
+   {
+    "t": "Tell the people it covers where to ask",
+    "n": "One address inside your organisation, printed on the statement itself."
    }
   ]
  },
@@ -65,6 +88,14 @@ window.__seeds = {
    {
     "t": "Attach the numbers the decision rests on",
     "n": "With their source."
+   },
+   {
+    "t": "Choose who gives the opinion",
+    "n": "Someone in your organisation who was not part of the decision — or entrosana at info@entrosana.com."
+   },
+   {
+    "t": "Set the date the answer is due",
+    "n": "A review without a date arrives after the decision."
    },
    {
     "t": "Record what the review actually said",
@@ -96,6 +127,14 @@ window.__seeds = {
    {
     "t": "Set the dates and the person leading",
     "n": "A named lead, so the module has someone answerable for it."
+   },
+   {
+    "t": "Get a written yes inside your school",
+    "n": "From the Schulleitung, or whoever holds the budget. A yes in the corridor is not one."
+   },
+   {
+    "t": "Send the plan to entrosana",
+    "n": "info@entrosana.com, or the form on entrosana.com/request-access. Say the age group, the dates, and what you want us to bring."
    }
   ]
  },
@@ -113,12 +152,24 @@ window.__seeds = {
     "n": "Decided in advance, not on the morning."
    },
    {
+    "t": "Check the ratio and the insurance",
+    "n": "Adults per child as your canton asks for, and who is covered on the way there and back."
+   },
+   {
     "t": "List what each person carries",
     "n": "Short enough that a parent can read it in one go."
    },
    {
     "t": "Name who holds the first-aid kit",
     "n": "A person, not a rucksack."
+   },
+   {
+    "t": "Write to the parents and set a date for the reply",
+    "n": "One page, one address to answer to, one date after which you follow up by phone."
+   },
+   {
+    "t": "Agree the call chain for the day",
+    "n": "Who rings whom, in which order, with the school number on paper as well as in a phone."
    }
   ]
  },
@@ -136,12 +187,20 @@ window.__seeds = {
     "n": "That point is the lesson."
    },
    {
+    "t": "Agree the device rules with your school",
+    "n": "What may be used in the room, and what happens to the data on it. That is settled with the person responsible for IT, not in the lesson."
+   },
+   {
     "t": "Make the decision visible without code",
     "n": "Paper, cards, a whiteboard."
    },
    {
     "t": "Let them change the input and watch it turn",
     "n": "The turn is what they remember."
+   },
+   {
+    "t": "Ask entrosana for the material",
+    "n": "info@entrosana.com — say the age group and how long you have. It comes back as something you can repeat without us."
    }
   ]
  },
@@ -169,6 +228,10 @@ window.__seeds = {
    {
     "t": "Agree how it gets reviewed",
     "n": "Who reads it, against what, and when they say yes or no."
+   },
+   {
+    "t": "Send the proposal in",
+    "n": "Export this checklist and mail it to info@entrosana.com, or use entrosana.com/request-access. A proposal that arrives with its trail gets a shorter answer."
    }
   ]
  },
@@ -192,6 +255,10 @@ window.__seeds = {
    {
     "t": "Separate what is wrong from what you would do differently",
     "n": "Only the first blocks."
+   },
+   {
+    "t": "Send it back to the author, and keep your copy",
+    "n": "To them directly, and to info@entrosana.com if the Hub asked for the review. Your copy is the record that you said it."
    }
   ]
  },
@@ -215,6 +282,10 @@ window.__seeds = {
    {
     "t": "Name what happens if it is not granted",
     "n": "Sometimes the honest answer is: nothing changes."
+   },
+   {
+    "t": "Ask, with the export attached",
+    "n": "info@entrosana.com. Runway is granted against a written request, not a conversation."
    }
   ]
  }

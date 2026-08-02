@@ -80,33 +80,23 @@
       <section class="block hair">
         <span class="eyebrow">Modules</span>
         <h1 class="work__h">Human-led lessons, adapted to the school and the age group.</h1>
-        <p class="work__sub" style="max-width:62ch">Taught by people, in different depths, for the school and the age group that asks for them.</p>
+        <p class="work__sub measure">Taught by people, in different depths, for the school and the
+          age group that asks for them. Open a module to see who it is for, how long it runs, and
+          what the school ends up with.</p>
       </section>
 
       <section class="block hair">
-        <span class="eyebrow">Checklists you can start from</span>
-        <p class="work__sub">These are checklists, not software. Every visitor opens the same one, and
-          opening it makes a copy that is yours.</p>
-        <div class="grid">
-          <article class="card">
-            <p class="h3">Plan a module for your group</p>
-            <span class="tool__who">social work driven · social skills · community building</span>
-            <p class="muted" style="font-size:.9rem">5 steps &middot; seed <span class="mono">modules/000</span></p>
-            <a class="btn" href="/project?p=modules/000">Open project</a>
-          </article>
-          <article class="card">
-            <p class="h3">Take a group outdoors</p>
-            <span class="tool__who">nature driven · ecology · outdoor learning</span>
-            <p class="muted" style="font-size:.9rem">4 steps &middot; seed <span class="mono">modules/001</span></p>
-            <a class="btn" href="/project?p=modules/001">Open project</a>
-          </article>
-          <article class="card">
-            <p class="h3">Teach how a machine actually works</p>
-            <span class="tool__who">code · computing · data features</span>
-            <p class="muted" style="font-size:.9rem">4 steps &middot; seed <span class="mono">modules/002</span></p>
-            <a class="btn" href="/project?p=modules/002">Open project</a>
-          </article>
-        </div>
+        <span class="eyebrow">The catalogue</span>
+        <p class="work__sub">Three tracks today.</p>
+        <div class="filters" data-filters="modules"></div>
+        <div class="cards" data-cards="modules"></div>
+      </section>
+
+      <section class="block hair">
+        <span class="eyebrow">Not what you need?</span>
+        <p class="work__sub measure">A module can be cut to a group we have not met yet. Say what
+          the group should be able to do afterwards, and we start from there.</p>
+        <a class="btn btn--ghost" href="/contribute">Propose a module</a>
       </section>
     </div>
   </main>
@@ -132,7 +122,9 @@
 </dialog>
 
 <script src="/assets/seeds.js"></script>
+<script src="/assets/catalogue.js"></script>
 <script src="/assets/services.js"></script>
 <script src="/assets/app.js"></script>
+<script src="/assets/cards.js"></script>
 </body>
 </html>
