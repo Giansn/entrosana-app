@@ -2,3 +2,6 @@
 # Die .bak-Dateien bleiben drin: sie sind der Stand vor dem Umbau.
 *.pyc
 __pycache__/
+
+# Laufprotokoll der Admin-Oberflaeche, kein Bestandteil des Stands.
+admin-app.log
