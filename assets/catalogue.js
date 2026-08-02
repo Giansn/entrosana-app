@@ -135,16 +135,19 @@ window.__catalogue = {
     "track":"running",
     "state":"running",
     "title":"Lehrplan 21 — citation and navigation",
-    "lede":"Resolves a competence code to its exact wording, from a local index you can check.",
-    "meta":"not published yet",
-    "about":"Builds a local index of be.lehrplan.ch and answers from it, so a citation can be checked against the source instead of being trusted. Python, standard library only, no dependencies.",
+    "lede":"Resolves a competence code to its exact wording, and checks a finished document against the curriculum.",
+    "meta":"published",
+    "about":"Two things go wrong routinely when the Lehrplan 21 is quoted: the competency code is misremembered, and the wording is paraphrased and then presented as a quotation. Both are invisible in the finished text. The tool looks up the exact competency and the exact wording of each level, and writes the citation the way the official Zitierhilfe asks for it, permalink included.",
+    "note":"The other direction works too: hand «pruefe» a .docx or .md file and it checks every code and every quotation in it against the curriculum, then reports the ones that do not hold. Over MCP a model does this while it writes, instead of a person doing it afterwards.",
     "facts":[
      ["What it reads","be.lehrplan.ch, Bern cantonal edition"],
-     ["Built with","Python, standard library only"],
-     ["Dependencies","None"],
-     ["Status","Running on e14"]
+     ["Built with","Python 3.7 or newer, standard library only"],
+     ["Dependencies","None — no SDK, no virtual environment"],
+     ["How it is used","On the command line, and as an MCP server for language models"],
+     ["Curriculum content","None is shipped: the index is built on your own machine on first use, about 474 pages in roughly eight minutes. Afterwards it works offline"],
+     ["Licence","AGPL-3.0, full text in the repository"]
     ],
-    "note":"Not published yet. Once it is on GitHub it becomes reachable as an MCP tool, so an assistant can cite the curriculum without a human copying text across."
+    "repo":"https://github.com/entrosana/hub/tree/main/lp21-mcp"
    },
    {
     "slug":"lehrplan21-stand-in",
@@ -158,7 +161,7 @@ window.__catalogue = {
      ["What it replaces","The official Lehrplan 21 data interface"],
      ["Test data","Fixed, kept with the code"],
      ["Acceptance","A script that reports match or mismatch"],
-     ["Status","Running on e14"]
+     ["How it is used","On e14, as a script beside the import it measures"]
     ],
     "note":"Access to the official interface has been requested. The stand-in stays afterwards, as the thing the real interface is measured against."
    },

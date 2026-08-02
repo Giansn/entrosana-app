@@ -140,7 +140,12 @@
     open.href = "/project?p=" + e.seed;
     act.appendChild(open);
   }
-  var ask = el("a", e.seed ? "btn btn--ghost" : "btn",
+  if (e.repo) {
+    var repo = el("a", "btn", "Open the repository");
+    repo.href = e.repo;
+    act.appendChild(repo);
+  }
+  var ask = el("a", (e.seed || e.repo) ? "btn btn--ghost" : "btn",
                section === "modules"
                  ? (e.downloads ? "Ask us to run it with you" : "Request this module")
                  : "Ask about this tool");
