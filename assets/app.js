@@ -154,8 +154,12 @@
       return ("0" + b.toString(16)).slice(-2);
     }).join("");
   }
+  // Ausserhalb eines sicheren Kontexts (HTTPS oder localhost) gibt es kein
+  // crypto.subtle. Dann null statt Leerstring: ein Leerstring sähe aus wie ein
+  // Siegel, und die Kette würde sich gegen lauter leere Siegel "bestätigen".
+  function sealable() { return !!(window.crypto && window.crypto.subtle); }
   function sha256(text) {
-    if (!window.crypto || !crypto.subtle) return Promise.resolve("");
+    if (!sealable()) return Promise.resolve(null);
     return crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)).then(hex);
   }
 
@@ -165,13 +169,21 @@
     var prev = state.records.length ? state.records[state.records.length - 1].h : "";
     var r = { t: new Date().toISOString(), kind: kind, text: text, project: project || null };
     return sha256(prev + "|" + payload(r)).then(function (h) {
+      if (h == null) {
+        // Ohne Siegel keine Zeile: eine ungesiegelte Zeile wäre eine Attrappe.
+        // Die Handlung selbst bleibt erlaubt, aber sie wird laut angesagt.
+        say("No seal possible here (needs HTTPS) — this action left no record.", "warn");
+        return null;
+      }
       r.h = h;
       state.records.push(r);
       save(state);
       return r;
     });
   }
+  // true: jede Zeile passt. false: ein Bruch. null: hier nicht prüfbar.
   function verifyChain() {
+    if (!sealable()) return Promise.resolve(null);
     var prev = "";
     var chain = Promise.resolve(true);
     state.records.forEach(function (r) {
@@ -227,10 +239,15 @@
     var done = p.steps.filter(function (s) { return s.checked; }).length;
     return { done: done, total: p.steps.length };
   }
+  // Das Dateisiegel deckt, was man sieht: Text, Haken, Abschlusszeit und
+  // Notiz jedes Schritts. JSON statt join, damit kein Zeichen im Text die
+  // Feldgrenzen verschieben kann. Vorher lasen die Felder s.t/s.done/s.at,
+  // die es im Schema (content/checked/completed_at) nie gab — das Siegel
+  // blieb starr, egal was in der Datei geschah.
   function projectSeal(p) {
-    var canon = p.seed + "\n" + p.steps.map(function (s) {
-      return [s.t, s.done ? "1" : "0", s.at || "", s.note].join("");
-    }).join("\n");
+    var canon = JSON.stringify([p.seed, p.steps.map(function (s) {
+      return [s.content, !!s.checked, s.completed_at || null, s.note || ""];
+    })]);
     return sha256(canon);
   }
 
@@ -331,6 +348,11 @@
     var note = document.getElementById("chain-note"), box = document.getElementById("chain-receipt");
     if (!state.records.length) return;
     verifyChain().then(function (ok) {
+      if (ok == null) {
+        note.className = "note note--idle";
+        note.textContent = "cannot verify here — seals need HTTPS · " + state.records.length + " records";
+        return;
+      }
       note.className = "note note--" + (ok ? "ok" : "warn");
       note.textContent = (ok ? "chain verified · " : "chain broken · ") + state.records.length +
         " of " + state.records.length + " records";
@@ -937,7 +959,7 @@
     seal.querySelectorAll("span")[1].textContent =
       "recomputed from " + p.steps.length + " tasks";
     file.appendChild(seal);
-    projectSeal(p).then(function (h) { seal.querySelector("b").textContent = h.slice(0, 10); });
+    projectSeal(p).then(function (h) { seal.querySelector("b").textContent = h ? h.slice(0, 10) : "unavailable — needs https"; });
   }
 
   function orderedSections(p) {
@@ -1513,9 +1535,11 @@
     host.appendChild(card);
 
     verifyChain().then(function (ok) {
-      var n = el("p", "note note--" + (ok ? "ok" : "warn"),
-                 ok ? "chain verified · " + state.records.length + " records"
-                    : "chain broken · a line does not match its predecessor");
+      var n = ok == null
+        ? el("p", "note note--idle", "cannot verify here — seals need HTTPS")
+        : el("p", "note note--" + (ok ? "ok" : "warn"),
+             ok ? "chain verified · " + state.records.length + " records"
+                : "chain broken · a line does not match its predecessor");
       n.style.marginTop = "1rem";
       host.appendChild(n);
     });
@@ -1616,6 +1640,7 @@
       ev.preventDefault();
       if (!state.records.length) return say("Nothing to verify yet.", "idle");
       verifyChain().then(function (ok) {
+        if (ok == null) return say("Cannot verify here — seals need HTTPS.", "warn");
         say(ok ? "Chain verified, " + state.records.length + " records match."
                : "Chain broken: a line does not match its predecessor.", ok ? "ok" : "warn");
       });
