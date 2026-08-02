@@ -232,7 +232,7 @@ DESIGN_END = "/* === END ENTROSANA-DESIGN-OVERRIDES === */"
 # Arbeitsfläche wieder abdunkeln (--paper steht dort bewusst heller).
 DESIGN_DEFAULTS = {
     "seal": "#2BD4E8", "paper": "#21252C", "ink": "#E9EBE7",
-    "light_seal": "#077183", "light_paper": "#F5FFFE", "light_ink": "#16181D",
+    "light_seal": "#066675", "light_paper": "#CFE6EA", "light_ink": "#16181D",
     "wrap": 1140, "gutter": 3.0, "radius": 4, "size": 100,
 }
 _HEX = re.compile(r"^#[0-9a-fA-F]{6}$")

@@ -1580,3 +1580,35 @@ html{ scrollbar-gutter:stable }
 .tabpanel__go{ font-family:var(--font-mono); font-size:var(--step--1); color:var(--seal) }
 /* Auf schmalen Geräten teilen sich die Reiter die Zeile, statt umzubrechen. */
 @media (max-width:559.98px){ .tabs__b{ flex:1 1 8rem; justify-content:center } }
+
+/* ---------- Die helle Fassung schärfen ----------
+   Sie war formlos: --paper stand auf #f5fffe, --card-bg auf #FFFFFF — ein
+   Prozent Unterschied. Karten, Kopfpille und Leiste verschwammen mit dem
+   Grund, und das Korn hatte keine Fläche, auf der es sichtbar wird (Rauschen
+   im Overlay-Modus braucht einen Ton, den es aufhellen und abdunkeln kann).
+   Deshalb bekommt der Grund einen echten Ton, und Weiss wird wieder das,
+   was es sein soll: die erhobene Fläche darüber. */
+:root[data-theme="light"]{
+  --paper:#CFE6EA; --paper-2:#C0DBE1;
+  /* Ränder kühler und eine Spur dunkler: der alte Wert war ein warmes Grau
+     und stand quer zum Cyan des Hauses. */
+  --line:#A8C4C9; --line-2:#2C313B; --line-ui:#6F7E80;
+  /* Auf dem getönten Grund verfehlten die alten Werte die Lesbarkeitsschwelle:
+     --muted lag bei 3.82:1, --seal bei 4.37:1 (Soll 4.5:1). Eine Stufe tiefer,
+     der Farbcharakter bleibt. Gemessen gegen Grund und gegen die weisse Karte. */
+  --muted:#5C6067; --seal:#066675;
+  --shadow-1:0 1px 2px rgba(16,32,36,.07),0 4px 10px rgba(16,32,36,.10);
+  --shadow-2:0 3px 6px rgba(16,32,36,.09),0 12px 28px rgba(16,32,36,.13),0 28px 56px rgba(16,32,36,.08);
+}
+/* Leiste und Kopfpille sind auf hellem Grund keine dunklen Schleier, sondern
+   helle Körper: derselbe Bau wie im Dunkeln, nur andersherum gemischt. */
+:root[data-theme="light"] .rail{ background:color-mix(in srgb, #fff 60%, transparent) }
+:root[data-theme="light"] .top{ background:color-mix(in srgb, #fff 84%, transparent) }
+/* Die Lichtkante am oberen Rand ist auf Weiss unsichtbar; dort trägt eine
+   feine dunkle Kante die Form. */
+:root[data-theme="light"] .rail,
+:root[data-theme="light"] .top,
+:root[data-theme="light"] .pick,
+:root[data-theme="light"] .modal{
+  box-shadow:var(--shadow-2), inset 0 1px 0 rgba(255,255,255,.9);
+}
