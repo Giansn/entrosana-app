@@ -12,6 +12,11 @@ import { fileURLToPath } from "node:url";
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 4322);
 const HOST = process.env.HOST || "127.0.0.1";
+// Öffentlich gibt es genau einen Ursprung: https://entrosana.app. www und
+// blankes http leiten dorthin um, sonst legt localStorage je Ursprung eine
+// eigene, leere Kopie aller Daten an. Lokale Zugriffe (127.0.0.1, Proben)
+// tragen einen anderen Host und bleiben unberührt.
+const CANON = "entrosana.app";
 
 const HTML = "text/html; charset=utf-8";
 const CSS = "text/css; charset=utf-8";
@@ -86,26 +91,40 @@ createServer((req, res) => {
     return;
   }
 
+  // Host und Schema kommen durch den Tunnel unverändert an: cloudflared reicht
+  // den Host durch, die Cloudflare-Kante setzt X-Forwarded-Proto auf das
+  // Schema des Besuchers.
+  const host = String(req.headers.host || "").split(":")[0].toLowerCase();
+  const proto = String(req.headers["x-forwarded-proto"] || "").toLowerCase();
+  if (host === "www." + CANON || (host === CANON && proto === "http")) {
+    res.writeHead(301, { "Location": "https://" + CANON + req.url, "Content-Length": 0 }).end();
+    return;
+  }
+
   const route = ROUTES.get(normalize(req.url));
   // Unbekannte Pfade liefern die Startseite mit 404, damit nichts vorgetäuscht wird.
   const entry = cache.get((route ?? ROUTES.get("/")).file);
   const status = route ? 200 : 404;
 
   if (status === 200 && req.headers["if-none-match"] === entry.etag) {
-    res.writeHead(304, { ETag: entry.etag }).end();
+    res.writeHead(304, { ETag: entry.etag, "Cache-Control": "no-cache" }).end();
     return;
   }
-  res.writeHead(status, {
+  const headers = {
     "Content-Type": entry.type,
     "Content-Length": entry.body.length,
-    // Kein Zwischenspeicher: sonst zeigt der Browser nach einer Änderung noch
-    // bis zu fünf Minuten die alte Fassung, und man sucht den Fehler im Code.
-    "Cache-Control": "no-store",
+    // no-cache statt no-store: der Browser darf behalten, muss aber mit dem
+    // ETag nachfragen. Änderungen erscheinen weiterhin sofort, Unverändertes
+    // kommt als 304 ohne Rumpf zurück statt jedes Mal ganz.
+    "Cache-Control": "no-cache",
     "ETag": entry.etag,
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Content-Security-Policy": CSP,
-  });
+  };
+  // Die .app-Zone ist ohnehin HSTS-vorgeladen; die Kopfzeile macht es explizit.
+  if (proto === "https") headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
+  res.writeHead(status, headers);
   res.end(req.method === "HEAD" ? undefined : entry.body);
 }).listen(PORT, HOST, () => {
   console.log(`entrosana-app serving ${ROUTES.size} routes on http://${HOST}:${PORT}`);
