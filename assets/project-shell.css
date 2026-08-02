@@ -321,3 +321,75 @@ header.top .view__tools{ display:flex; align-items:center; gap:.5rem; margin-lef
 .rail__group--act .rail__plus:hover{
   border-color:var(--seal); background:color-mix(in srgb, var(--seal) 12%, transparent);
 }
+
+
+/* ---------- Verschmelzung: das Brett spricht die Flächensprache des Hauses ----------
+   Die Kopie kehrte die Schichtung des Hubs um (dunkle Karte auf hellerer
+   Spalte) und brachte ihren eigenen Vorrat mit: Todoist-Blau und -Orange,
+   weisse Schrift auf Farbflächen, dauersichtbare Zeilenhandlungen und ein
+   Dropdown in voller Breite auf jeder Karte. Hier wird beides auf das Haus
+   gedreht: die Spalte ist eine durchscheinende Wanne, durch die das Korn
+   trägt, die Karte die helle Fläche wie jede Karte des Hauses, und die
+   Zustände sprechen den geschlossenen Vorrat aus §8 — wartend als Randpunkt,
+   laufend als pulsierendes Seal, zur Prüfung als Seal-2, fertig als --done.
+   Für .check und .task .prio stand die Hausfassung schon in app.css; die
+   Kopie überschrieb sie nur, weil sie später lädt. */
+
+/* Schichtung: Wanne unten, Karte oben. */
+.col{
+  background:color-mix(in srgb, var(--paper) 55%, transparent);
+  border-color:color-mix(in srgb, var(--line) 85%, transparent);
+}
+.col__h{
+  border-bottom:0; font-weight:400; letter-spacing:.12em;
+  background:color-mix(in srgb, var(--paper) 78%, transparent);
+  backdrop-filter:blur(6px);
+}
+.col__cnt{ background:var(--field-bg); font-family:var(--font-mono); font-weight:400 }
+.col .task, .card{
+  background:var(--card-bg); border-color:var(--line); box-shadow:var(--shadow-1);
+}
+.col .task:hover, .card:hover{ background:color-mix(in srgb, var(--seal) 6%, var(--card-bg)) }
+.sec{ background:color-mix(in srgb, var(--paper) 55%, transparent) }
+.sec__h{ background:color-mix(in srgb, var(--paper-2) 88%, transparent); backdrop-filter:blur(6px) }
+
+/* Zustände im Vorrat des Hauses, gleiche Rezeptur wie die Bahnenpunkte in app.css. */
+.col__badge--pending, .sec__badge[data-lane="pending"]{
+  background:transparent; border:1px solid var(--line-ui);
+}
+.col__badge--in_progress, .sec__badge[data-lane="in_progress"]{
+  background:var(--seal); animation:pulse 1.6s ease-in-out infinite;
+}
+.col__badge--audit, .sec__badge[data-lane="audit"]{ background:var(--seal-2) }
+.pill--pending{ color:var(--muted); border-color:var(--line-ui) }
+.pill--in_progress{ color:var(--seal); border-color:color-mix(in srgb, var(--seal) 45%, var(--line)) }
+.pill--audit{ color:var(--seal-2); border-color:color-mix(in srgb, var(--seal-2) 45%, var(--line)) }
+
+/* Rang als Umriss, wie .prio überall im Haus — keine Farbfläche, keine weisse Schrift. */
+.prio, .prio--1, .prio--2, .prio--3, .prio--4{ background:transparent; color:var(--muted) }
+.prio{ border:1px solid var(--line-ui); font:600 .68rem/1 var(--font-mono) }
+.prio--1{ border-color:var(--warn); color:var(--warn) }
+.prio--2{ border-color:var(--seal); color:var(--seal) }
+.prio--3{ border-color:var(--line-ui); color:var(--ink-2) }
+.prio--4{ border-color:var(--line); color:var(--muted) }
+.prio:hover{ filter:none; border-color:var(--seal); color:var(--seal) }
+
+/* Der Kreis kehrt zur Fassung von app.css zurück. */
+.check{ border-color:var(--line-ui); background:var(--field-bg) }
+.check:hover{ border-color:var(--seal); background:var(--field-bg) }
+.check.on::after{ color:var(--btn-fg) }
+
+/* Das Dropdown je Karte wird zum Mono-Chip statt zur Formularstrecke. */
+.col .move-sel{ width:auto; max-width:100% }
+.move-sel{ font-family:var(--font-mono); font-size:.72rem; background:var(--field-bg); color:var(--ink-2) }
+.move-sel:hover, .move-sel:focus{ border-color:var(--seal); color:var(--seal) }
+
+/* Zeilenhandlungen ruhen auch im Brett, bis Zeiger oder Fokus sie ruft. */
+.task__actions{ background:color-mix(in srgb, var(--card-bg) 92%, transparent) }
+.col .task__actions{ opacity:0 }
+.col .task:hover .task__actions, .col .task:focus-within .task__actions{ opacity:1 }
+@media (hover:none){ .col .task__actions{ opacity:.7 } }
+
+/* Weiss auf Farbfläche gehört nicht zum Haus: dunkle Schrift wie auf .btn. */
+.btn-primary{ color:var(--btn-fg) }
+.composer{ box-shadow:var(--shadow-2) }
