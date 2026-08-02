@@ -27,7 +27,10 @@ STAGING="$(unit_state entrosana-staging.service)"
 BACKUP="$(unit_state entrosana-wp-backup.service)"
 
 # Der Widerspruch aus §2: die Beschreibung der Einheit nennt einen anderen Port
-# als der Lauscher. Wird gemessen, nicht angenommen.
+# als der Lauscher. Wird gemessen, nicht angenommen. Auf der öffentlichen
+# Seite stehen keine Portnummern und keine Bind-Adressen: die Spalte where
+# nennt nur den Ort (tunnel, LAN, tailnet, container). Wer die Ports braucht,
+# liest sie hier im Skript oder per ss auf der Maschine.
 ADMIN_DESC_PORT="$(systemctl --user show entrosana-admin.service -p Description --value 2>/dev/null \
                    | grep -oE ':[0-9]{2,5}' | tr -d ':' | head -1)"
 ADMIN_PORT=""
@@ -35,7 +38,7 @@ for p in 8392 8393 8394; do [ "$(listens $p)" = yes ] && ADMIN_PORT=$p && break;
 ADMIN_FLAG=""
 ADMIN_STATE="ok"
 if [ -n "$ADMIN_DESC_PORT" ] && [ -n "$ADMIN_PORT" ] && [ "$ADMIN_DESC_PORT" != "$ADMIN_PORT" ]; then
-  ADMIN_FLAG="Unit description says :${ADMIN_DESC_PORT}, the listener is on :${ADMIN_PORT}. One of the two is wrong."
+  ADMIN_FLAG="Unit description and the actual listener disagree about the port."
   ADMIN_STATE="warn"
 fi
 
@@ -48,14 +51,14 @@ window.__services = {
  "host": "${HOST}",
  "read": "${READ_AT}",
  "services": [
-  {"group":"Public","name":"entrosana.com","what":"WordPress","where":"tunnel → :8090","state":"$(docker_state "$WP_STATUS")","status":"${WP_STATUS}"},
-  {"group":"Public","name":"entrosana.app","what":"this app, entrosana-app.service","where":"tunnel → :4322","state":"$(state_of "$APP")","status":"${APP}"},
+  {"group":"Public","name":"entrosana.com","what":"WordPress","where":"via tunnel","state":"$(docker_state "$WP_STATUS")","status":"${WP_STATUS}"},
+  {"group":"Public","name":"entrosana.app","what":"this app, entrosana-app.service","where":"via tunnel","state":"$(state_of "$APP")","status":"${APP}"},
   {"group":"Public","name":"entrosana-tunnel","what":"Cloudflare Tunnel, serves both hosts","where":"cloudflared","state":"$(state_of "$TUN")","status":"${TUN}"},
-  {"group":"LAN and tailnet","name":"entrosana-site","what":"static predecessor, fallback path","where":"0.0.0.0:4321","state":"$(state_of "$SITE")","status":"${SITE}"},
-  {"group":"LAN and tailnet","name":"entrosana-edge","what":"Caddy TLS edge","where":"LAN :443 → :4321","state":"$(docker_state "$EDGE_STATUS")","status":"${EDGE_STATUS}"},
-  {"group":"LAN and tailnet","name":"entrosana-admin","what":"editor, tailnet only","where":"0.0.0.0:${ADMIN_PORT:-?}","state":"${ADMIN_STATE}","status":"${ADMIN}"$( [ -n "$ADMIN_FLAG" ] && printf ',"flag":"%s"' "$ADMIN_FLAG" )},
-  {"group":"LAN and tailnet","name":"entrosana-staging","what":"staging preview, tailnet only","where":":8394","state":"$(state_of "$STAGING")","status":"${STAGING}"},
-  {"group":"Data","name":"entrosana-wp-db-1","what":"MariaDB","where":"3306, container only","state":"$(docker_state "$DB_STATUS")","status":"${DB_STATUS}"},
+  {"group":"LAN and tailnet","name":"entrosana-site","what":"static predecessor, fallback path","where":"LAN","state":"$(state_of "$SITE")","status":"${SITE}"},
+  {"group":"LAN and tailnet","name":"entrosana-edge","what":"Caddy TLS edge","where":"LAN","state":"$(docker_state "$EDGE_STATUS")","status":"${EDGE_STATUS}"},
+  {"group":"LAN and tailnet","name":"entrosana-admin","what":"editor, tailnet only","where":"tailnet","state":"${ADMIN_STATE}","status":"${ADMIN}"$( [ -n "$ADMIN_FLAG" ] && printf ',"flag":"%s"' "$ADMIN_FLAG" )},
+  {"group":"LAN and tailnet","name":"entrosana-staging","what":"staging preview, tailnet only","where":"tailnet","state":"$(state_of "$STAGING")","status":"${STAGING}"},
+  {"group":"Data","name":"entrosana-wp-db-1","what":"MariaDB","where":"container only","state":"$(docker_state "$DB_STATUS")","status":"${DB_STATUS}"},
   {"group":"Jobs","name":"entrosana-wp-backup","what":"db + wp-content + stack → local, T9, Nextcloud","where":"oneshot","state":"wait","status":"${BACKUP}"}
  ]
 };
