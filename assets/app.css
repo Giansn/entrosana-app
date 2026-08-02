@@ -500,12 +500,31 @@ p{ margin:0 0 var(--pad-para) }
   .grid{ grid-template-columns:repeat(auto-fit,minmax(16rem,1fr)) }
   .split{ grid-template-columns:1fr }
 }
+/* Der Burger existiert nur unter 760 px; auf dem Schreibtisch bleibt er weg. */
+.rail__burger{ display:none }
+
 @media (max-width:759.98px){
   .app{ grid-template-columns:1fr }
-  .rail{ flex-direction:row; flex-wrap:wrap; align-items:center; gap:.15rem .5rem; padding:.8rem 1rem }
-  .rail .seam::before, .rail__rule, .rail__group, .rail__foot{ display:none }
-  .rail__brand{ padding:0 .5rem 0 0 }
-  .rail__item.is-active{ margin-bottom:0 }
+  .rail{ flex-direction:row; flex-wrap:wrap; align-items:center; gap:.15rem .5rem; padding:.55rem .8rem }
+  .rail .seam::before, .rail__rule{ display:none }
+  .rail__brand{ padding:.2rem .5rem .2rem .3rem; margin-right:auto }
+  /* zugeklappt: nur Marke und Burger, alles andere wartet hinter dem Knopf */
+  .rail:not(.is-open) .rail__item,
+  .rail:not(.is-open) .rail__group,
+  .rail:not(.is-open) .nav__projects,
+  .rail:not(.is-open) .rail__foot{ display:none }
+  .rail__burger{
+    display:grid; place-items:center; width:44px; height:44px; flex:none;
+    border:0; background:none; color:var(--ink-2); font-size:1.1rem;
+    border-radius:var(--radius); cursor:pointer;
+  }
+  .rail__burger:hover{ color:var(--ink) }
+  .rail__burger::before{ content:"☰" }
+  .rail.is-open .rail__burger::before{ content:"✕" }
+  /* aufgeklappt: die volle senkrechte Leiste, der Knopf wandert in die Ecke */
+  .rail.is-open{ flex-direction:column; align-items:stretch }
+  .rail.is-open .rail__brand{ margin-right:0 }
+  .rail.is-open .rail__burger{ position:absolute; top:.55rem; right:.6rem }
   .work{ padding:0 1rem }
   .top{ padding:0 1rem }
   .search{ display:none }

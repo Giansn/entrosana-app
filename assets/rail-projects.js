@@ -92,4 +92,13 @@
     }).length);
   }
   if (window.__services) set("svc-count", window.__services.services.length);
+
+  // Der Burger unter 760 px klappt die Leiste auf und zu. Hier verdrahtet,
+  // weil dieses Skript auf jeder Seite direkt nach der Leiste läuft.
+  var burger = document.querySelector(".rail__burger");
+  if (burger) burger.addEventListener("click", function () {
+    var rail = burger.closest(".rail");
+    var open = rail.classList.toggle("is-open");
+    burger.setAttribute("aria-expanded", open ? "true" : "false");
+  });
 })();
