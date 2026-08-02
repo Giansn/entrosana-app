@@ -36,7 +36,14 @@
     <div class="rail__rule"></div>
 
     <a class="rail__item" href="/"><span class="rail__glyph">▤</span> Workspace</a>
-    <a class="rail__item" href="/projects"><span class="rail__glyph">▦</span> Projects</a>
+    <div class="rail__row">
+      <a class="rail__item" href="/projects"><span class="rail__glyph">▦</span> Projects</a>
+      <button class="rail__chev" type="button" aria-expanded="true" aria-controls="projects" aria-label="Show or hide project list"></button>
+      <button class="iconbtn rail__plus" type="button" id="btn-add-project" title="Add project">+</button>
+    </div>
+    <div class="rail__proj" id="proj-wrap">
+      <nav class="nav__projects" id="projects"></nav>
+    </div>
     <a class="rail__item" href="/services"><span class="rail__glyph">◉</span> Running Services <span class="rail__count" id=svc-count></span></a>
 
     <div class="rail__group">Sections</div>
@@ -44,8 +51,6 @@
     <a class="rail__item" href="/modules"><span class="rail__glyph"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 8H6.3A1.55 1.55 0 1 1 9.3 8H11.2V11.95A1.65 1.65 0 0 1 11.2 15.35V18H3.4Z"/><path d="M13.2 8H21V18H13.2V15.35A1.65 1.65 0 0 0 13.2 11.95Z"/></svg></span> Modules <span class="rail__count">3</span></a>
     <a class="rail__item" href="/contribute"><span class="rail__glyph"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5.14 9.50A7.3 7.3 0 0 1 18.86 9.50"/><path d="M17.07 10.15L19.89 12.32L20.65 8.85Z" fill="currentColor" stroke="none"/><path d="M18.86 14.50A7.3 7.3 0 0 1 5.14 14.50"/><path d="M6.93 13.85L4.11 11.68L3.35 15.15Z" fill="currentColor" stroke="none"/></svg></span> Contribute <span class="rail__count">3</span></a>
 
-    <div class="rail__group rail__group--act">Projects<button class="iconbtn rail__plus" type="button" id="btn-add-project" title="Add project">+</button></div>
-    <nav class="nav__projects" id="projects"></nav>
 
     <div class="rail__group">Lanes</div>
     <nav class="nav__filters" id="filters"></nav>

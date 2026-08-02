@@ -520,7 +520,8 @@ p{ margin:0 0 var(--pad-para) }
   /* zugeklappt: nur Marke und Burger, alles andere wartet hinter dem Knopf */
   .rail:not(.is-open) .rail__item,
   .rail:not(.is-open) .rail__group,
-  .rail:not(.is-open) .nav__projects,
+  .rail:not(.is-open) .rail__row,
+  .rail:not(.is-open) .rail__proj,
   .rail:not(.is-open) .rail__foot{ display:none }
   .rail__burger{
     display:grid; place-items:center; width:44px; height:44px; flex:none;
@@ -530,6 +531,8 @@ p{ margin:0 0 var(--pad-para) }
   .rail__burger:hover{ color:var(--ink) }
   /* Fitts: Fingerziele in der offenen Leiste mindestens 44 px hoch. */
   .rail__item, .nav__projects .navitem{ min-height:2.75rem }
+  .rail__chev{ width:2.2rem; min-height:2.75rem }
+  .rail__row .rail__plus{ width:2rem; height:2rem }
   .rail__burger::before{ content:"☰" }
   .rail.is-open .rail__burger::before{ content:"✕" }
   /* aufgeklappt: die volle senkrechte Leiste, der Knopf wandert in die Ecke */
@@ -1274,3 +1277,27 @@ html{ scrollbar-gutter:stable }
 @media (max-width:640px){
   .ov__rwhen{ display:none }
 }
+
+/* ---------- Projekte hängen am Eintrag ----------
+   Vorher nannte die Leiste die Projekte zweimal: als Reiter «Projects» oben
+   und als eigene Zwischenüberschrift mit Plus weiter unten. Jetzt trägt der
+   Reiter selbst Pfeil und Plus, die Liste klappt direkt darunter auf. Das
+   Aufklappen läuft über grid-template-rows, damit die Höhe weich fährt statt
+   zu springen; der Zustand übersteht den Seitenwechsel (rail-projects.js). */
+.rail__row{ display:flex; align-items:center; gap:.3rem }
+.rail__row .rail__item{ flex:1 1 auto; min-width:0 }
+.rail__chev{
+  width:1.4rem; height:1.4rem; flex:none; display:grid; place-items:center; padding:0;
+  font:inherit; font-size:.68rem; line-height:1; cursor:pointer;
+  background:none; border:0; color:var(--muted); border-radius:var(--radius);
+}
+.rail__chev::before{ content:"▸"; display:block; transition:transform .22s ease }
+.rail__chev:hover{ color:var(--seal) }
+.rail__chev[aria-expanded="true"]::before{ transform:rotate(90deg) }
+.rail__proj{ display:grid; grid-template-rows:1fr; transition:grid-template-rows .22s ease }
+.rail__proj > .nav__projects{ overflow:hidden; min-height:0 }
+.rail__proj.is-closed{ grid-template-rows:0fr }
+
+/* Das Auswahlfenster für neue Projekte kommt weich, nicht sprunghaft. */
+.pick[open]{ animation:pick-rise .18s cubic-bezier(.2,.7,.3,1) }
+@keyframes pick-rise{ from{ opacity:0; transform:translateY(8px) } }

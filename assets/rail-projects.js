@@ -93,6 +93,22 @@
   }
   if (window.__services) set("svc-count", window.__services.services.length);
 
+  // Die Projektliste klappt am Eintrag selbst auf und zu; der Zustand
+  // übersteht den Seitenwechsel. Standard ist offen. Läuft synchron vor dem
+  // ersten Zeichnen, darum blitzt beim Laden kein falscher Zustand auf.
+  var wrap = document.getElementById("proj-wrap");
+  var chev = document.querySelector(".rail__chev");
+  if (wrap && chev) {
+    var zu = false;
+    try { zu = localStorage.getItem("entrosana-rail:projects") === "closed"; } catch (e) { /* Speicher gesperrt */ }
+    if (zu) { wrap.classList.add("is-closed"); chev.setAttribute("aria-expanded", "false"); }
+    chev.addEventListener("click", function () {
+      var closed = wrap.classList.toggle("is-closed");
+      chev.setAttribute("aria-expanded", closed ? "false" : "true");
+      try { localStorage.setItem("entrosana-rail:projects", closed ? "closed" : "open"); } catch (e) { /* dito */ }
+    });
+  }
+
   // Der Burger unter 760 px klappt die Leiste auf und zu. Hier verdrahtet,
   // weil dieses Skript auf jeder Seite direkt nach der Leiste läuft.
   var burger = document.querySelector(".rail__burger");
