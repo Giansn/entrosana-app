@@ -11,85 +11,85 @@ window.__catalogue = {
 
  "modules": {
   "title": "Modules",
+  // Ein Gleis, weil alle drei denselben Zustand haben: gebaut wird auf Anfrage.
+  // Die Gebietsnamen sind die von entrosana.com/modules, die Absaetze auch.
   "tracks": [
-   {"id":"social",    "name":"Social"},
-   {"id":"nature",    "name":"Nature"},
-   {"id":"technical", "name":"Technical"}
+   {"id":"onrequest", "name":"On request", "short":"on request"}
   ],
   "list": [
    {
-    "slug":"plan-a-module",
+    "slug":"social",
     "seed":"modules/000",
-    "track":"social",
-    "title":"Plan a module for your group",
-    "lede":"A module built around the group you actually have, not the one a curriculum assumes.",
-    "meta":"half day to 3 sessions",
-    "draft":true,
-    "about":"The planning happens with you, not for you. We start from what the group can do today and what it should be able to do afterwards, and everything else — place, materials, dates — follows from that one sentence.",
+    "track":"onrequest",
+    "title":"Social",
+    "who":"social work driven · social skills · community building",
+    "lede":"How we create values, talk, decide, and live together or alone, including how to read the media, the machines and influences around us.",
+    "meta":"on request",
+    "about":"Composed by experts who do this work — social workers, and practitioners who teach. Scoped and built on request, so the depth matches the class instead of a catalogue.",
     "facts":[
-     ["Who it is for","Any age group; works from about 8 upwards"],
-     ["Group size","One class, up to 24"],
-     ["Format","Half a day to three sessions"],
-     ["Place","Your rooms"],
-     ["Who leads it","One named lead from entrosana, with your teacher"],
-     ["Cost","Scoped on request"]
+     ["Scope","Scoped and built on request, matched to the age and size of the class"],
+     ["Who composes it","Experts: social workers, nature pedagogy, and engineers who teach"],
+     ["How it starts","A school asks; we scope a priced proposal"],
+     ["What stays visible","The plan, the materials, and what was delivered — to learners, parents and teachers"],
+     ["Curriculum references","Checked against the source, not trusted"],
+     ["Cost","A priced proposal, per module"]
     ],
     "gets":[
-     "A written plan the school can hand to a substitute",
-     "One named person answerable for the module",
-     "A record of every decision, sealed as it is made"
+     "The module delivered with its full record",
+     "No catalogue lock-in: modules are built, adapted and retired as classes actually need them",
+     "An audit record that answers the parents who chose the school"
     ]
    },
    {
-    "slug":"take-a-group-outdoors",
+    "slug":"nature-based",
     "seed":"modules/001",
-    "track":"nature",
-    "title":"Take a group outdoors",
-    "lede":"A day outside that is prepared well enough to be boring for the adults.",
-    "meta":"one day",
-    "draft":true,
-    "about":"The place is walked once before the group ever sees it. Weather limits, kit lists and who carries the first-aid kit are settled in advance, in writing, so the morning holds no decisions.",
+    "track":"onrequest",
+    "title":"Nature-based",
+    "who":"nature driven · ecology · outdoor learning",
+    "lede":"Out of the classroom and into the forest, with experiences that revitalize mind and body.",
+    "meta":"on request",
+    "about":"Learning where the physical boundaries of nature and of a person actually are. Composed by people from nature pedagogy, and scoped to the class that goes out.",
     "facts":[
-     ["Who it is for","Primary and lower secondary"],
-     ["Group size","One class, up to 24"],
-     ["Format","One day, or a series of afternoons"],
-     ["Place","Forest, field or water within reach of the school"],
-     ["Who leads it","One lead from entrosana, plus your staff"],
-     ["Cost","Scoped on request"]
+     ["Scope","Scoped and built on request, matched to the age and size of the class"],
+     ["Who composes it","Experts: social workers, nature pedagogy, and engineers who teach"],
+     ["How it starts","A school asks; we scope a priced proposal"],
+     ["What stays visible","The plan, the materials, and what was delivered — to learners, parents and teachers"],
+     ["Curriculum references","Checked against the source, not trusted"],
+     ["Cost","A priced proposal, per module"]
     ],
     "gets":[
-     "A route that somebody has actually walked",
-     "A parent letter that fits on one page",
-     "Cancellation criteria decided before the day, not on it"
+     "The module delivered with its full record",
+     "No catalogue lock-in: modules are built, adapted and retired as classes actually need them",
+     "An audit record that answers the parents who chose the school"
     ]
    },
    {
-    "slug":"how-a-machine-works",
+    "slug":"technical",
     "seed":"modules/002",
-    "track":"technical",
-    "title":"Teach how a machine actually works",
-    "lede":"One machine the group already carries, taken apart to the point where it decides something.",
-    "meta":"2 to 4 lessons",
-    "draft":true,
-    "about":"No code is written. The decision a machine makes is laid out on paper and cards until the group can change an input and watch the outcome turn. What they remember is the turn.",
+    "track":"onrequest",
+    "title":"Technical",
+    "who":"code · computing · data features",
+    "lede":"How software, data and machines actually work, and how they can be used productively.",
+    "meta":"on request",
+    "about":"Taught in different depths and from different approaches. Composed by engineers who teach, and scoped to the class rather than to a catalogue.",
     "facts":[
-     ["Who it is for","From about 10 upwards"],
-     ["Group size","One class, up to 24"],
-     ["Format","Two to four lessons"],
-     ["Place","Your rooms; no computer room needed"],
-     ["Who leads it","One lead from entrosana"],
-     ["Cost","Scoped on request"]
+     ["Scope","Scoped and built on request, matched to the age and size of the class"],
+     ["Who composes it","Experts: social workers, nature pedagogy, and engineers who teach"],
+     ["How it starts","A school asks; we scope a priced proposal"],
+     ["What stays visible","The plan, the materials, and what was delivered — to learners, parents and teachers"],
+     ["Curriculum references","Checked against the source, not trusted. The Lehrplan 21 citation tool is in development"],
+     ["Cost","A priced proposal, per module"]
     ],
     "gets":[
-     "A lesson that runs without devices if the network is down",
-     "Material your staff can repeat next year on their own",
-     "A vocabulary for talking about machine decisions with parents"
+     "The module delivered with its full record",
+     "No catalogue lock-in: modules are built, adapted and retired as classes actually need them",
+     "An audit record that answers the parents who chose the school"
     ]
    }
   ]
  },
 
- "tools": {
+  "tools": {
   "title": "Tools",
   // Die Trennung ist der Kern der Seite: was läuft, und was eine Checkliste
   // ist. Deshalb zwei Wände statt eines Filters — sie darf nicht wegklickbar
@@ -168,6 +168,57 @@ window.__catalogue = {
      ["Who it is for","Second opinions that show their work"],
      ["What it leaves","A sealed record for every step you tick"],
      ["Where it lives","On this device, until you say otherwise"]
+    ]
+   }
+  ]
+ },
+
+ "contribute": {
+  "title": "Contribute",
+  "tracks": [
+   {"id":"start", "name":"Checklists", "short":"checklist"}
+  ],
+  "list": [
+   {
+    "slug":"propose-a-track",
+    "seed":"contribute/000",
+    "track":"start",
+    "title":"Propose a track",
+    "lede":"Something you want to build or teach, described well enough to be answered.",
+    "meta":"",
+    "about":"A track is a subject the Hub does not cover yet, brought by someone who can cover it. The proposal is short on purpose: what it is, who it is for, what exists already, and what you need from us.",
+    "facts":[
+     ["Who it is for","Anyone with a subject and a group in mind"],
+     ["What it leaves","A sealed record of the proposal and the answer"],
+     ["Where it goes","info@entrosana.com, or entrosana.com/request-access"]
+    ]
+   },
+   {
+    "slug":"review-someones-work",
+    "seed":"contribute/001",
+    "track":"start",
+    "title":"Review someone else's work",
+    "lede":"Read it against what it claims, and name the case that breaks it.",
+    "meta":"",
+    "about":"The most useful contribution to this project is a careful reader. A review that names one broken case is worth more than an approval, and it counts as a contribution in its own right.",
+    "facts":[
+     ["Who it is for","Anyone, no account needed"],
+     ["What it leaves","Your copy of the review, sealed as you write it"],
+     ["Where it goes","To the author, and to us if the Hub asked for it"]
+    ]
+   },
+   {
+    "slug":"ask-for-runway",
+    "seed":"contribute/002",
+    "track":"start",
+    "title":"Ask for runway",
+    "lede":"Work that needs time, machines, or a person who knows the subject.",
+    "meta":"",
+    "about":"Runway follows review, not the other way round: show what already got read, say what the work needs and for how long, and name what happens if the answer is no.",
+    "facts":[
+     ["Who it is for","Contributors with something already reviewed"],
+     ["What it leaves","A written request with its trail attached"],
+     ["Where it goes","info@entrosana.com"]
     ]
    }
   ]

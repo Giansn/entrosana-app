@@ -1508,3 +1508,29 @@ html{ scrollbar-gutter:stable }
 #detail .actions{ margin-bottom:.9rem }
 #detail .actions + .muted{ font-size:.9rem; margin:0 }
 #detail .hint{ margin-top:1.1rem }
+
+/* Offene Bitten: eine Zeile je Bitte, Aufwand rechts. Bewusst keine Karten —
+   eine Liste laesst sich in einer Minute pflegen und liest sich schneller. */
+.asks{ list-style:none; margin:0; padding:0 }
+.asks li{
+  display:flex; align-items:baseline; gap:1rem; flex-wrap:wrap;
+  padding:.7rem 0; border-bottom:1px solid var(--line);
+}
+.asks li:last-child{ border-bottom:0 }
+.ask__t{ flex:1 1 22rem; min-width:0 }
+.ask__w{
+  font-family:var(--font-mono); font-size:var(--step--1); color:var(--muted); white-space:nowrap;
+}
+.block > .actions{ margin-top:1.2rem }
+.block > ul.measure{ margin:0; padding-left:1.15rem }
+.block > ul.measure li{ margin-bottom:.4rem }
+
+.asks + .muted{ margin-top:1rem }
+
+/* Die Zeile unter dem Namen ist dieselbe wie auf entrosana.com: Schreibmaschine,
+   leise, nennt das Gebiet statt es zu beschreiben. */
+.mcard__who, .mod__who{
+  font-family:var(--font-mono); font-size:var(--step--1); color:var(--seal);
+  margin:0;
+}
+.mod__who{ margin:.5rem 0 .1rem }

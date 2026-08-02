@@ -27,8 +27,8 @@ const INDEXABLE = false;
 // und /services zeigen, was auf dem jeweiligen Gerät liegt, /project ist noch
 // nicht gebaut — nichts davon hat in einem Suchindex etwas verloren.
 const SITEMAP = ["/", "/tools", "/modules", "/contribute",
-  "/modules/plan-a-module", "/modules/take-a-group-outdoors",
-  "/modules/how-a-machine-works", "/tools/lehrplan21-citation",
+  "/modules/social", "/modules/nature-based",
+  "/modules/technical", "/tools/lehrplan21-citation",
   "/tools/lehrplan21-stand-in", "/tools/auditable-back-office",
   "/tools/payroll-run", "/tools/second-opinion"];
 
@@ -48,9 +48,9 @@ const ROUTES = new Map([
   // bleibt, und module.js liest den Slug aus dem Pfad.
   // Je Katalogeintrag ein eigener Eintrag, alle auf dieselbe Datei: die
   // Allowlist bleibt, und detail.js liest Abteilung und Slug aus dem Pfad.
-  ["/modules/plan-a-module",         { file: "detail.html", type: HTML }],
-  ["/modules/take-a-group-outdoors", { file: "detail.html", type: HTML }],
-  ["/modules/how-a-machine-works",   { file: "detail.html", type: HTML }],
+  ["/modules/social",                { file: "detail.html", type: HTML }],
+  ["/modules/nature-based",          { file: "detail.html", type: HTML }],
+  ["/modules/technical",             { file: "detail.html", type: HTML }],
   ["/tools/lehrplan21-citation",     { file: "detail.html", type: HTML }],
   ["/tools/lehrplan21-stand-in",     { file: "detail.html", type: HTML }],
   ["/tools/auditable-back-office",   { file: "detail.html", type: HTML }],

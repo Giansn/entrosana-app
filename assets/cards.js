@@ -38,6 +38,13 @@
     t.textContent = e.title;
     a.appendChild(t);
 
+    if (e.who) {
+      var w = document.createElement("p");
+      w.className = "mcard__who";
+      w.textContent = e.who;
+      a.appendChild(w);
+    }
+
     var l = document.createElement("p");
     l.className = "mcard__l";
     l.textContent = e.lede;

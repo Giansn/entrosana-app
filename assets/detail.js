@@ -61,6 +61,7 @@
   }
   b1.appendChild(head);
   b1.appendChild(el("h1", "work__h", e.title));
+  if (e.who) b1.appendChild(el("p", "mod__who", e.who));
   b1.appendChild(el("p", "mod__lede", e.lede));
   if (e.draft) {
     b1.appendChild(el("p", "draftnote",
@@ -120,8 +121,9 @@
     open.href = "/project?p=" + e.seed;
     act.appendChild(open);
   }
-  var ask = el("a", e.seed ? "btn btn--ghost" : "btn", section === "modules" ? "Ask for this module" : "Ask about this tool");
-  ask.href = "/contribute";
+  var ask = el("a", e.seed ? "btn btn--ghost" : "btn",
+               section === "modules" ? "Request this module" : "Ask about this tool");
+  ask.href = section === "modules" ? "https://entrosana.com/request-access" : "/contribute";
   act.appendChild(ask);
   b6.appendChild(act);
   if (e.seed) {
