@@ -1534,3 +1534,16 @@ html{ scrollbar-gutter:stable }
   margin:0;
 }
 .mod__who{ margin:.5rem 0 .1rem }
+
+/* Ein einzelnes fertiges Modul steht nicht als Drittelkarte da. */
+.cards--1{ grid-template-columns:minmax(0,42rem) }
+.dl__lang{
+  font-family:var(--font-mono); font-size:var(--step--1); color:var(--seal);
+  margin:1rem 0 .5rem;
+}
+#detail .dl__lang:first-of-type{ margin-top:.4rem }
+#detail .actions{ margin-bottom:.9rem }
+
+/* Zwischenueberschrift unter einer Rubrik, wenn die Rubrik selbst schon eine
+   Ueberschrift traegt. */
+.work__h2{ font-size:var(--step-1); font-weight:600; letter-spacing:-.015em; margin:0 0 .5rem }

@@ -14,9 +14,40 @@ window.__catalogue = {
   // Ein Gleis, weil alle drei denselben Zustand haben: gebaut wird auf Anfrage.
   // Die Gebietsnamen sind die von entrosana.com/modules, die Absaetze auch.
   "tracks": [
-   {"id":"onrequest", "name":"On request", "short":"on request"}
+   {"id":"available", "name":"Available now", "short":"self-implementation"},
+   {"id":"onrequest", "name":"On request",    "short":"on request"}
   ],
   "list": [
+   {
+    "slug":"your-value-system",
+    "track":"available",
+    "state":"available",
+    "title":"Your Value System",
+    "who":"social · 9 slides + 2-page worksheet · English and German",
+    "lede":"A session on the values a person actually holds, rather than the ones they would name if asked.",
+    "meta":"finished · take it",
+    "about":"It works through why the weight of a value shifts with age, time of day, place and company, why so much of a value system sits below awareness, and the question underneath both: are we led by our value system, or do we build it. Maslow's hierarchy and the World Economic Forum's system-value framework appear as reference models, not as answers.",
+    "note":"It closes with an exercise rather than a summary. Learners build a character, invented or real, and map its complete value system including the parts the character is not aware of. Discussion prompts and thinking pauses are written into the slides, so a teacher can run it without preparation from us.",
+    "facts":[
+     ["Area","Social"],
+     ["What you get","9 slides and a 2-page worksheet"],
+     ["Languages","English and German"],
+     ["What you need from us","Nothing. No account, no request"],
+     ["Reference models","Maslow's hierarchy, the World Economic Forum's system-value framework"],
+     ["Preparation","None: the prompts and pauses are written into the slides"]
+    ],
+    "downloads":[
+     {"lang":"English", "files":[["Slides","https://entrosana.com/wp-content/uploads/2026/08/value-system-slides-en.pdf"],
+                                 ["Worksheet","https://entrosana.com/wp-content/uploads/2026/08/value-system-worksheet-en.pdf"]]},
+     {"lang":"Deutsch", "files":[["Folien","https://entrosana.com/wp-content/uploads/2026/08/value-system-slides-de.pdf"],
+                                 ["Arbeitsblatt","https://entrosana.com/wp-content/uploads/2026/08/value-system-worksheet-de.pdf"]]}
+    ],
+    "gets":[
+     "A session a teacher can run without preparation from us",
+     "The same material in English and German",
+     "Yours to adapt: read it, run it with your class, change it"
+    ]
+   },
    {
     "slug":"social",
     "seed":"modules/000",
@@ -25,10 +56,10 @@ window.__catalogue = {
     "who":"social work driven · social skills · community building",
     "lede":"How we create values, talk, decide, and live together or alone, including how to read the media, the machines and influences around us.",
     "meta":"on request",
-    "about":"Composed by experts who do this work — social workers, and practitioners who teach. Scoped and built on request, so the depth matches the class instead of a catalogue.",
+    "about":"Composed by contributors who do this work — social workers, and practitioners who teach. Scoped and built on request, so the depth matches the class instead of a catalogue.",
     "facts":[
      ["Scope","Scoped and built on request, matched to the age and size of the class"],
-     ["Who composes it","Experts: social workers, nature pedagogy, and engineers who teach"],
+     ["Who composes it","Contributors: social workers, nature pedagogy, and engineers who teach"],
      ["How it starts","A school asks; we scope a priced proposal"],
      ["What stays visible","The plan, the materials, and what was delivered — to learners, parents and teachers"],
      ["Curriculum references","Checked against the source, not trusted"],
@@ -51,7 +82,7 @@ window.__catalogue = {
     "about":"Learning where the physical boundaries of nature and of a person actually are. Composed by people from nature pedagogy, and scoped to the class that goes out.",
     "facts":[
      ["Scope","Scoped and built on request, matched to the age and size of the class"],
-     ["Who composes it","Experts: social workers, nature pedagogy, and engineers who teach"],
+     ["Who composes it","Contributors: social workers, nature pedagogy, and engineers who teach"],
      ["How it starts","A school asks; we scope a priced proposal"],
      ["What stays visible","The plan, the materials, and what was delivered — to learners, parents and teachers"],
      ["Curriculum references","Checked against the source, not trusted"],
@@ -74,7 +105,7 @@ window.__catalogue = {
     "about":"Taught in different depths and from different approaches. Composed by engineers who teach, and scoped to the class rather than to a catalogue.",
     "facts":[
      ["Scope","Scoped and built on request, matched to the age and size of the class"],
-     ["Who composes it","Experts: social workers, nature pedagogy, and engineers who teach"],
+     ["Who composes it","Contributors: social workers, nature pedagogy, and engineers who teach"],
      ["How it starts","A school asks; we scope a priced proposal"],
      ["What stays visible","The plan, the materials, and what was delivered — to learners, parents and teachers"],
      ["Curriculum references","Checked against the source, not trusted. The Lehrplan 21 citation tool is in development"],

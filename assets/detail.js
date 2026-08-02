@@ -104,6 +104,25 @@
     b4.appendChild(ol);
   }
 
+  // Zum Mitnehmen. Steht vor «was bleibt», weil es der Grund ist, warum
+  // jemand die Seite offen hat.
+  if (e.downloads && e.downloads.length) {
+    var bd = block();
+    bd.appendChild(el("span", "eyebrow", "Take it with you"));
+    bd.appendChild(el("p", "work__sub measure",
+      "The files sit on entrosana.com. No account, no request — running it with your class needs nothing from us."));
+    e.downloads.forEach(function (g) {
+      bd.appendChild(el("p", "dl__lang", g.lang));
+      var row = el("div", "actions");
+      g.files.forEach(function (f, i) {
+        var a = el("a", i ? "btn btn--ghost" : "btn", f[0]);
+        a.href = f[1];
+        row.appendChild(a);
+      });
+      bd.appendChild(row);
+    });
+  }
+
   // Was bleibt
   if (e.gets && e.gets.length) {
     var b5 = block();
@@ -122,7 +141,9 @@
     act.appendChild(open);
   }
   var ask = el("a", e.seed ? "btn btn--ghost" : "btn",
-               section === "modules" ? "Request this module" : "Ask about this tool");
+               section === "modules"
+                 ? (e.downloads ? "Ask us to run it with you" : "Request this module")
+                 : "Ask about this tool");
   ask.href = section === "modules" ? "https://entrosana.com/request-access" : "/contribute";
   act.appendChild(ask);
   b6.appendChild(act);

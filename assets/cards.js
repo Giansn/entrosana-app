@@ -24,11 +24,11 @@
     chip.className = "chip";
     chip.textContent = name;
     head.appendChild(chip);
-    if (e.state === "running") {
+    if (e.state === "running" || e.state === "available") {
       var led = document.createElement("span");
       led.className = "note note--ok";
       led.innerHTML = '<span class="led"></span>';
-      led.appendChild(document.createTextNode("running"));
+      led.appendChild(document.createTextNode(e.state === "available" ? "finished" : "running"));
       head.appendChild(led);
     }
     a.appendChild(head);
