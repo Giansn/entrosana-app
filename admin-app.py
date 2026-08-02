@@ -134,10 +134,88 @@ def spans(src):
     return out
 
 
+def glatt(t: str) -> str:
+    """Zeilenumbrüche und Einrückung der Datei zu einfachen Leerzeichen.
+
+    Im Feld soll ein Satz als Satz stehen, nicht als Quelltext mit
+    Einzügen. Beim Zurückschreiben bleibt eine unberührte Stelle trotzdem
+    buchstabengleich: page_write vergleicht geglättet und lässt sie dann
+    in Ruhe."""
+    return re.sub(r"\s+", " ", t).strip()
+
+
 def page_read(name):
     src = (APP / name).read_text(encoding="utf-8")
-    return src, [{"i": i, "tag": t, "text": src[a:b].strip()}
+    return src, [{"i": i, "tag": t, "text": glatt(src[a:b])}
                  for i, (a, b, t) in enumerate(spans(src))]
+
+
+def bereiche(src):
+    """[(start, ende, art)] für aside, header und section — ohne Verschachtelung."""
+    out = []
+    for tag in ("aside", "header", "section"):
+        tiefe, offen = 0, None
+        for m in re.finditer(rf"</?{tag}\b[^>]*>", src):
+            if m.group(0).startswith("</"):
+                tiefe -= 1
+                if tiefe == 0 and offen is not None:
+                    out.append((offen, m.end(), tag))
+                    offen = None
+            else:
+                if tiefe == 0:
+                    offen = m.start()
+                tiefe += 1
+    return out
+
+
+def gruppiere(src, stellen):
+    """[(titel, zu, [stelle,…], [hinweis,…])] — Stellen nach Abschnitt der Seite.
+
+    Der Titel ist die erste Zeile des Abschnitts: auf diesen Seiten ist das
+    die Augenbraue, also genau das Wort, unter dem man den Abschnitt sucht.
+    Die Leiste kommt zugeklappt, sie ist auf allen Seiten dieselbe.
+    """
+    body = src.lower().find("<body")
+    ber = bereiche(src)
+    sp = spans(src)
+    zuordnung = []
+    for i, (a, b, _t) in enumerate(sp):
+        if a < body:
+            zuordnung.append("kopf")
+            continue
+        passend = [(e - s2, k) for k, (s2, e, _art) in enumerate(ber) if s2 <= a < e]
+        zuordnung.append(min(passend)[1] if passend else "rest")
+
+    # Wo erzeugt JavaScript den Inhalt? Dort gibt es nichts zu tippen.
+    js_orte = []
+    for m in re.finditer(r'data-(cards|tabs|tabpanel)="([a-z-]+)"(?:[^>]*data-track="([a-z-]+)")?', src):
+        js_orte.append((m.start(), m.group(2), m.group(3)))
+
+    gruppen, gesehen = [], {}
+    for i, st in enumerate(stellen):
+        k = zuordnung[i]
+        if k not in gesehen:
+            if k == "kopf":
+                titel, zu = "Kopfbereich · Titel und Beschreibung", True
+            elif k == "rest":
+                titel, zu = "Seitentext ausserhalb der Abschnitte", False
+            else:
+                s2, e, art = ber[k]
+                titel = st["text"][:60] if st["text"] else art
+                if art == "aside":
+                    titel, zu = "Leiste · auf allen Seiten gleich", True
+                elif art == "header":
+                    titel, zu = "Kopfzeile der Seite", True
+                else:
+                    zu = False
+            gesehen[k] = len(gruppen)
+            hinweise = []
+            if isinstance(k, int):
+                s2, e, _art = ber[k]
+                hinweise = [(abt, gleis) for pos, abt, gleis in js_orte if s2 <= pos < e]
+            gruppen.append({"titel": titel, "zu": zu, "stellen": [], "js": hinweise})
+        gruppen[gesehen[k]]["stellen"].append(st)
+    return gruppen
 
 
 LIVE = "https://entrosana.app"
@@ -196,8 +274,9 @@ def page_write(name, neu: list):
         if "<" in t or ">" in t:
             raise ValueError(f"Stelle {i + 1}: < und > sind nicht erlaubt, hier steht nur Text")
         alt = src[a:b]
-        if alt.strip() != t.strip():
-            geaendert.append((f"Stelle {i + 1} · <{tag}>", alt.strip(), t.strip()))
+        if glatt(alt) == t.strip():
+            continue                               # unberührt: Datei bleibt wie sie ist
+        geaendert.append((f"Stelle {i + 1} · <{tag}>", glatt(alt), t.strip()))
         vor = alt[:len(alt) - len(alt.lstrip())]   # Einrückung erhalten
         nach = alt[len(alt.rstrip()):]
         out = out[:a] + vor + t.strip() + nach + out[b:]
@@ -233,6 +312,19 @@ def cat_entries():
             continue
         e = eintraege.setdefault(gehoert, {"slug": gehoert, "felder": {}})
         e["felder"][m.group(1)] = (m.start(2), m.end(2), json.loads('"' + m.group(2) + '"'))
+    # Abteilung und Gleis mitführen: der Seiteneditor blendet die Karten dort
+    # ein, wo die Seite sie erzeugt, und muss dafür wissen, welche dazugehören.
+    # Die Abschnitte stehen mit ein bis zwei Leerzeichen eingerückt (modules 1,
+    # tools 2) — das Muster muss beides fassen, sonst fallen die Tools unter
+    # Modules und die Karten erscheinen auf der falschen Seite.
+    abschnitte = [(m.start(), m.group(1))
+                  for m in re.finditer(r'\n {1,2}"([a-z-]+)":\s*\{', src)]
+    for e in eintraege.values():
+        pos = next(p for p, sl in slugs if sl == e["slug"])
+        vor = [n for p, n in abschnitte if p < pos]
+        e["abteilung"] = vor[-1] if vor else ""
+        g = re.search(r'"track"\s*:\s*"([a-z-]+)"', src[pos:pos + 400])
+        e["gleis"] = g.group(1) if g else ""
     return src, list(eintraege.values())
 
 
@@ -366,11 +458,30 @@ label{display:block;margin:.9rem 0}
 .f.zeichen input{width:5rem;text-align:center}
 /* Zwei Spalten: links die Felder, rechts die Seite. Die Vorschau bleibt
    stehen, waehrend die Felder scrollen. */
-.zwei{display:grid;grid-template-columns:minmax(24rem,40%) minmax(0,1fr);gap:1.4rem;align-items:start}
+.zwei{display:grid;grid-template-columns:minmax(24rem,40%) 10px minmax(0,1fr);gap:.7rem;align-items:start}
 /* Zugeklappt bekommen die Felder die ganze Breite. */
 .zwei.zu{grid-template-columns:minmax(0,1fr)}
 .zwei.zu .vorschau{display:none}
 .zwei.zu .felder{max-height:none}
+/* Teilung mit der Maus verschiebbar. */
+.griff{width:10px;cursor:col-resize;align-self:stretch;position:relative}
+.griff::after{content:"";position:absolute;left:4px;top:0;bottom:0;width:2px;background:#323843;border-radius:2px}
+.griff:hover::after{background:#2BD4E8}
+.zwei.zu .griff{display:none}
+/* Gruppen: der Aufbau der Seite, nicht eine Reihe von Feldern. */
+.grp{border:1px solid #262b33;border-radius:10px;margin:.5rem 0;background:rgba(255,255,255,.015)}
+.grp>summary{cursor:pointer;padding:.55rem .8rem;font-size:.92rem;color:#C6CAD1;list-style:none}
+.grp>summary::-webkit-details-marker{display:none}
+.grp>summary::before{content:"▸ ";color:#2BD4E8}
+.grp[open]>summary::before{content:"▾ "}
+.grp>summary b{color:#E9EBE7;font-weight:600}
+.grp>summary .n{color:#8F95A1;font-family:'Geist Mono',ui-monospace,monospace;font-size:.74rem;margin-left:.4rem}
+.grp>div{padding:0 .8rem .5rem}
+.js-hinweis{margin:.5rem 0;padding:.55rem .7rem;border:1px dashed #5A6273;border-radius:8px;
+  font-size:.86rem;color:#8F95A1}
+.js-hinweis a{margin-right:.6rem}
+.kat{border-left:2px solid #2BD4E8;padding-left:.7rem;margin:.5rem 0}
+.kat__t{color:#2BD4E8;font-size:.74rem;margin-bottom:.2rem}
 .felder{max-height:calc(100vh - 15rem);overflow-y:auto;overflow-x:hidden;min-width:0;padding-right:.6rem}
 .vorschau{position:sticky;top:1rem;height:calc(100vh - 13rem);border:1px solid #323843;border-radius:12px;overflow:hidden;background:#21252C}
 .vorschau iframe{width:100%;height:100%;border:0;display:block}
@@ -479,20 +590,76 @@ def entwurf_js(key: str, sel: str, attr: str) -> str:
 def page_editor(name, msg="", err=""):
     label = next((l for n, l, _ in PAGES if n == name), name)
     pfad = next((p for n, _, p in PAGES if n == name), "/")
-    _, stellen = page_read(name)
-    felder = ""
-    for st in stellen:
+    src, stellen = page_read(name)
+    _, katalog = cat_entries()
+
+    def feld(st):
         text = st["text"]
-        # Einzelne Zeichen (▤ ▦ ◉ ✓ ↧) sind Symbole, kein Fliesstext: schmales
-        # Feld, damit sie die Spalte nicht auseinanderziehen.
         zeichen = len(text) <= 2
         kurz = len(text) <= 60
         rows = max(2, min(8, len(text) // 60 + 1))
-        feld = (f"<input type=text data-i='{st['i']}' value=\"{html.escape(text, quote=True)}\">"
-                if kurz else
-                f"<textarea data-i='{st['i']}' rows='{rows}'>{html.escape(text)}</textarea>")
-        felder += (f"<div class='f{' zeichen' if zeichen else ''}' id='f{st['i']}'>"
-                   f"<div class='k'>{html.escape(st['tag'])}</div><div>{feld}</div></div>")
+        eingabe = (f"<input type=text data-i='{st['i']}' data-key='p:{st['i']}' "
+                   f"value=\"{html.escape(text, quote=True)}\">"
+                   if kurz else
+                   f"<textarea data-i='{st['i']}' data-key='p:{st['i']}' rows='{rows}'>"
+                   f"{html.escape(text)}</textarea>")
+        return (f"<div class='f{' zeichen' if zeichen else ''}' id='f{st['i']}'>"
+                f"<div class='k'>{html.escape(st['tag'])}</div><div>{eingabe}</div></div>")
+
+    schon_da = set()
+
+    def katalogfelder(abteilung, gleis):
+        """Die Karten stehen nicht in der Datei, sondern in catalogue.js.
+        Sie gehören trotzdem hierher: wer die Seite bearbeitet, will jede
+        Zeile ändern können, die er sieht — nicht nur die aus dem Markup."""
+        passend = [e for e in katalog
+                   if e["felder"] and (not gleis or e.get("gleis") in (None, gleis))]
+        # Zuordnung über den Abschnitt im Katalog: der Slug der Seite ist die
+        # Abteilung (modules, tools), das Gleis unterscheidet fertig von auf Anfrage.
+        passend = [e for e in katalog if e["abteilung"] == abteilung
+                   and (not gleis or e["gleis"] == gleis)]
+        # Ein Behälter ohne Gleis (die Tafel der Gebiete) fasst dieselben
+        # Einträge nochmals: jeder Eintrag erscheint nur beim ersten Mal.
+        passend = [e for e in passend if e["slug"] not in schon_da]
+        for e in passend:
+            schon_da.add(e["slug"])
+        if not passend:
+            return ""
+        out = ("<div class='js-hinweis'>Diese Texte stehen in "
+               "<span class='mono'>assets/catalogue.js</span> und werden beim Laden erzeugt. "
+               "Hier bearbeitbar, gespeichert wird mit derselben Schaltfläche.</div>")
+        namen = {"title": "Titel", "who": "Kurzkennung", "lede": "Kernsatz",
+                 "about": "Beschreibung", "note": "Zusatz", "meta": "Fussnote"}
+        for e in sorted(passend, key=lambda x: x["slug"]):
+            out += f"<div class='kat'><div class='kat__t mono'>{html.escape(e['slug'])}</div>"
+            for k in FIELDS:
+                if k not in e["felder"]:
+                    continue
+                wert = e["felder"][k][2]
+                schl = f"c:{e['slug']}:{k}"
+                lang = len(wert) > 60
+                eing = (f"<textarea data-key='{schl}' rows='{max(2, min(8, len(wert)//60+1))}'>"
+                        f"{html.escape(wert)}</textarea>" if lang else
+                        f"<input type=text data-key='{schl}' "
+                        f"value='{html.escape(wert, quote=True)}'>")
+                out += (f"<div class='f'><div class='k'>{namen[k]}</div><div>{eing}</div></div>")
+            out += "</div>"
+        return out
+
+    bloecke = ""
+    gruppen = gruppiere(src, stellen)
+    # Die Leiste ist auf jeder Seite dieselbe: eigener Block, ganz unten,
+    # damit sie den Inhalt der Seite nicht auseinanderschiebt.
+    gruppen = [g for g in gruppen if "Leiste" not in g["titel"]] +               [g for g in gruppen if "Leiste" in g["titel"]]
+    for g in gruppen:
+        inhalt = "".join(feld(st) for st in g["stellen"])
+        for abt, gleis in g["js"]:
+            inhalt += katalogfelder(abt, gleis)
+        bloecke += (f"<details class='grp'{'' if g['zu'] else ' open'}>"
+                    f"<summary><b>{html.escape(g['titel'])}</b>"
+                    f"<span class='n'>{len(g['stellen'])} Felder</span></summary>"
+                    f"<div>{inhalt}</div></details>")
+
     return page(f"{label} · entrosana.app",
         f"<p><a href='/'>&larr; Übersicht</a></p><h1>{html.escape(label)}</h1>"
         f"<p class='mono'>{name} &middot; {len(stellen)} Textstellen &middot; "
@@ -502,7 +669,8 @@ def page_editor(name, msg="", err=""):
         + "<div id='entwurf' class='entwurf' hidden></div>"
         + "<div id='fehler' class='fehler' hidden></div>"
         + "<div class='zwei'>"
-        + f"<div class='felder' id='fs'>{felder}</div>"
+        + f"<div class='felder' id='fs'>{bloecke}</div>"
+        + "<div class='griff' id='griff' title='Teilung verschieben'></div>"
         + f"<div class='vorschau'><iframe id='pv' src='/preview/{name}'></iframe></div>"
         + "</div>"
         "<div class='bar'><button class='btn' id='save'>Speichern</button> "
@@ -511,21 +679,33 @@ def page_editor(name, msg="", err=""):
         "<a class='btn ghost' href='/'>Zurück</a> "
         "<span id='m' class='mono' style='margin-left:1rem'></span></div>"
         "<script>"
-        + entwurf_js(name, "#fs", "data-i") +
-        # Der Zustand der Vorschau bleibt gemerkt: wer sie zuklappt, will sie
-        # beim naechsten Oeffnen nicht wieder vor sich haben.
-        "var ZU='entrosana-admin-vorschau-zu';"
+        + entwurf_js(name, "#fs", "data-key") +
+        "var ZU='entrosana-admin-vorschau-zu',BR='entrosana-admin-breite';"
         "var zwei=document.querySelector('.zwei'),kb=document.getElementById('klapp');"
+        "function breiteSetzen(){var w=null;try{w=localStorage.getItem(BR)}catch(e){}"
+        "if(w)zwei.style.gridTemplateColumns=w+' 10px minmax(0,1fr)';}"
         "function klappStand(){var zu=false;try{zu=localStorage.getItem(ZU)==='1'}catch(e){}"
         "zwei.className='zwei'+(zu?' zu':'');"
+        "if(zu)zwei.style.gridTemplateColumns='';else breiteSetzen();"
         "kb.textContent=zu?'Vorschau einblenden':'Vorschau ausblenden';}"
         "kb.onclick=function(){var zu=zwei.className.indexOf('zu')<0;"
         "try{localStorage.setItem(ZU,zu?'1':'0')}catch(e){}klappStand();};"
         "klappStand();"
+        # Teilung ziehen: waehrend des Ziehens keine Textauswahl, sonst markiert
+        # der Zeiger die halbe Seite.
+        "var griff=document.getElementById('griff'),zieht=false;"
+        "griff.addEventListener('mousedown',function(e){zieht=true;e.preventDefault();"
+        "document.body.style.userSelect='none';});"
+        "window.addEventListener('mousemove',function(e){if(!zieht)return;"
+        "var links=zwei.getBoundingClientRect().left;"
+        "var w=Math.max(280,Math.min(e.clientX-links,zwei.clientWidth-320));"
+        "zwei.style.gridTemplateColumns=w+'px 10px minmax(0,1fr)';"
+        "try{localStorage.setItem(BR,w+'px')}catch(x){}});"
+        "window.addEventListener('mouseup',function(){zieht=false;document.body.style.userSelect='';});"
         "var pv=document.getElementById('pv');"
         "function doc(){try{return pv.contentDocument}catch(e){return null}}"
         "function stelle(i){var d=doc();return d?d.querySelector('.__ed[data-i=\"'+i+'\"]'):null;}"
-        "function feld(i){return document.querySelector('#fs [data-i=\"'+i+'\"]');}"
+        "function feldVon(i){return document.querySelector('#fs [data-i=\"'+i+'\"]');}"
         "function zeige(i){"
         "var d=doc();if(d){var alt=d.querySelectorAll('.__ed.is-sel');"
         "for(var k=0;k<alt.length;k++)alt[k].classList.remove('is-sel');"
@@ -534,8 +714,9 @@ def page_editor(name, msg="", err=""):
         "var zeilen=document.querySelectorAll('#fs .f');"
         "for(var j=0;j<zeilen.length;j++)zeilen[j].classList.remove('is-sel');"
         "var z=document.getElementById('f'+i);if(z)z.classList.add('is-sel');}"
-        # Klick in der Vorschau: Feld holen, hineinspringen.
-        "window.__waehle=function(i){var f=feld(i);if(!f)return;"
+        # Klick in der Vorschau: die Gruppe aufklappen, dann ins Feld springen.
+        "window.__waehle=function(i){var f=feldVon(i);if(!f)return;"
+        "var g=f.closest('details');if(g)g.open=true;"
         "f.scrollIntoView({block:'center'});f.focus();zeige(i);};"
         "var alle=document.querySelectorAll('#fs [data-i]');"
         "for(var i=0;i<alle.length;i++){(function(el){"
@@ -544,16 +725,25 @@ def page_editor(name, msg="", err=""):
         "el.addEventListener('input',function(){var n=stelle(idx);if(n)n.textContent=el.value;});"
         "})(alle[i]);}"
         "document.getElementById('save').onclick=function(){"
-        "var n=document.querySelectorAll('#fs [data-i]'),t=[];"
-        "for(var i=0;i<n.length;i++)t.push(n[i].value);"
         "var m=document.getElementById('m');m.textContent='speichere…';"
-        "fetch('/api/page',{method:'POST',headers:{'Content-Type':'application/json'},"
-        "body:JSON.stringify({name:" + json.dumps(name) + ",texts:t})})"
-        ".then(function(r){return r.json()}).then(function(j){"
-        "if(j.ok){GESPEICHERT=JSON.stringify(sammle());entwurfLoeschen();fehlerWeg();"
-        "m.textContent='gespeichert ✓ Sicherung '+j.backup+' · in ≤5 s live';"
-        "setTimeout(function(){pv.src=pv.src},5200);}"
-        "else{m.textContent='nicht gespeichert';fehlerZeigen(j.error);entwurfSchreiben();}})"
+        "var t=[],kat={};"
+        "var n=document.querySelectorAll('#fs [data-key]');"
+        "for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-key');"
+        "if(k.indexOf('p:')===0)t.push(n[i].value);"
+        "else{var teil=k.split(':');(kat[teil[1]]=kat[teil[1]]||{})[teil[2]]=n[i].value;}}"
+        "var auftraege=[fetch('/api/page',{method:'POST',headers:{'Content-Type':'application/json'},"
+        "body:JSON.stringify({name:" + json.dumps(name) + ",texts:t})}).then(function(r){return r.json()})];"
+        "for(var slug in kat){(function(sl){auftraege.push("
+        "fetch('/api/catalogue',{method:'POST',headers:{'Content-Type':'application/json'},"
+        "body:JSON.stringify({slug:sl,values:kat[sl]})}).then(function(r){return r.json()}));})(slug);}"
+        "Promise.all(auftraege).then(function(js){"
+        "var schlecht=js.filter(function(j){return !j.ok});"
+        "if(schlecht.length){m.textContent='nicht gespeichert';"
+        "fehlerZeigen(schlecht.map(function(j){return j.error}).join(' · '));entwurfSchreiben();return;}"
+        "GESPEICHERT=JSON.stringify(sammle());entwurfLoeschen();fehlerWeg();"
+        "var w=js.filter(function(j){return j.backup&&j.backup.indexOf('keine')<0});"
+        "m.textContent='gespeichert ✓ '+(w.length?w.length+' Datei(en)':'keine Änderung')+' · in ≤5 s live';"
+        "setTimeout(function(){pv.src=pv.src},5200);})"
         ".catch(function(e){m.textContent='nicht gespeichert';fehlerZeigen(String(e));entwurfSchreiben();});};"
         "</script>")
 
