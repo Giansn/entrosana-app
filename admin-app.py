@@ -70,6 +70,33 @@ def backup(p: Path) -> str:
     return dest.name
 
 
+AENDERUNGEN = BACKUPS / "aenderungen"
+
+
+def aenderungen_schreiben(quelle: str, eintraege: list) -> str:
+    """Eine Datei je Speicherung, die nur das Geänderte enthält.
+
+    eintraege = [(bezeichnung, vorher, nachher)]. Die vollständige Kopie
+    macht backup(); hier steht, was sich unterscheidet — lesbar, damit man
+    ohne Werkzeug sieht, was eine Speicherung angerichtet hat.
+    """
+    if not eintraege:
+        return ""
+    AENDERUNGEN.mkdir(parents=True, exist_ok=True)
+    ts = time.strftime("%Y%m%d-%H%M%S")
+    ziel = AENDERUNGEN / f"{quelle}.{ts}.txt"
+    k = 0
+    while ziel.exists():
+        k += 1
+        ziel = AENDERUNGEN / f"{quelle}.{ts}-{k}.txt"
+    zeilen = [f"{quelle} · {time.strftime('%Y-%m-%d %H:%M:%S')} · "
+              f"{len(eintraege)} Änderung{'en' if len(eintraege) != 1 else ''}", ""]
+    for bez, vorher, nachher in eintraege:
+        zeilen += [f"[{bez}]", f"- {vorher}", f"+ {nachher}", ""]
+    ziel.write_text("\n".join(zeilen), encoding="utf-8")
+    return ziel.name
+
+
 # ── Textstellen in HTML ───────────────────────────────────────────────────
 # Ein Durchlauf über die Datei: alles zwischen zwei Tags ist Text, ausser
 # innerhalb von script, style, svg und Verwandten. Die Spannen werden als
@@ -162,20 +189,24 @@ def page_write(name, neu: list):
     if len(neu) != len(sp):
         raise ValueError(f"{len(neu)} Texte für {len(sp)} Stellen — abgelehnt")
     out = src
+    geaendert = []
     for i in range(len(sp) - 1, -1, -1):          # von hinten, sonst wandern die Positionen
-        a, b, _ = sp[i]
+        a, b, tag = sp[i]
         t = neu[i]
         if "<" in t or ">" in t:
             raise ValueError(f"Stelle {i + 1}: < und > sind nicht erlaubt, hier steht nur Text")
         alt = src[a:b]
+        if alt.strip() != t.strip():
+            geaendert.append((f"Stelle {i + 1} · <{tag}>", alt.strip(), t.strip()))
         vor = alt[:len(alt) - len(alt.lstrip())]   # Einrückung erhalten
         nach = alt[len(alt.rstrip()):]
         out = out[:a] + vor + t.strip() + nach + out[b:]
     if out == src:
         return None
     b_name = backup(f)
+    d_name = aenderungen_schreiben(name, list(reversed(geaendert)))
     f.write_text(out, encoding="utf-8")
-    return b_name
+    return f"{b_name} · Änderungen: {d_name}" if d_name else b_name
 
 
 # ── Katalog ───────────────────────────────────────────────────────────────
@@ -212,16 +243,21 @@ def cat_write(slug, werte: dict):
         raise ValueError(f"Eintrag {slug} nicht gefunden")
     orte = sorted(((v[0], v[1], k) for k, v in e["felder"].items()), reverse=True)
     out = src
+    geaendert = []
     for a, b, key in orte:
         if key not in werte:
             continue
+        alt_wert = e["felder"][key][2]
+        if alt_wert != werte[key]:
+            geaendert.append((f"{slug} · {key}", alt_wert, werte[key]))
         neu = json.dumps(werte[key], ensure_ascii=False)[1:-1]
         out = out[:a] + neu + out[b:]
     if out == src:
         return None
     b_name = backup(CATALOGUE)
+    d_name = aenderungen_schreiben(f"catalogue-{slug}", list(reversed(geaendert)))
     CATALOGUE.write_text(out, encoding="utf-8")
-    return b_name
+    return f"{b_name} · Änderungen: {d_name}" if d_name else b_name
 
 
 # ── Design ────────────────────────────────────────────────────────────────
@@ -296,9 +332,12 @@ def design_write(v):
             raise ValueError("Der verwaltete Block hat keine Endmarke — bitte von Hand richten")
         css = css[:i].rstrip() + "\n" + css[j + len(DESIGN_END):].lstrip()
     css = css.rstrip() + "\n\n" + design_css(v)
+    frueher = design_read()
+    geaendert = [(k, str(frueher.get(k)), str(v[k])) for k in v if str(frueher.get(k)) != str(v[k])]
     b = backup(APP_CSS)
+    d_name = aenderungen_schreiben("design", geaendert)
     APP_CSS.write_text(css, encoding="utf-8")
-    return b
+    return f"{b} · Änderungen: {d_name}" if d_name else b
 
 
 # ── Oberfläche ────────────────────────────────────────────────────────────
@@ -328,6 +367,10 @@ label{display:block;margin:.9rem 0}
 /* Zwei Spalten: links die Felder, rechts die Seite. Die Vorschau bleibt
    stehen, waehrend die Felder scrollen. */
 .zwei{display:grid;grid-template-columns:minmax(24rem,40%) minmax(0,1fr);gap:1.4rem;align-items:start}
+/* Zugeklappt bekommen die Felder die ganze Breite. */
+.zwei.zu{grid-template-columns:minmax(0,1fr)}
+.zwei.zu .vorschau{display:none}
+.zwei.zu .felder{max-height:none}
 .felder{max-height:calc(100vh - 15rem);overflow-y:auto;overflow-x:hidden;min-width:0;padding-right:.6rem}
 .vorschau{position:sticky;top:1rem;height:calc(100vh - 13rem);border:1px solid #323843;border-radius:12px;overflow:hidden;background:#21252C}
 .vorschau iframe{width:100%;height:100%;border:0;display:block}
@@ -463,11 +506,22 @@ def page_editor(name, msg="", err=""):
         + f"<div class='vorschau'><iframe id='pv' src='/preview/{name}'></iframe></div>"
         + "</div>"
         "<div class='bar'><button class='btn' id='save'>Speichern</button> "
+        "<button class='btn ghost' id='klapp'>Vorschau ausblenden</button> "
         f"<a class='btn ghost' href='https://entrosana.app{pfad}' target='_blank'>Seite öffnen</a> "
         "<a class='btn ghost' href='/'>Zurück</a> "
         "<span id='m' class='mono' style='margin-left:1rem'></span></div>"
         "<script>"
         + entwurf_js(name, "#fs", "data-i") +
+        # Der Zustand der Vorschau bleibt gemerkt: wer sie zuklappt, will sie
+        # beim naechsten Oeffnen nicht wieder vor sich haben.
+        "var ZU='entrosana-admin-vorschau-zu';"
+        "var zwei=document.querySelector('.zwei'),kb=document.getElementById('klapp');"
+        "function klappStand(){var zu=false;try{zu=localStorage.getItem(ZU)==='1'}catch(e){}"
+        "zwei.className='zwei'+(zu?' zu':'');"
+        "kb.textContent=zu?'Vorschau einblenden':'Vorschau ausblenden';}"
+        "kb.onclick=function(){var zu=zwei.className.indexOf('zu')<0;"
+        "try{localStorage.setItem(ZU,zu?'1':'0')}catch(e){}klappStand();};"
+        "klappStand();"
         "var pv=document.getElementById('pv');"
         "function doc(){try{return pv.contentDocument}catch(e){return null}}"
         "function stelle(i){var d=doc();return d?d.querySelector('.__ed[data-i=\"'+i+'\"]'):null;}"
