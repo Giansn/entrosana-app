@@ -113,6 +113,47 @@ def page_read(name):
                  for i, (a, b, t) in enumerate(spans(src))]
 
 
+LIVE = "https://entrosana.app"
+# Root-absolute Verweise zeigen im Vorschaurahmen sonst auf den Editor und
+# laufen ins Leere. Sie werden auf die Live-Adresse umgebogen, damit Stile,
+# Schriften und Skripte dieselben sind wie auf der Seite.
+ABS_RE = re.compile(r'(\s(?:href|src)=")/(?!/)')
+
+PREVIEW_JS = """
+<style>
+.__ed{ outline:1px dashed rgba(43,212,232,.30); outline-offset:2px; cursor:pointer }
+.__ed:hover{ outline-color:#2BD4E8; background:rgba(43,212,232,.10) }
+.__ed.is-sel{ outline:2px solid #2BD4E8; background:rgba(43,212,232,.18) }
+</style>
+<script>
+document.addEventListener("click", function (e) {
+  var n = e.target.closest ? e.target.closest(".__ed") : null;
+  if (!n) return;
+  e.preventDefault(); e.stopPropagation();
+  if (parent && parent.__waehle) parent.__waehle(n.getAttribute("data-i"));
+}, true);
+</script>
+"""
+
+
+def preview_html(name):
+    """Die Seite, wie sie ist — nur jede Textstelle umschlossen und markiert."""
+    src = (APP / name).read_text(encoding="utf-8")
+    body = src.lower().find("<body")
+    out = src
+    for i, (a, b, _t) in reversed(list(enumerate(spans(src)))):
+        if a < body:                       # Kopfbereich bleibt unangetastet
+            continue
+        roh = src[a:b]
+        vor = roh[:len(roh) - len(roh.lstrip())]
+        nach = roh[len(roh.rstrip()):]
+        kern = roh.strip()
+        out = (out[:a] + vor + f'<span class="__ed" data-i="{i}">' + kern + "</span>"
+               + nach + out[b:])
+    out = ABS_RE.sub(r"\1" + LIVE + "/", out)
+    return out.replace("</body>", PREVIEW_JS + "</body>", 1)
+
+
 def page_write(name, neu: list):
     """neu = Liste der Texte in derselben Reihenfolge wie page_read."""
     f = APP / name
@@ -261,7 +302,8 @@ def design_write(v):
 
 
 # ── Oberfläche ────────────────────────────────────────────────────────────
-CSS = """body{margin:0;background:#1B1E24;color:#E9EBE7;font-family:Calibri,Carlito,'Segoe UI',sans-serif;padding:2rem}
+CSS = """*{box-sizing:border-box}
+body{margin:0;background:#1B1E24;color:#E9EBE7;font-family:Calibri,Carlito,'Segoe UI',sans-serif;padding:2rem}
 .wrap{max-width:74rem;margin:0 auto}
 h1,h2{font-weight:600;letter-spacing:-.02em} h1{font-size:1.9rem} h2{font-size:1.25rem;margin:2.4rem 0 .8rem}
 .mono{font-family:'Geist Mono',ui-monospace,Menlo,monospace;font-size:.82rem;color:#8F95A1}
@@ -276,8 +318,20 @@ th{color:#8F95A1;font-weight:400;font-size:.82rem}
 textarea,input[type=text]{width:100%;background:#101318;color:#E9EBE7;border:1px solid #323843;border-radius:8px;padding:.55em .7em;font:inherit;font-size:.95rem}
 textarea{min-height:3.4rem;resize:vertical}
 label{display:block;margin:.9rem 0}
-.f{display:grid;grid-template-columns:5.5rem 1fr;gap:.8rem;align-items:start;margin:.7rem 0;padding-bottom:.7rem;border-bottom:1px solid #262b33}
-.f .k{color:#8F95A1;font-family:'Geist Mono',ui-monospace,monospace;font-size:.74rem;padding-top:.55em}
+.f{display:grid;grid-template-columns:4.2rem minmax(0,1fr);gap:.7rem;align-items:start;margin:.35rem 0;padding-bottom:.35rem;border-bottom:1px solid #262b33}
+.f .k{color:#8F95A1;font-family:'Geist Mono',ui-monospace,monospace;font-size:.7rem;padding-top:.5em}
+.f.is-sel{background:rgba(43,212,232,.07);border-radius:6px}
+.f.is-sel .k{color:#2BD4E8}
+.f textarea,.f input{font-size:.9rem;padding:.35em .55em}
+.f textarea{min-height:2.2rem}
+.f.zeichen input{width:5rem;text-align:center}
+/* Zwei Spalten: links die Felder, rechts die Seite. Die Vorschau bleibt
+   stehen, waehrend die Felder scrollen. */
+.zwei{display:grid;grid-template-columns:minmax(24rem,40%) minmax(0,1fr);gap:1.4rem;align-items:start}
+.felder{max-height:calc(100vh - 15rem);overflow-y:auto;overflow-x:hidden;min-width:0;padding-right:.6rem}
+.vorschau{position:sticky;top:1rem;height:calc(100vh - 13rem);border:1px solid #323843;border-radius:12px;overflow:hidden;background:#21252C}
+.vorschau iframe{width:100%;height:100%;border:0;display:block}
+@media(max-width:1100px){.zwei{grid-template-columns:1fr}.vorschau{position:static;height:60vh}}
 .bar{position:sticky;bottom:0;background:#1B1E24;border-top:1px solid #323843;padding:1rem 0;margin-top:1.5rem}"""
 
 
@@ -328,32 +382,68 @@ def dash():
 
 def page_editor(name, msg="", err=""):
     label = next((l for n, l, _ in PAGES if n == name), name)
+    pfad = next((p for n, _, p in PAGES if n == name), "/")
     _, stellen = page_read(name)
     felder = ""
-    for s in stellen:
-        kurz = len(s["text"]) <= 24
-        felder += (f"<div class='f'><div class='k'>{html.escape(s['tag'])}</div>"
-                   f"<div>{'<input type=text' if kurz else '<textarea'} data-i='{s['i']}' "
-                   + (f"value=\"{html.escape(s['text'], quote=True)}\">"
-                      if kurz else f">{html.escape(s['text'])}</textarea>")
-                   + "</div></div>")
+    for st in stellen:
+        text = st["text"]
+        # Einzelne Zeichen (▤ ▦ ◉ ✓ ↧) sind Symbole, kein Fliesstext: schmales
+        # Feld, damit sie die Spalte nicht auseinanderziehen.
+        zeichen = len(text) <= 2
+        kurz = len(text) <= 60
+        rows = max(2, min(8, len(text) // 60 + 1))
+        feld = (f"<input type=text data-i='{st['i']}' value=\"{html.escape(text, quote=True)}\">"
+                if kurz else
+                f"<textarea data-i='{st['i']}' rows='{rows}'>{html.escape(text)}</textarea>")
+        felder += (f"<div class='f{' zeichen' if zeichen else ''}' id='f{st['i']}'>"
+                   f"<div class='k'>{html.escape(st['tag'])}</div><div>{feld}</div></div>")
     return page(f"{label} · entrosana.app",
         f"<p><a href='/'>&larr; Übersicht</a></p><h1>{html.escape(label)}</h1>"
-        f"<p class='mono'>{name} &middot; {len(stellen)} Textstellen, in der Reihenfolge der Seite</p>"
+        f"<p class='mono'>{name} &middot; {len(stellen)} Textstellen &middot; "
+        f"Klick in die Seite rechts springt ins Feld, Tippen ändert die Vorschau sofort</p>"
         + (f"<p class='ok'>{html.escape(msg)}</p>" if msg else "")
         + (f"<p class='err'>{html.escape(err)}</p>" if err else "")
-        + f"<div id='fs'>{felder}</div>"
+        + "<div class='zwei'>"
+        + f"<div class='felder' id='fs'>{felder}</div>"
+        + f"<div class='vorschau'><iframe id='pv' src='/preview/{name}'></iframe></div>"
+        + "</div>"
         "<div class='bar'><button class='btn' id='save'>Speichern</button> "
-        "<a class='btn ghost' href='/'>Zurück</a> <span id='m' class='mono' style='margin-left:1rem'></span></div>"
-        "<script>document.getElementById('save').onclick=function(){"
+        f"<a class='btn ghost' href='https://entrosana.app{pfad}' target='_blank'>Seite öffnen</a> "
+        "<a class='btn ghost' href='/'>Zurück</a> "
+        "<span id='m' class='mono' style='margin-left:1rem'></span></div>"
+        "<script>"
+        "var pv=document.getElementById('pv');"
+        "function doc(){try{return pv.contentDocument}catch(e){return null}}"
+        "function stelle(i){var d=doc();return d?d.querySelector('.__ed[data-i=\"'+i+'\"]'):null;}"
+        "function feld(i){return document.querySelector('#fs [data-i=\"'+i+'\"]');}"
+        "function zeige(i){"
+        "var d=doc();if(d){var alt=d.querySelectorAll('.__ed.is-sel');"
+        "for(var k=0;k<alt.length;k++)alt[k].classList.remove('is-sel');"
+        "var n=stelle(i);if(n){n.classList.add('is-sel');"
+        "n.scrollIntoView({block:'center',behavior:'smooth'});}}"
+        "var zeilen=document.querySelectorAll('#fs .f');"
+        "for(var j=0;j<zeilen.length;j++)zeilen[j].classList.remove('is-sel');"
+        "var z=document.getElementById('f'+i);if(z)z.classList.add('is-sel');}"
+        # Klick in der Vorschau: Feld holen, hineinspringen.
+        "window.__waehle=function(i){var f=feld(i);if(!f)return;"
+        "f.scrollIntoView({block:'center'});f.focus();zeige(i);};"
+        "var alle=document.querySelectorAll('#fs [data-i]');"
+        "for(var i=0;i<alle.length;i++){(function(el){"
+        "var idx=el.getAttribute('data-i');"
+        "el.addEventListener('focus',function(){zeige(idx)});"
+        "el.addEventListener('input',function(){var n=stelle(idx);if(n)n.textContent=el.value;});"
+        "})(alle[i]);}"
+        "document.getElementById('save').onclick=function(){"
         "var n=document.querySelectorAll('#fs [data-i]'),t=[];"
         "for(var i=0;i<n.length;i++)t.push(n[i].value);"
         "var m=document.getElementById('m');m.textContent='speichere…';"
         "fetch('/api/page',{method:'POST',headers:{'Content-Type':'application/json'},"
         "body:JSON.stringify({name:" + json.dumps(name) + ",texts:t})})"
         ".then(function(r){return r.json()}).then(function(j){"
-        "m.textContent=j.ok?('gespeichert ✓ Sicherung '+j.backup+' · in ≤5 s live'):('Fehler: '+j.error);})"
-        ".catch(function(e){m.textContent='Fehler: '+e});};</script>")
+        "m.textContent=j.ok?('gespeichert ✓ Sicherung '+j.backup+' · in ≤5 s live'):('Fehler: '+j.error);"
+        "if(j.ok)setTimeout(function(){pv.src=pv.src},5200);})"
+        ".catch(function(e){m.textContent='Fehler: '+e});};"
+        "</script>")
 
 
 def cat_editor(slug, msg="", err=""):
@@ -490,6 +580,10 @@ class H(BaseHTTPRequestHandler):
             return
         if u.path == "/":
             self._send(200, dash())
+            return
+        m = re.match(r"^/preview/([a-z0-9-]+\.html)$", u.path)
+        if m and any(m.group(1) == n for n, _, _ in PAGES):
+            self._send(200, preview_html(m.group(1)))
             return
         m = re.match(r"^/page/([a-z0-9-]+\.html)$", u.path)
         if m and any(m.group(1) == n for n, _, _ in PAGES):
