@@ -256,6 +256,12 @@ def preview_html(name):
         out = (out[:a] + vor + f'<span class="__ed" data-i="{i}">' + kern + "</span>"
                + nach + out[b:])
     out = ABS_RE.sub(r"\1" + LIVE + "/", out)
+    # Die Vorschau holt Stile und Daten von der Live-Adresse. Ohne Frischemarke
+    # zeigt sie den zwischengespeicherten Stand des Browsers — und damit unter
+    # Umständen Texte, die längst geändert sind. Der Server ignoriert die
+    # Abfrage (serve.mjs schneidet sie ab), der Browser nicht.
+    marke = str(int(time.time()))
+    out = re.sub(r'(' + re.escape(LIVE) + r'/assets/[^"?]+)"', r'\1?v=' + marke + '"', out)
     return out.replace("</body>", PREVIEW_JS + "</body>", 1)
 
 
