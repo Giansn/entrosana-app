@@ -30,7 +30,9 @@ const SITEMAP = ["/", "/tools", "/modules", "/contribute",
   "/modules/your-value-system", "/modules/social", "/modules/nature-based",
   "/modules/technical", "/tools/lehrplan21-citation",
   "/tools/lehrplan21-stand-in", "/tools/auditable-back-office",
-  "/tools/payroll-run", "/tools/second-opinion"];
+  "/tools/payroll-run", "/tools/second-opinion",
+  "/contribute/propose-a-track", "/contribute/review-someones-work",
+  "/contribute/ask-for-runway"];
 
 const HTML = "text/html; charset=utf-8";
 const CSS = "text/css; charset=utf-8";
@@ -57,6 +59,9 @@ const ROUTES = new Map([
   ["/tools/auditable-back-office",   { file: "detail.html", type: HTML }],
   ["/tools/payroll-run",             { file: "detail.html", type: HTML }],
   ["/tools/second-opinion",          { file: "detail.html", type: HTML }],
+  ["/contribute/propose-a-track",      { file: "detail.html", type: HTML }],
+  ["/contribute/review-someones-work", { file: "detail.html", type: HTML }],
+  ["/contribute/ask-for-runway",       { file: "detail.html", type: HTML }],
   ["/assets/catalogue.js",   { file: "assets/catalogue.js",   type: JS }],
   ["/assets/cards.js",       { file: "assets/cards.js",       type: JS }],
   ["/assets/detail.js",      { file: "assets/detail.js",      type: JS }],
