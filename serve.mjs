@@ -17,6 +17,16 @@ const HOST = process.env.HOST || "127.0.0.1";
 // eigene, leere Kopie aller Daten an. Lokale Zugriffe (127.0.0.1, Proben)
 // tragen einen anderen Host und bleiben unberührt.
 const CANON = "entrosana.app";
+// Der einzige Schalter für die Sichtbarkeit in Suchmaschinen. Solange er false
+// ist, geht auf jeder Seite X-Robots-Tag: noindex raus; die Seiten selbst
+// tragen dazu nichts, damit es nur eine Stelle gibt. Auf true setzen, sobald
+// der Hub öffentlich gefunden werden soll — mehr ist nicht zu tun, robots.txt
+// und sitemap.xml richten sich danach.
+const INDEXABLE = false;
+// Was in die sitemap.xml gehört: die inhaltlichen Seiten. /records, /projects
+// und /services zeigen, was auf dem jeweiligen Gerät liegt, /project ist noch
+// nicht gebaut — nichts davon hat in einem Suchindex etwas verloren.
+const SITEMAP = ["/", "/tools", "/modules", "/contribute"];
 
 const HTML = "text/html; charset=utf-8";
 const CSS = "text/css; charset=utf-8";
@@ -43,6 +53,9 @@ const ROUTES = new Map([
   ["/assets/services.js", { file: "assets/services.js", type: JS }],
   ["/assets/theme.js",    { file: "assets/theme.js",    type: JS }],
   ["/assets/mark.svg",    { file: "assets/mark.svg",    type: "image/svg+xml" }],
+  // Vorschaubild für geteilte Links. Wird nicht von der Seite geladen, sondern
+  // von fremden Diensten geholt, deshalb greift die CSP hier nicht.
+  ["/assets/share-1200x630.png", { file: "assets/share-1200x630.png", type: "image/png" }],
   // assets/fonts.css liegt noch auf der Platte, wird aber nicht mehr ausgeliefert:
   // die neun Schnitte haben keinen Lateinbereich (docs/handoff-design.md §3).
 ]);
@@ -101,7 +114,29 @@ createServer((req, res) => {
     return;
   }
 
-  const route = ROUTES.get(normalize(req.url));
+  const path = normalize(req.url);
+
+  // robots.txt und sitemap.xml entstehen aus SITEMAP und INDEXABLE, damit sie
+  // nicht getrennt gepflegt werden müssen und nie etwas anderes behaupten als
+  // der Kopf, den die Seiten mitbekommen.
+  if (path === "/robots.txt") {
+    // Auch bei noindex bleibt das Crawlen erlaubt: wer nicht laden darf, sieht
+    // den noindex-Kopf nicht und darf die URL trotzdem in den Index nehmen.
+    const body = INDEXABLE
+      ? `User-agent: *\nAllow: /\n\nSitemap: https://${CANON}/sitemap.xml\n`
+      : `User-agent: *\nAllow: /\n`;
+    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" }).end(body);
+    return;
+  }
+  if (path === "/sitemap.xml") {
+    if (!INDEXABLE) { res.writeHead(404, { "Content-Type": "text/plain" }).end("404\n"); return; }
+    const urls = SITEMAP.map((p) => `  <url><loc>https://${CANON}${p}</loc></url>`).join("\n");
+    res.writeHead(200, { "Content-Type": "application/xml; charset=utf-8" })
+       .end(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`);
+    return;
+  }
+
+  const route = ROUTES.get(path);
   // Unbekannte Pfade liefern die Startseite mit 404, damit nichts vorgetäuscht wird.
   const entry = cache.get((route ?? ROUTES.get("/")).file);
   const status = route ? 200 : 404;
@@ -122,6 +157,7 @@ createServer((req, res) => {
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Content-Security-Policy": CSP,
   };
+  if (!INDEXABLE) headers["X-Robots-Tag"] = "noindex, nofollow";
   // Die .app-Zone ist ohnehin HSTS-vorgeladen; die Kopfzeile macht es explizit.
   if (proto === "https") headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
   res.writeHead(status, headers);
