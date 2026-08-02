@@ -332,6 +332,13 @@ label{display:block;margin:.9rem 0}
 .vorschau{position:sticky;top:1rem;height:calc(100vh - 13rem);border:1px solid #323843;border-radius:12px;overflow:hidden;background:#21252C}
 .vorschau iframe{width:100%;height:100%;border:0;display:block}
 @media(max-width:1100px){.zwei{grid-template-columns:1fr}.vorschau{position:static;height:60vh}}
+.entwurf{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin:.8rem 0;
+  padding:.7rem .9rem;border:1px solid #2BD4E8;border-radius:10px;
+  background:rgba(43,212,232,.08);font-size:.92rem}
+.entwurf[hidden]{display:none}
+.fehler{margin:.8rem 0;padding:.7rem .9rem;border:1px solid #DC7A6E;border-radius:10px;
+  background:rgba(220,122,110,.10);color:#F0B3AA;font-size:.92rem}
+.fehler[hidden]{display:none}
 .bar{position:sticky;bottom:0;background:#1B1E24;border-top:1px solid #323843;padding:1rem 0;margin-top:1.5rem}"""
 
 
@@ -380,6 +387,52 @@ def dash():
         "<span class='mono'>~/entrosana-app-backups</span> ab, die letzten 20 je Datei.</p>")
 
 
+def entwurf_js(key: str, sel: str, attr: str) -> str:
+    """Entwurf im Browser halten, anbieten, nach erfolgreicher Speicherung löschen.
+
+    key  Speicherschlüssel, je Seite oder Katalogeintrag einer.
+    sel  Behälter der Felder. attr  das Attribut, das ein Feld kennzeichnet.
+    """
+    return (
+        "var KEY=" + json.dumps("entrosana-admin-draft:" + key) + ";"
+        "var FELDER=function(){return document.querySelectorAll(" + json.dumps(sel + " [" + attr + "]") + ")};"
+        "function sammle(){var n=FELDER(),v={};"
+        "for(var i=0;i<n.length;i++)v[n[i].getAttribute(" + json.dumps(attr) + ")]=n[i].value;return v;}"
+        "var GESPEICHERT=JSON.stringify(sammle());"
+        "function schmutzig(){return JSON.stringify(sammle())!==GESPEICHERT;}"
+        "function entwurfSchreiben(){try{if(schmutzig())"
+        "localStorage.setItem(KEY,JSON.stringify({t:new Date().toISOString(),v:sammle()}));"
+        "else localStorage.removeItem(KEY);}catch(e){}}"
+        "function entwurfLoeschen(){try{localStorage.removeItem(KEY)}catch(e){}}"
+        "function einsetzen(v){var n=FELDER();for(var i=0;i<n.length;i++){"
+        "var k=n[i].getAttribute(" + json.dumps(attr) + ");if(k in v)n[i].value=v[k];}}"
+        # Beim Öffnen: liegt ein Entwurf vor, der von der Datei abweicht, wird er angeboten.
+        "(function(){var roh=null;try{roh=localStorage.getItem(KEY)}catch(e){}"
+        "if(!roh)return;var d=null;try{d=JSON.parse(roh)}catch(e){entwurfLoeschen();return;}"
+        "if(!d||!d.v)return;"
+        "var gleich=JSON.stringify(d.v)===JSON.stringify(sammle());"
+        "if(gleich){entwurfLoeschen();return;}"
+        "var bar=document.getElementById('entwurf');if(!bar)return;"
+        "var wann=d.t?new Date(d.t).toLocaleString():'unbekannt';"
+        "bar.innerHTML='<b>Ungesicherter Entwurf gefunden</b> <span class=mono>'+wann+"
+        "'</span> &mdash; die Datei zeigt einen anderen Stand.';"
+        "var a=document.createElement('button');a.className='btn';a.textContent='Entwurf übernehmen';"
+        "a.onclick=function(){einsetzen(d.v);bar.hidden=true;};"
+        "var b=document.createElement('button');b.className='btn ghost';b.textContent='verwerfen';"
+        "b.onclick=function(){entwurfLoeschen();bar.hidden=true;};"
+        "bar.appendChild(a);bar.appendChild(b);bar.hidden=false;})();"
+        # Jede Eingabe hält den Entwurf nach.
+        "(function(){var n=FELDER();for(var i=0;i<n.length;i++){"
+        "n[i].addEventListener('input',entwurfSchreiben);}})();"
+        "window.addEventListener('beforeunload',function(e){if(schmutzig()){"
+        "entwurfSchreiben();e.preventDefault();e.returnValue='';}});"
+        "function fehlerZeigen(t){var f=document.getElementById('fehler');if(!f)return;"
+        "f.innerHTML='<b>Nicht gespeichert:</b> '+t+'<br>Der Text steht weiterhin in den Feldern "
+        "und liegt als Entwurf im Browser. Nochmal auf Speichern drücken genügt.';f.hidden=false;}"
+        "function fehlerWeg(){var f=document.getElementById('fehler');if(f)f.hidden=true;}"
+    )
+
+
 def page_editor(name, msg="", err=""):
     label = next((l for n, l, _ in PAGES if n == name), name)
     pfad = next((p for n, _, p in PAGES if n == name), "/")
@@ -403,6 +456,8 @@ def page_editor(name, msg="", err=""):
         f"Klick in die Seite rechts springt ins Feld, Tippen ändert die Vorschau sofort</p>"
         + (f"<p class='ok'>{html.escape(msg)}</p>" if msg else "")
         + (f"<p class='err'>{html.escape(err)}</p>" if err else "")
+        + "<div id='entwurf' class='entwurf' hidden></div>"
+        + "<div id='fehler' class='fehler' hidden></div>"
         + "<div class='zwei'>"
         + f"<div class='felder' id='fs'>{felder}</div>"
         + f"<div class='vorschau'><iframe id='pv' src='/preview/{name}'></iframe></div>"
@@ -412,6 +467,7 @@ def page_editor(name, msg="", err=""):
         "<a class='btn ghost' href='/'>Zurück</a> "
         "<span id='m' class='mono' style='margin-left:1rem'></span></div>"
         "<script>"
+        + entwurf_js(name, "#fs", "data-i") +
         "var pv=document.getElementById('pv');"
         "function doc(){try{return pv.contentDocument}catch(e){return null}}"
         "function stelle(i){var d=doc();return d?d.querySelector('.__ed[data-i=\"'+i+'\"]'):null;}"
@@ -440,9 +496,11 @@ def page_editor(name, msg="", err=""):
         "fetch('/api/page',{method:'POST',headers:{'Content-Type':'application/json'},"
         "body:JSON.stringify({name:" + json.dumps(name) + ",texts:t})})"
         ".then(function(r){return r.json()}).then(function(j){"
-        "m.textContent=j.ok?('gespeichert ✓ Sicherung '+j.backup+' · in ≤5 s live'):('Fehler: '+j.error);"
-        "if(j.ok)setTimeout(function(){pv.src=pv.src},5200);})"
-        ".catch(function(e){m.textContent='Fehler: '+e});};"
+        "if(j.ok){GESPEICHERT=JSON.stringify(sammle());entwurfLoeschen();fehlerWeg();"
+        "m.textContent='gespeichert ✓ Sicherung '+j.backup+' · in ≤5 s live';"
+        "setTimeout(function(){pv.src=pv.src},5200);}"
+        "else{m.textContent='nicht gespeichert';fehlerZeigen(j.error);entwurfSchreiben();}})"
+        ".catch(function(e){m.textContent='nicht gespeichert';fehlerZeigen(String(e));entwurfSchreiben();});};"
         "</script>")
 
 
@@ -470,18 +528,24 @@ def cat_editor(slug, msg="", err=""):
         f"<p class='mono'>catalogue.js &middot; {slug}</p>"
         + (f"<p class='ok'>{html.escape(msg)}</p>" if msg else "")
         + (f"<p class='err'>{html.escape(err)}</p>" if err else "")
+        + "<div id='entwurf' class='entwurf' hidden></div>"
+        + "<div id='fehler' class='fehler' hidden></div>"
         + f"<div id='fs' style='max-width:70ch'>{felder}</div>"
         "<div class='bar'><button class='btn' id='save'>Speichern</button> "
         "<a class='btn ghost' href='/'>Zurück</a> <span id='m' class='mono' style='margin-left:1rem'></span></div>"
-        "<script>document.getElementById('save').onclick=function(){"
+        "<script>"
+        + entwurf_js("cat:" + slug, "#fs", "data-k") +
+        "document.getElementById('save').onclick=function(){"
         "var n=document.querySelectorAll('#fs [data-k]'),v={};"
         "for(var i=0;i<n.length;i++)v[n[i].getAttribute('data-k')]=n[i].value;"
         "var m=document.getElementById('m');m.textContent='speichere…';"
         "fetch('/api/catalogue',{method:'POST',headers:{'Content-Type':'application/json'},"
         "body:JSON.stringify({slug:" + json.dumps(slug) + ",values:v})})"
         ".then(function(r){return r.json()}).then(function(j){"
-        "m.textContent=j.ok?('gespeichert ✓ Sicherung '+j.backup+' · in ≤5 s live'):('Fehler: '+j.error);})"
-        ".catch(function(e){m.textContent='Fehler: '+e});};</script>")
+        "if(j.ok){GESPEICHERT=JSON.stringify(sammle());entwurfLoeschen();fehlerWeg();"
+        "m.textContent='gespeichert ✓ Sicherung '+j.backup+' · in ≤5 s live';}"
+        "else{m.textContent='nicht gespeichert';fehlerZeigen(j.error);entwurfSchreiben();}})"
+        ".catch(function(e){m.textContent='nicht gespeichert';fehlerZeigen(String(e));entwurfSchreiben();});};</script>")
 
 
 def design_editor():
