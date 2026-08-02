@@ -58,9 +58,9 @@ window.__catalogue = {
     "meta":"on request",
     "about":"Composed by contributors who do this work — social workers, and practitioners who teach. Scoped and built on request, so the depth matches the class instead of a catalogue.",
     "facts":[
-     ["Scope","Scoped and built on request, matched to the age and size of the class"],
+     ["Scope","Scoped and built on request, matched to the age and size of the group"],
      ["Who composes it","Contributors: social workers, nature pedagogy, and engineers who teach"],
-     ["How it starts","A school asks; we scope a priced proposal"],
+     ["How it starts","A school or a homeschooling family asks; we scope a priced proposal"],
      ["What stays visible","The plan, the materials, and what was delivered — to learners, parents and teachers"],
      ["Curriculum references","Checked against the source, not trusted"],
      ["Cost","A priced proposal, per module"]
@@ -81,9 +81,9 @@ window.__catalogue = {
     "meta":"on request",
     "about":"Learning where the physical boundaries of nature and of a person actually are. Composed by people from nature pedagogy, and scoped to the class that goes out.",
     "facts":[
-     ["Scope","Scoped and built on request, matched to the age and size of the class"],
+     ["Scope","Scoped and built on request, matched to the age and size of the group"],
      ["Who composes it","Contributors: social workers, nature pedagogy, and engineers who teach"],
-     ["How it starts","A school asks; we scope a priced proposal"],
+     ["How it starts","A school or a homeschooling family asks; we scope a priced proposal"],
      ["What stays visible","The plan, the materials, and what was delivered — to learners, parents and teachers"],
      ["Curriculum references","Checked against the source, not trusted"],
      ["Cost","A priced proposal, per module"]
@@ -104,9 +104,9 @@ window.__catalogue = {
     "meta":"on request",
     "about":"Taught in different depths and from different approaches. Composed by engineers who teach, and scoped to the class rather than to a catalogue.",
     "facts":[
-     ["Scope","Scoped and built on request, matched to the age and size of the class"],
+     ["Scope","Scoped and built on request, matched to the age and size of the group"],
      ["Who composes it","Contributors: social workers, nature pedagogy, and engineers who teach"],
-     ["How it starts","A school asks; we scope a priced proposal"],
+     ["How it starts","A school or a homeschooling family asks; we scope a priced proposal"],
      ["What stays visible","The plan, the materials, and what was delivered — to learners, parents and teachers"],
      ["Curriculum references","Checked against the source, not trusted. The Lehrplan 21 citation tool is in development"],
      ["Cost","A priced proposal, per module"]

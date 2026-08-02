@@ -1547,3 +1547,36 @@ html{ scrollbar-gutter:stable }
 /* Zwischenueberschrift unter einer Rubrik, wenn die Rubrik selbst schon eine
    Ueberschrift traegt. */
 .work__h2{ font-size:var(--step-1); font-weight:600; letter-spacing:-.015em; margin:0 0 .5rem }
+
+/* ---------- Reiter für die Gebiete ----------
+   Dieselbe Auswahl-Sprache wie in der Leiste: Füllung im Sealton und ein
+   Balken. Der Balken steht hier unten statt links, das unterscheidet einen
+   Reiter von einem Listeneintrag. Die Höhe von 2.75rem ist die
+   Fingergrösse — die Reiter tragen in jeder Breite, ohne Sonderfassung. */
+.tabs{ display:flex; flex-wrap:wrap; gap:.3rem; margin:0 0 1.3rem; position:relative }
+.tabs::after{
+  content:""; position:absolute; left:0; right:0; bottom:0; height:1px;
+  background:linear-gradient(90deg,
+    color-mix(in srgb, var(--seal) 26%, transparent), transparent 82%);
+}
+.tabs__b{
+  position:relative; z-index:1; display:inline-flex; align-items:center;
+  min-height:2.75rem; padding:.4rem .85rem; border:0; cursor:pointer;
+  border-radius:10px 10px 0 0; background:none; color:var(--ink-2);
+  font:inherit; font-size:.95rem; transition:background-color .12s, color .12s;
+}
+.tabs__b:hover{ color:var(--ink); background:color-mix(in srgb, var(--ink) 6%, transparent) }
+.tabs__b.is-on{ color:var(--ink); background:color-mix(in srgb, var(--seal) 13%, transparent) }
+.tabs__b.is-on::after{
+  content:""; position:absolute; left:.55rem; right:.55rem; bottom:0; height:2px;
+  border-radius:999px; background:var(--seal);
+  box-shadow:0 0 6px color-mix(in srgb, var(--seal) 55%, transparent);
+}
+.tabpanel{ max-width:68ch }
+.tabpanel:focus-visible{ outline:2px solid var(--seal); outline-offset:6px; border-radius:var(--radius) }
+.tabpanel__who{ font-size:var(--step--1); color:var(--seal-2); margin:0 0 .55rem }
+.tabpanel__l{ font-size:var(--step-1); line-height:1.4; letter-spacing:-.01em; margin:0 0 .65rem }
+.tabpanel__a{ color:var(--ink-2); margin:0 0 1rem }
+.tabpanel__go{ font-family:var(--font-mono); font-size:var(--step--1); color:var(--seal) }
+/* Auf schmalen Geräten teilen sich die Reiter die Zeile, statt umzubrechen. */
+@media (max-width:559.98px){ .tabs__b{ flex:1 1 8rem; justify-content:center } }
