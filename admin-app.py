@@ -729,7 +729,7 @@ def page_editor(name, msg="", err=""):
         "var t=[],kat={};"
         "var n=document.querySelectorAll('#fs [data-key]');"
         "for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-key');"
-        "if(k.indexOf('p:')===0)t.push(n[i].value);"
+        "if(k.indexOf('p:')===0)t[parseInt(k.slice(2),10)]=n[i].value;"
         "else{var teil=k.split(':');(kat[teil[1]]=kat[teil[1]]||{})[teil[2]]=n[i].value;}}"
         "var auftraege=[fetch('/api/page',{method:'POST',headers:{'Content-Type':'application/json'},"
         "body:JSON.stringify({name:" + json.dumps(name) + ",texts:t})}).then(function(r){return r.json()})];"
