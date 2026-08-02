@@ -1,0 +1,58 @@
+// Minimaler Server für die Übergangsseite auf entrosana.app.
+//
+// Bewusst ohne Fremdabhängigkeiten und ohne Dateisystem-Auflösung: es gibt genau
+// eine Seite, jede Anfrage bekommt sie. Damit ist Pfad-Traversal strukturell
+// ausgeschlossen, statt nur abgesichert.
+import { createServer } from "node:http";
+import { readFileSync, statSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const ROOT = dirname(fileURLToPath(import.meta.url));
+const FILE = join(ROOT, "index.html");
+const PORT = Number(process.env.PORT || 4322);
+const HOST = process.env.HOST || "127.0.0.1";
+
+let body = readFileSync(FILE);
+let etag = `W/"${statSync(FILE).mtimeMs.toString(36)}-${body.length.toString(36)}"`;
+
+// Beim Ändern der Seite neu einlesen, ohne Neustart.
+setInterval(() => {
+  try {
+    const m = statSync(FILE).mtimeMs;
+    const tag = `W/"${m.toString(36)}-${statSync(FILE).size.toString(36)}"`;
+    if (tag !== etag) { body = readFileSync(FILE); etag = tag; }
+  } catch { /* Datei kurzzeitig weg: alte Fassung weiter ausliefern */ }
+}, 5000);
+
+createServer((req, res) => {
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    res.writeHead(405, { "Allow": "GET, HEAD" }).end();
+    return;
+  }
+  if (req.url === "/healthz") {
+    res.writeHead(200, { "Content-Type": "text/plain" }).end("ok\n");
+    return;
+  }
+  const headers = {
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": body.length,
+    "Cache-Control": "public, max-age=300",
+    "ETag": etag,
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    // Die Seite ist eigenständig: kein fremdes Skript, kein fremder Stil.
+    "Content-Security-Policy":
+      "default-src 'none'; style-src 'unsafe-inline'; img-src data:; " +
+      "form-action 'none'; frame-ancestors 'none'; base-uri 'none'",
+  };
+  if (req.headers["if-none-match"] === etag) {
+    res.writeHead(304, { ETag: etag }).end();
+    return;
+  }
+  // Unbekannte Pfade liefern dieselbe Seite mit 404, damit nichts vorgetäuscht wird.
+  res.writeHead(req.url === "/" ? 200 : 404, headers);
+  res.end(req.method === "HEAD" ? undefined : body);
+}).listen(PORT, HOST, () => {
+  console.log(`entrosana-app serving index.html on http://${HOST}:${PORT}`);
+});

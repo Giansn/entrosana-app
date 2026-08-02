@@ -1,0 +1,319 @@
+/* Naht zwischen der Hülle des Hubs und der kopierten Projektverwaltung.
+   Beide Vorlagen bleiben unangetastet, hier steht nur, was dazwischen gehört. */
+
+/* Das Raster kommt vom Hub, nicht von der Demo. */
+.app{ display:grid; grid-template-columns:var(--rail) 1fr; min-height:100dvh }
+.main{ min-width:0; padding:0 1.5rem 2rem }
+
+/* Die eigene Leiste der Demo entfällt, ihre Listen sitzen jetzt in der Leiste
+   des Hubs. Die Elemente bleiben im Baum, damit deren JS sie weiter findet. */
+.nav__brand, .nav__foot, .nav__label{ display:none }
+.nav{ all:unset }
+
+/* Die Einträge der Demo tragen das Aussehen der Leiste. */
+.navitem{
+  position:relative; display:flex; align-items:center; gap:.65rem;
+  padding:.42rem .55rem; color:var(--ink-2); font-size:.95rem;
+  border-radius:var(--radius); text-decoration:none; cursor:pointer;
+  background:none; border:0; width:100%; text-align:left; font-family:inherit;
+}
+.navitem:hover{ color:var(--ink) }
+.navitem.on, .navitem.is-on{
+  color:var(--ink);
+  background:linear-gradient(180deg, color-mix(in srgb, var(--seal) 10%, transparent), transparent 78%);
+}
+.navitem .cnt{ margin-left:auto; font-family:var(--font-mono); font-size:.72rem; color:var(--muted) }
+.navitem .swatch{ width:.55rem; height:.55rem; border-radius:50%; flex:none }
+#projects, #filters{ display:flex; flex-direction:column; gap:.1rem }
+
+/* Der Kopf der Ansicht wird zur schwebenden Pille wie überall im Hub. */
+.view__head{
+  position:sticky; top:.85rem; z-index:5; min-height:62px;
+  margin:.85rem 0 1.2rem; padding:0 1.1rem;
+  border:1px solid var(--line); border-radius:999px;
+  background:color-mix(in srgb, var(--paper) 86%, transparent);
+  backdrop-filter:blur(12px);
+  box-shadow:var(--shadow-2), inset 0 1px 0 color-mix(in srgb, var(--seal) 16%, transparent);
+}
+
+/* ---------- Feinschliff ---------- */
+
+/* Das Brett nutzt die Höhe des Fensters, die Spalten scrollen für sich. */
+.main{ display:flex; flex-direction:column; min-height:100dvh }
+.view{ flex:1; display:flex; flex-direction:column; min-height:0 }
+.board{ flex:1; min-height:0; align-items:stretch; padding-bottom:.5rem }
+.col{ max-height:none; min-height:0 }
+
+/* Vier Bahnen passen bei 1440 px nebeneinander, ohne Querlauf. */
+.col{ flex:1 1 0; min-width:14rem }
+
+/* Der Spaltenkopf bleibt stehen, wenn die Spalte scrollt. */
+.col__h{
+  position:sticky; top:0; z-index:2;
+  background:color-mix(in srgb, var(--bg-2) 94%, transparent);
+  backdrop-filter:blur(4px);
+}
+
+/* Die Eingabeleiste klebt unten, statt hinter dem Brett zu verschwinden. */
+.addbar{
+  position:sticky; bottom:0; z-index:6; margin-top:.75rem;
+  background:color-mix(in srgb, var(--paper) 90%, transparent);
+  backdrop-filter:blur(10px);
+  border:1px solid var(--line); border-radius:16px;
+  box-shadow:var(--shadow-2), inset 0 1px 0 color-mix(in srgb, var(--seal) 14%, transparent);
+}
+
+/* Etwas dichter, wie §7 es für eine Arbeitsfläche vorsieht. */
+.task{ padding-block:.6rem }
+.task__content{ padding-bottom:.3rem }
+.col{ padding:.6rem .6rem .5rem }
+
+/* Der Fokus ist überall sichtbar, nicht nur bei den Feldern. */
+.task:focus-within{ background:color-mix(in srgb, var(--seal) 5%, transparent); border-radius:var(--radius) }
+button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible,
+.navitem:focus-visible{ outline:2px solid var(--seal); outline-offset:2px; border-radius:3px }
+
+/* Griff und Handlungen sind auf dem Zeigergerät ruhig, auf Tastatur sichtbar. */
+.task__actions{ opacity:0 }
+.task:hover .task__actions, .task:focus-within .task__actions{ opacity:1 }
+@media (hover:none){ .task__actions{ opacity:.7 } }
+
+/* Ziehen wird deutlicher: die Zielspalte hebt sich ab. */
+.col__body.is-over, .col.is-over{
+  outline:1px dashed color-mix(in srgb, var(--seal) 55%, transparent); outline-offset:-4px;
+}
+
+/* Die ganze Karte ist der Griff. Text und Bedienelemente bleiben bedienbar. */
+.task{ cursor:grab }
+.task:active{ cursor:grabbing }
+.task input, .task textarea, .task select, .task button{ cursor:auto }
+.task button, .task .grip{ cursor:pointer }
+.task .grip{ cursor:grab }
+
+
+/* ---------- Ruhige Bewegung ---------- */
+html{ scroll-behavior:smooth }
+.task, .col, .col__body, .check, .prio, .grip, .navitem, .btn, .ghost, .chipbtn,
+.iconbtn, .col__add, .task__actions, .act, .lane, .modal{
+  transition:background-color .16s ease, border-color .16s ease, color .16s ease,
+             box-shadow .16s ease, opacity .16s ease, transform .16s ease;
+}
+.task:hover{ background:color-mix(in srgb, var(--seal) 4%, transparent) }
+.task.is-dragging{ opacity:.35; transform:scale(.99) }
+.col__body.is-over{ transform:none }
+.col__add:hover{ transform:translateX(2px) }
+.check:hover{ transform:scale(1.06) }
+.prio:hover{ transform:translateY(-1px) }
+
+/* Das Fenster kommt nicht sprunghaft. */
+.modal-back{ animation:e-fade .14s ease-out both }
+.modal{ animation:e-rise .18s cubic-bezier(.2,.7,.3,1) both }
+@keyframes e-fade{ from{ opacity:0 } to{ opacity:1 } }
+@keyframes e-rise{ from{ opacity:0; transform:translateY(8px) } to{ opacity:1; transform:none } }
+
+/* Der Kopf sitzt mittig und behält seine Höhe. */
+.view__head{
+  display:flex; align-items:center; gap:1rem;
+  min-height:62px; height:62px; padding-block:0;
+}
+.view__title{ margin:0; display:flex; align-items:center; gap:.4rem }
+.view__tools{ margin-left:auto; display:flex; align-items:center; gap:.5rem }
+
+@media (prefers-reduced-motion:reduce){
+  html{ scroll-behavior:auto }
+  *{ transition:none !important; animation:none !important }
+  .task.is-dragging{ transform:none }
+}
+
+/* ---------- Die Naht bei der Schrift ----------
+   project.css setzt html,body auf 14px/1.4 — das ist die Grundgrösse der Demo.
+   Weil die Kopie nach app.css geladen wird, galt sie bisher für die ganze
+   Seite und liess die Leiste schrumpfen. Der Hub bekommt seine Grösse zurück,
+   die 14 px gelten nur noch im Inhaltsbereich. */
+html{ font-size:100% }            /* nicht antasten: rem haengt daran */
+body{ font-size:var(--step-0); line-height:1.55 }
+.rail{ font-size:var(--step-0); line-height:1.55 }
+.main{ font:14px/1.4 var(--font) }
+
+/* ---------- Der Untergrund wie auf jeder anderen Unterseite ----------
+   project.css setzt body auf eine flache Fläche und überschreibt damit den
+   Lichtschimmer aus app.css. Hier wird er zurückgeholt — nicht abgeschrieben,
+   sondern aus derselben Quelle: --schimmer steht in app.css. Vorher standen
+   hier zwei Rezepturen, die auseinandergelaufen sind. */
+/* html muss leer bleiben. project.css gibt ihm eine flache Farbe; dadurch
+   wandert der Untergrund von body nicht mehr auf die Zeichenfläche, sondern
+   bleibt in dessen Kasten — und der ist height:100%, also genau ein Fenster
+   hoch. Beim Scrollen brach der Schimmer deshalb mit einer harten Kante ab.
+   Ohne Farbe auf html erbt die Zeichenfläche wieder den Untergrund von body
+   und füllt das Fenster in jeder Scrollstellung, wie auf allen Unterseiten. */
+html{ background:none }
+body{
+  background:var(--schimmer);
+  background-attachment:fixed;
+}
+.main{ background:transparent }
+
+/* ---------- Grundton, letztes Wort ----------
+   project.css bringt ihren eigenen :root mit und überschreibt app.css. Damit
+   /project nicht dunkler ist als jede andere Unterseite, stehen dieselben
+   Werte hier noch einmal — dieselben wie in app.css, kein zweiter Satz. */
+:root{
+  --paper:#21252C; --paper-2:#272C34;
+  --card-bg:#2A2F39; --field-bg:#242932;
+  --line:#39404C; --line-2:#434B58; --line-ui:#68707F;
+  --bg:var(--paper); --bg-2:var(--card-bg); --bg-3:var(--paper-2);
+  --bg-hover:color-mix(in srgb, var(--seal) 8%, var(--card-bg));
+  --bg-active:color-mix(in srgb, var(--seal) 15%, var(--card-bg));
+}
+
+/* ---------- Die Kopfzeile spricht dieselbe Sprache wie überall ----------
+   Auf den anderen Unterseiten steht dort .crumb: Mono, klein, ruhig. Der
+   Projektname wird genauso gesetzt, damit keine Seite aus der Reihe fällt. */
+.view__title{ display:flex; align-items:center; gap:.35rem; margin:0 }
+.view__hash{
+  font-family:var(--font-mono); font-size:.82rem; color:var(--seal);
+  font-weight:400; opacity:.9;
+}
+.view__title input{
+  font-family:var(--font-mono); font-size:.82rem; font-weight:600;
+  color:var(--ink); background:transparent; border:0; padding:.15rem .25rem;
+  border-radius:var(--radius); min-width:10rem; width:auto;
+}
+.view__title input:hover{ background:color-mix(in srgb, var(--seal) 8%, transparent) }
+.view__title input:focus{ outline:none; background:var(--field-bg); box-shadow:0 0 0 1px var(--seal) }
+
+/* Die Werkzeuge rechts sehen aus wie die Leiste der anderen Seiten. */
+.view__tools .seg{
+  display:inline-flex; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
+}
+.view__tools .seg button{
+  font-family:var(--font-mono); font-size:.78rem; color:var(--ink-2);
+  background:none; border:0; padding:.25rem .7rem; cursor:pointer;
+}
+.view__tools .seg button.is-on{
+  background:color-mix(in srgb, var(--seal) 16%, transparent); color:var(--seal);
+}
+.view__tools select, .view__tools .ghost{
+  font-family:var(--font-mono); font-size:.78rem; color:var(--ink-2);
+  background:var(--field-bg); border:1px solid var(--line);
+  border-radius:var(--radius); padding:.25rem .55rem; cursor:pointer;
+}
+.view__tools .ghost:hover, .view__tools select:hover{ border-color:var(--seal); color:var(--seal) }
+
+/* ---------- Rechter Rand ----------
+   Das Brett lief über die Breite hinaus und wurde vom Fensterrand beschnitten.
+   Die Arbeitsfläche begrenzt sich jetzt selbst, der Querlauf gehört ins Brett. */
+.app{ max-width:100vw; overflow-x:hidden }
+.main{ min-width:0; max-width:100%; overflow-x:hidden; padding-right:1.5rem }
+.view{ min-width:0; max-width:100% }
+.board{ max-width:100%; overflow-x:auto; scrollbar-gutter:stable }
+.view__head{ margin-right:0 }
+
+/* Suchfeld in der Pille, gleiche Form wie auf den anderen Unterseiten. */
+.view__head .search{
+  margin-left:auto; display:flex; align-items:center; gap:.5rem;
+  border:1px solid var(--line-ui); border-radius:var(--radius);
+  background:var(--field-bg); padding:.35rem .7rem; min-width:17rem;
+  color:var(--muted); font-family:var(--font-mono); font-size:.8rem;
+}
+.view__head .search kbd{
+  margin-left:auto; border:1px solid var(--line); border-radius:3px;
+  padding:.05rem .3rem; font-size:.7rem; color:var(--muted);
+}
+.view__head .iconbtn{
+  width:2rem; height:2rem; border-radius:999px; border:1px solid var(--line-ui);
+  background:none; color:var(--muted); display:grid; place-items:center; cursor:pointer;
+}
+.view__head .iconbtn:hover{ color:var(--seal); border-color:var(--seal) }
+.view__head .view__tools{ margin-left:0 }
+
+/* ---------- Einzüge wörtlich wie .top auf den anderen Unterseiten ----------
+   Dort steht margin-inline:1rem 1.5rem, gerechnet ab der Spaltenkante. Damit
+   die Pille auf /project an derselben Stelle beginnt und endet, wandert das
+   seitliche Polster von .main an die Pille und an das Brett. */
+.main{ padding-inline:0 }
+.view__head{ margin:.85rem 1.5rem 1.2rem 1rem }
+.view{ padding-inline:1rem 1.5rem }
+.addbar{ margin-inline:0 }
+/* Korrektur: .view darf nicht polstern, sonst zählt der Einzug doppelt.
+   Pille, Brett und Eingabeleiste tragen ihn je selbst, mit denselben Werten. */
+.view{ padding-inline:0 }
+.board{ margin-inline:1rem 1.5rem }
+.addbar{ margin-inline:1rem 1.5rem }
+.view > .lanes, .view > .sec, .view > .section{ margin-inline:1rem 1.5rem }
+/* Letzte Korrektur an der Positionierung: overflow-x:hidden auf .main macht
+   daraus einen Rollbereich und reserviert 15 px für den Balken. Damit endete
+   die Pille 15 px früher als auf den anderen Seiten. Das Beschneiden gehört
+   ins Brett, nicht in die Arbeitsfläche. */
+.app{ overflow-x:visible }
+.main{ overflow-x:visible }
+.board{ scrollbar-gutter:auto }
+/* project.css lässt <main> selbst rollen. Dadurch reserviert es einen
+   Rollbalken und ist 15 px schmaler als das Fenster, weshalb die Pille rechts
+   früher endete. Auf den anderen Unterseiten rollt das Dokument. Hier auch. */
+.main{ overflow:visible }
+/* Der eigentliche Grund für den Überlauf: eine Rasterspalte mit 1fr schrumpft
+   nicht unter ihren Inhalt. Das Brett drückte sie auf, daraus entstand der
+   waagerechte Rollbalken und mit ihm die 15 px am rechten Rand. */
+.app{ grid-template-columns:var(--rail) minmax(0,1fr) }
+.main, .view, .board{ min-width:0; max-width:100% }
+.board{ overflow-x:auto }
+/* max-width:100% rechnet ohne die Aussenabstände: das Brett war so breit wie
+   die Spalte und stand zusätzlich um seinen linken Abstand versetzt, also lief
+   es rechts über. Breite ergibt sich aus den Abständen, nicht aus 100 %. */
+.main, .view, .board{ max-width:none }
+.board{ width:auto }
+
+/* Die Eingabeleiste steht unter dem Brett, nicht darüber. Sie klebte am
+   unteren Rand und legte sich dabei über die Spalten. */
+.addbar{
+  position:static; margin:1rem 1.5rem 1.5rem 1rem;
+  backdrop-filter:none;
+  background:color-mix(in srgb, var(--card-bg) 70%, transparent);
+}
+
+/* ---------- Anordnung in der Pille wie auf den anderen Unterseiten ----------
+   Dort steht links der Name und rechts aussen Suche und Themenschalter. Hier
+   drückte die Suche mit margin-left:auto nach rechts, danach schoben die
+   Werkzeuge sie wieder nach innen. Der Abstand gehört hinter den Namen. */
+.view__title{ margin-right:auto }
+.view__head .search{ margin-left:0 }
+.view__head .view__tools{ margin-left:0 }
+/* Das Rautenzeichen kommt auf keiner anderen Seite vor. */
+.view__hash{ display:none }
+
+/* ---------- Eine Kopfzeile für alle Seiten ----------
+   Die Pille ist jetzt die echte .top aus app.css. Die Kopfzeile der Kopie wird
+   ausgeblendet, ihre Werkzeuge hängen in der Pille. Alles, was ich vorher zur
+   Nachahmung geschrieben habe, entfällt damit. */
+.mainwrap{ min-width:0; display:flex; flex-direction:column; min-height:100dvh }
+.view__head{ display:none !important }
+header.top .view__tools{ display:flex; align-items:center; gap:.5rem; margin-left:.5rem }
+
+/* Erledigt in Grün, in Bahn, Punkt und Kreis. */
+.sec__badge[data-lane="done"], .col__badge--done{ background:var(--done) !important }
+.check.on{ background:var(--done) !important; border-color:var(--done) !important }
+.pill--done{ color:var(--done); border-color:color-mix(in srgb, var(--done) 45%, var(--line)) }
+.navitem .swatch[data-lane="done"]{ background:var(--done) }
+
+/* Das Eingabefenster der Seite, gleiche Form wie das Details-Fenster. */
+.modal--ask{ width:min(94vw, 26rem) }
+.modal--ask .modal__input{ margin-top:.9rem }
+
+/* —— Die Leiste gehört dem Haus, nicht der Kopie ——
+   project.css lädt nach app.css und färbt sonst zwei Stellen um: den Punkt
+   vor dem Projektnamen (.pdot, dort .65rem in --accent gefüllt) und den
+   Plus-Knopf, der hier ein .iconbtn ist und dadurch seinen Rahmen verliert.
+   Beides wird auf die Fassung von app.css zurückgesetzt, damit die Leiste
+   auf /project Zeichen für Zeichen so aussieht wie auf jeder anderen Seite. */
+.nav__projects .pdot{
+  width:1.4rem; height:1.4rem; border-radius:0; background:none;
+  display:grid; place-items:center;
+}
+.rail__group--act .rail__plus{
+  width:1.4rem; height:1.4rem; font-size:1rem; color:var(--seal);
+  border:1px solid var(--line-ui); border-radius:var(--radius);
+}
+.rail__group--act .rail__plus:hover{
+  border-color:var(--seal); background:color-mix(in srgb, var(--seal) 12%, transparent);
+}

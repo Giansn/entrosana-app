@@ -1,0 +1,1239 @@
+/* entrosana.app — Gestaltung nach docs/handoff-design.md, Stand 2026-08-01 23:10.
+ *
+ * Grundsatz aus §1: gemeinsames Fundament, eigene Aufgabe. Farben, Schriftleiter
+ * und Satzspiegel kommen unverändert von entrosana.com (§3), die Dichte ist die
+ * einer Arbeitsfläche (§7), und der filigrane Trennstrich (§4) trägt die
+ * Handschrift auch hier.
+ *
+ * Schriftstapel wie auf .com: die eingebetteten Schnitte haben keinen
+ * Lateinbereich (§3), es entscheidet also der Rückfallstapel. Carlito ist auf
+ * diesem Rechner vorhanden, damit rendert der Prototyp, was .com rendert.
+ * Welche Schrift die Marke ist, steht in §10 offen.
+ */
+
+:root{
+  color-scheme:dark;
+  --paper:#1B1E24; --paper-2:#22262E;
+  --ink:#E9EBE7; --ink-2:#C6CAD1; --muted:#8F95A1;
+  --line:#323843; --line-2:#3A404C; --line-ui:#5A6273;
+  --seal:#2BD4E8; --seal-2:#7FE7F3;
+  --verify:#2FB89E; --warn:#D2685C;
+  --card-bg:#232833; --field-bg:#1F232B; --btn-fg:#071316;
+  --shadow-1:0 1px 2px rgba(0,0,0,.35),0 4px 12px rgba(0,0,0,.30);
+  --shadow-2:0 4px 8px rgba(0,0,0,.42),0 14px 32px rgba(0,0,0,.45);
+
+  --font-mono:"Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-sans:Calibri, Carlito, "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-serif:Calibri, Carlito, "Segoe UI", system-ui, -apple-system, sans-serif;
+
+  --step--1:clamp(.78rem, .74rem + .2vw, .86rem);
+  --step-0:clamp(.95rem, .9rem + .25vw, 1.05rem);
+  --step-1:clamp(1.15rem, 1.05rem + .5vw, 1.4rem);
+  --step-2:clamp(1.5rem, 1.3rem + 1vw, 2.1rem);
+  --step-3:clamp(2.1rem, 1.7rem + 2vw, 3.4rem);
+  --step-4:clamp(2.8rem, 2rem + 4vw, 5.2rem);
+
+  --wrap:1140px;
+  --gutter:clamp(1.25rem, .8rem + 2.5vw, 3rem);
+  --radius:4px;
+
+  /* Dichte einer Arbeitsfläche, §7. Satzspiegel und Leiter bleiben unberührt. */
+  --pad-block:56px;
+  --pad-card:22px;
+  --gap-grid:18px;
+  --pad-para:12px;
+  --rail:15.5rem;
+
+  /* Lichtschimmer wie auf .com. Keine neue Farbe, nur --seal und --verify in
+     geringer Sättigung über --paper (§8: der Vorrat bleibt geschlossen). Als
+     eigener Wert, weil ihn zwei Stellen brauchen: body hier und body in
+     project-shell.css, wo project.css den Untergrund flachlegt. Vorher
+     standen dort zwei Abschriften, die auseinandergelaufen sind. Steht
+     bewusst im gemeinsamen :root und nicht im hellen Block: --seal, --verify
+     und --paper darin lösen sich erst beim Einsetzen auf und folgen dem
+     gewählten Modus von selbst. */
+  --schimmer:
+    radial-gradient(130% 90% at 12% -10%, color-mix(in srgb, var(--seal) 16%, transparent), transparent 68%),
+    radial-gradient(90% 70% at 92% 0%, color-mix(in srgb, var(--verify) 11%, transparent), transparent 70%),
+    radial-gradient(140% 120% at 50% 118%, color-mix(in srgb, var(--seal) 8%, transparent), transparent 74%),
+    linear-gradient(180deg, color-mix(in srgb, var(--seal) 3%, var(--paper)) 0, var(--paper) 58%),
+    var(--paper);
+}
+
+:root[data-theme="light"]{
+  color-scheme:light;
+  --paper:#f5fffe; --paper-2:#ECEEEA;
+  --ink:#16181d; --ink-2:#3A3F49; --muted:#6C7078;
+  --line:#DCDDD6; --line-2:#2C313B; --line-ui:#8A8D84;
+  --seal:#077183; --seal-2:#09606F;
+  --verify:#0E7C6B; --warn:#B23A2E;
+  --card-bg:#FFFFFF; --field-bg:#FFFFFF; --btn-fg:#FFFFFF;
+  --shadow-1:0 1px 2px rgba(22,24,29,.06),0 4px 10px rgba(22,24,29,.07);
+  --shadow-2:0 3px 6px rgba(22,24,29,.08),0 12px 28px rgba(22,24,29,.11),0 28px 56px rgba(22,24,29,.07);
+}
+
+*,*::before,*::after{ box-sizing:border-box }
+html,body{ margin:0; height:100% }
+body{
+  font-family:var(--font-sans); color:var(--ink); font-size:var(--step-0); line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  /* Der Lichtschimmer steht als --schimmer weiter oben, weil ihn zwei Stellen
+     brauchen: hier und noch einmal in project-shell.css, wo project.css den
+     Untergrund flachlegt. Zwei Abschriften sind auseinandergelaufen, darum
+     jetzt eine Fassung an einer Stelle. */
+  background:var(--schimmer);
+  background-attachment:fixed;
+}
+a{ color:var(--seal); text-decoration:none }
+p{ margin:0 0 var(--pad-para) }
+.mono{ font-family:var(--font-mono) }
+.muted{ color:var(--muted) }
+.vh{ position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%) }
+
+/* ---------- §4 Der filigrane Trennstrich ----------
+   Eine Rezeptur, vier Stärken. Waagerecht 26 %, senkrecht 34 % und 42 %,
+   kurz mit Schimmer 65 %. Nie eine harte Kante. */
+.hair{ position:relative }
+.hair + .hair::before{
+  content:""; position:absolute; top:0; left:50%; transform:translateX(-50%);
+  width:min(var(--wrap,1140px), calc(100% - 3rem)); height:1px;
+  background:linear-gradient(90deg, transparent,
+    color-mix(in srgb, var(--seal) 26%, transparent) 18%,
+    color-mix(in srgb, var(--seal) 26%, transparent) 82%, transparent);
+}
+/* Senkrecht in einer Fuge, 34 %. Ohne Spalten keine Fuge. */
+.seam{ position:relative }
+.seam::before{
+  content:""; position:absolute; top:0; right:0; width:1px; height:min(70%, 40rem);
+  background:linear-gradient(180deg, transparent,
+    color-mix(in srgb, var(--seal) 34%, transparent) 12%,
+    color-mix(in srgb, var(--seal) 34%, transparent) 88%, transparent);
+}
+/* Kurz und mit Schimmer, 65 %. Laufender Verweis und Wortmarke. */
+.glow::after{
+  content:""; position:absolute; left:0; bottom:-6px; height:2px; width:100%;
+  background:linear-gradient(90deg,
+    color-mix(in srgb, var(--seal) 65%, transparent), transparent);
+  filter:drop-shadow(0 0 4px color-mix(in srgb, var(--seal) 55%, transparent));
+}
+
+/* ---------- Marke ----------
+   §8: einfarbig. Zeichen, «entro» und «sana» tragen dieselbe Farbe.
+   §5: Zeichen als eingebettetes SVG auf currentColor, 2.4em gegen 15 px Wort. */
+.brand{
+  display:inline-flex; align-items:center; gap:.5rem; position:relative;
+  color:var(--seal); text-decoration:none;
+}
+/* 2.4em auf der geerbten Grundgrösse, wie .com: 2,4 × 16,8 px = 40,31 px. */
+.brand__logo{ width:2.4em; height:2.4em; display:block; flex:none }
+.brand__word{ font-size:15px; letter-spacing:.01em; font-weight:600; color:inherit }
+
+/* ---------- Gerüst ---------- */
+.app{ display:grid; grid-template-columns:var(--rail) 1fr; min-height:100dvh }
+
+.rail{
+  padding:1.35rem 1rem; display:flex; flex-direction:column; gap:.2rem;
+  position:relative;
+  /* durchscheinend, damit der Schimmer des Untergrunds durchträgt */
+  background:color-mix(in srgb, #000 13%, transparent);
+  backdrop-filter:blur(6px);
+}
+.rail__brand{ padding:.2rem .3rem 1.05rem }
+/* Der Strich gehört zur Marke, nicht als Deckel auf den ersten Eintrag.
+   Darum eigenes Element mit Luft nach unten, §4 in der 26-%-Stärke. */
+.rail__rule{
+  height:1px; margin:0 .3rem 1.15rem;
+  background:linear-gradient(90deg,
+    color-mix(in srgb, var(--seal) 26%, transparent) 0,
+    color-mix(in srgb, var(--seal) 26%, transparent) 72%, transparent);
+}
+.rail__group{
+  font-family:var(--font-mono); font-size:var(--step--1); letter-spacing:.16em;
+  text-transform:uppercase; color:var(--muted); padding:1.15rem .55rem .45rem;
+}
+.rail__item{
+  position:relative; display:flex; align-items:center; gap:.65rem;
+  padding:.42rem .55rem; color:var(--ink-2); font-size:.95rem; border-radius:var(--radius);
+}
+.rail__item:hover{ color:var(--ink) }
+/* Der gewählte Reiter bekommt seinen Strich, aber mit Luft darunter, damit er
+   nicht zwischen zwei Linien eingeklemmt steht. */
+.rail__item.is-active{
+  color:var(--ink); padding-bottom:.62rem; margin-bottom:.42rem;
+  background:linear-gradient(180deg,
+    color-mix(in srgb, var(--seal) 10%, transparent), transparent 78%);
+}
+.rail__item.is-active::after{
+  content:""; position:absolute; left:.55rem; bottom:0; height:2px; width:calc(100% - 3.2rem);
+  background:linear-gradient(90deg,
+    color-mix(in srgb, var(--seal) 65%, transparent), transparent);
+  filter:drop-shadow(0 0 4px color-mix(in srgb, var(--seal) 55%, transparent));
+}
+.rail__glyph{
+  width:1.4rem; height:1.4rem; flex:none; display:grid; place-items:center;
+  color:var(--seal); font-size:.82rem;
+}
+.rail__count{ margin-left:auto; font-family:var(--font-mono); font-size:.72rem; color:var(--muted) }
+.rail__foot{ margin-top:auto; padding-top:1rem; position:relative }
+.rail__foot::before{
+  content:""; position:absolute; top:0; left:.3rem; right:.3rem; height:1px;
+  background:linear-gradient(90deg, transparent,
+    color-mix(in srgb, var(--seal) 26%, transparent) 18%,
+    color-mix(in srgb, var(--seal) 26%, transparent) 82%, transparent);
+}
+.rail__acct{ display:flex; align-items:center; gap:.6rem; padding:.5rem .55rem }
+.rail__avatar{
+  width:1.75rem; height:1.75rem; border-radius:999px; flex:none; display:grid; place-items:center;
+  border:1px solid var(--line-ui); color:var(--muted); font-family:var(--font-mono); font-size:.7rem;
+}
+.rail__acctname{ font-size:.88rem; color:var(--ink-2) }
+.rail__acctsub{ display:block; font-family:var(--font-mono); font-size:.7rem; color:var(--muted) }
+
+/* ---------- Kopfleiste ----------
+   §10 offen: Pille oder bündiger Balken. Hier bündig und klebend, aber auf der
+   Höhe der Pille von .com (62 px) und mit derselben Unschärfe. */
+/* §10 entschieden: die schwebende Pille, wie auf entrosana.com.
+   Sie trägt ihren eigenen Rand, darum keine Kante quer über die Breite. */
+.top{
+  position:sticky; top:.85rem; z-index:5; height:62px;
+  margin:.85rem 1.5rem 0; padding:0 .6rem 0 1.25rem;
+  display:flex; align-items:center; gap:1rem;
+  border:1px solid var(--line); border-radius:999px;
+  background:color-mix(in srgb, var(--paper) 86%, transparent);
+  backdrop-filter:blur(12px);
+  box-shadow:var(--shadow-1);
+}
+.crumb{ font-family:var(--font-mono); font-size:.82rem; color:var(--muted) }
+.crumb b{ color:var(--ink); font-weight:600 }
+.crumb i{ font-style:normal; padding:0 .45rem; opacity:.5 }
+.search{
+  margin-left:auto; display:flex; align-items:center; gap:.5rem;
+  border:1px solid var(--line-ui); border-radius:var(--radius); background:var(--field-bg);
+  padding:.35rem .7rem; min-width:17rem; color:var(--muted);
+  font-family:var(--font-mono); font-size:.8rem;
+}
+.search kbd{
+  margin-left:auto; border:1px solid var(--line); border-radius:3px;
+  padding:.05rem .3rem; font-size:.7rem; color:var(--muted);
+}
+.iconbtn{
+  width:2rem; height:2rem; border-radius:999px; border:1px solid var(--line-ui);
+  background:none; color:var(--muted); display:grid; place-items:center; cursor:pointer;
+}
+
+/* ---------- Arbeitsfläche ---------- */
+.work{ padding:0 1.5rem }
+.block{ position:relative; padding:var(--pad-block) 0 }
+.block--tight{ padding-block:calc(var(--pad-block) - 16px) }
+.wrapper{ width:min(100% - 0px, var(--wrap)) }
+
+.eyebrow{
+  display:flex; align-items:center; gap:.6rem;
+  font-family:var(--font-mono); font-size:var(--step--1); letter-spacing:.16em;
+  text-transform:uppercase; color:var(--seal); margin:0 0 .85rem;
+}
+.eyebrow::before{
+  content:""; width:22.0156px; height:1px; background:var(--seal); opacity:.5; flex:none;
+}
+.work__h{ font-size:var(--step-2); letter-spacing:-.02em; font-weight:600; margin:0 0 .2rem }
+.work__sub{ color:var(--muted); margin:0 0 1.6rem }
+.h3{ font-size:var(--step-1); font-weight:600; letter-spacing:-.015em; margin:0 }
+
+/* ---------- Karten und Kacheln ---------- */
+.grid{ display:grid; gap:var(--gap-grid); grid-template-columns:repeat(3,1fr) }
+.card{
+  border:1px solid var(--line); border-radius:var(--radius);
+  background:var(--card-bg); padding:var(--pad-card); box-shadow:var(--shadow-1);
+}
+/* Verlauf statt Fläche: --seal in geringer Sättigung über --card-bg,
+   dazu ein Schimmer, der oben rechts ausläuft. Keine neue Farbe. */
+.tile{
+  display:flex; flex-direction:column; gap:.45rem; color:inherit;
+  position:relative; overflow:hidden; box-shadow:var(--shadow-2);
+  background:linear-gradient(165deg,
+    color-mix(in srgb, var(--seal) 9%, var(--card-bg)) 0%, var(--card-bg) 58%);
+}
+.tile::after{
+  content:""; position:absolute; width:12rem; height:12rem; right:-5rem; top:-6rem;
+  border-radius:999px; pointer-events:none;
+  background:radial-gradient(circle,
+    color-mix(in srgb, var(--seal) 26%, transparent), transparent 68%);
+}
+.tile > *{ position:relative }
+.tile__glyph{
+  width:2.2rem; height:2.2rem; display:grid; place-items:center;
+  color:var(--seal); font-size:1.05rem; margin-bottom:.55rem;
+}
+.tile p:not(.h3){ color:var(--ink-2); font-size:.92rem; margin:.35rem 0 .9rem; min-height:3em }
+.tile__foot{
+  display:flex; align-items:center; gap:.6rem; font-family:var(--font-mono);
+  font-size:.74rem; color:var(--muted); padding-top:.7rem; position:relative;
+}
+.tile__foot::before{
+  content:""; position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg,
+    color-mix(in srgb, var(--seal) 26%, transparent), transparent 82%);
+}
+.tile__go{ margin-left:auto; color:var(--seal) }
+
+/* Fortsetzen */
+.resume{
+  display:grid; grid-template-columns:auto 1fr auto; gap:.4rem 1.15rem; align-items:center;
+}
+.ring{ width:3.1rem; height:3.1rem; position:relative; flex:none }
+.ring svg{ transform:rotate(-90deg) }
+.ring span{
+  position:absolute; inset:0; display:grid; place-items:center;
+  font-family:var(--font-mono); font-size:.76rem; color:var(--ink);
+}
+.resume__m{ font-family:var(--font-mono); font-size:.76rem; color:var(--muted); margin:.15rem 0 0 }
+
+/* ---------- Schaltflächen, §6: drei Stufen plus zerstörerisch ---------- */
+.btn{
+  font-family:var(--font-sans); font-weight:600; font-size:var(--step--1);
+  padding:.5rem 1.1rem; border-radius:999px; cursor:pointer; white-space:nowrap;
+  background:var(--seal); color:var(--btn-fg); border:1px solid var(--seal);
+}
+.btn--ghost{ background:none; color:var(--ink-2); border-color:var(--line-ui) }
+.btn--quiet{ background:none; color:var(--muted); border-color:transparent; padding-inline:.5rem }
+.btn--danger{ background:none; color:var(--warn); border-color:color-mix(in srgb, var(--warn) 45%, var(--line)) }
+:focus-visible{ outline:2px solid var(--seal); outline-offset:2px }
+
+/* ---------- §6 Tabelle: Mono-Kopf, Haarlinien, kein Zebra ---------- */
+.tbl{ width:100%; border-collapse:collapse }
+.tbl th{
+  font-family:var(--font-mono); font-size:var(--step--1); letter-spacing:.08em;
+  text-transform:uppercase; color:var(--muted); font-weight:400;
+  text-align:left; padding:.7em .8em; border-bottom:1px solid var(--line);
+}
+.tbl td{ padding:.7em .8em; border-bottom:1px solid var(--line); vertical-align:baseline }
+.tbl tr:last-child td{ border-bottom:0 }
+.tbl td.num, .tbl th.num{ text-align:right }
+.svc__n{ font-family:var(--font-mono); font-size:.86rem; color:var(--ink) }
+.svc__w{ color:var(--ink-2) }
+.svc__p{ font-family:var(--font-mono); font-size:.8rem; color:var(--seal) }
+.svc__s{ font-family:var(--font-mono); font-size:.78rem; color:var(--muted) }
+.svc__s.ok{ color:var(--verify) }
+.svc__s.warn{ color:var(--warn) }
+.svc__grp td{
+  font-family:var(--font-mono); font-size:var(--step--1); letter-spacing:.16em;
+  text-transform:uppercase; color:var(--muted); padding-top:1.3em;
+}
+.svc__flag{ color:var(--warn); font-size:.84rem; padding-left:.8em; border-left:2px solid var(--warn) }
+
+/* §6 Zustandsvorrat: vier Farben, mehr nicht. «läuft» über Bewegung,
+   «wartet» über --muted mit --line-ui-Rand. */
+.led{ width:.5rem; height:.5rem; border-radius:999px; background:var(--verify); display:inline-block }
+.led--warn{ background:var(--warn) }
+.led--off{ background:var(--muted); opacity:.45 }
+.led--wait{ background:transparent; border:1px solid var(--line-ui) }
+.led--run{ background:var(--seal); animation:pulse 1.6s ease-in-out infinite }
+@keyframes pulse{ 0%,100%{ opacity:1 } 50%{ opacity:.35 } }
+
+/* ---------- §5 Die Quittung, aus site.css übernommen ---------- */
+.receipt{
+  background:var(--card-bg); border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow-2); overflow:hidden; max-width:460px;
+}
+.receipt__perf{ height:10px; background:repeating-linear-gradient(90deg,var(--line) 0 6px,transparent 6px 12px) }
+.receipt__body{ padding:1.1rem 1.25rem }
+.receipt__row{ display:grid; grid-template-columns:4.5rem 1fr; gap:.75rem; align-items:baseline; padding-block:.45rem }
+.receipt__k{ font-family:var(--font-mono); font-size:var(--step--1); color:var(--muted); letter-spacing:.08em; text-transform:uppercase }
+.receipt__in{ font-family:var(--font-mono); font-size:var(--step--1); color:var(--ink-2); word-break:break-word }
+.receipt__hash{ font-family:var(--font-mono); font-size:var(--step-1); color:var(--seal); letter-spacing:.01em }
+.receipt__meta{ font-family:var(--font-mono); font-size:.72rem; color:var(--muted); margin-top:.4rem }
+.receipt__status{
+  font-family:var(--font-mono); font-size:var(--step--1); margin-top:.9rem; padding-top:.8rem;
+  border-top:1px dashed var(--line); color:var(--muted);
+}
+.receipt__status[data-state=ok]{ color:var(--verify) }
+.receipt__status[data-state=warn]{ color:var(--warn) }
+
+/* ---------- Die Projektdatei ----------
+   §9: «.open» hiess zweierlei. Das Aufklappfeld heisst jetzt .disclosure. */
+.disclosure{ border:1px solid var(--line); border-radius:var(--radius); background:var(--card-bg) }
+.split{ display:grid; grid-template-columns:1fr 19.5rem; gap:1.6rem; align-items:start }
+.file{ border:1px solid var(--line); border-radius:var(--radius); background:var(--card-bg); box-shadow:var(--shadow-1) }
+.file__h{ padding:var(--pad-card); display:flex; gap:1rem; align-items:center; position:relative }
+.file__h::after{
+  content:""; position:absolute; left:var(--pad-card); right:var(--pad-card); bottom:0; height:1px;
+  background:linear-gradient(90deg, transparent,
+    color-mix(in srgb, var(--seal) 26%, transparent) 12%,
+    color-mix(in srgb, var(--seal) 26%, transparent) 88%, transparent);
+}
+.file__m{ font-family:var(--font-mono); font-size:.76rem; color:var(--muted); margin:.15rem 0 0 }
+.file__act{ margin-left:auto; display:flex; gap:.5rem }
+
+.step{
+  display:grid; grid-template-columns:1.1rem 1.5rem minmax(0,1fr) 6.5rem; gap:.3rem .55rem;
+  padding:.75rem var(--pad-card); align-items:start; border-bottom:1px solid var(--line);
+  position:relative;
+}
+.step:last-of-type{ border-bottom:0 }
+.box{
+  width:1.1rem; height:1.1rem; border:1px solid var(--line-ui); border-radius:3px;
+  background:var(--field-bg); display:grid; place-items:center; margin-top:.12rem;
+  font-size:.72rem; color:var(--btn-fg);
+}
+.box.on{ background:var(--verify); border-color:var(--verify) }
+.step__t{ margin:0; font-size:.98rem }
+.step.done .step__t{ color:var(--muted) }
+.step__n{ display:block; color:var(--muted); font-size:.82rem; margin-top:.1rem }
+.step__r{ font-family:var(--font-mono); font-size:.76rem; text-align:right; color:var(--muted) }
+.step__r.has{ color:var(--verify) }
+.step__note{
+  grid-column:3/-1; margin-top:.5rem; border:1px solid var(--line); border-radius:3px;
+  background:var(--field-bg); padding:.45rem .6rem; color:var(--ink-2); font-size:.86rem;
+}
+.step__note::before{ content:"note "; font-family:var(--font-mono); font-size:.7rem; color:var(--muted) }
+.file__add{
+  display:flex; align-items:center; gap:.6rem; padding:.75rem var(--pad-card);
+  font-family:var(--font-mono); font-size:.82rem; color:var(--muted); position:relative;
+}
+.file__add::before{
+  content:""; position:absolute; top:0; left:var(--pad-card); right:var(--pad-card); height:1px;
+  background:linear-gradient(90deg, transparent,
+    color-mix(in srgb, var(--seal) 26%, transparent) 12%,
+    color-mix(in srgb, var(--seal) 26%, transparent) 88%, transparent);
+}
+
+.side{ display:grid; gap:1rem }
+.panel{ border:1px solid var(--line); border-radius:var(--radius); background:var(--card-bg) }
+.panel__h{
+  padding:.65rem .9rem; font-family:var(--font-mono); font-size:var(--step--1);
+  letter-spacing:.08em; text-transform:uppercase; color:var(--muted); position:relative;
+}
+.panel__h::after{
+  content:""; position:absolute; left:.9rem; right:.9rem; bottom:0; height:1px;
+  background:linear-gradient(90deg, transparent,
+    color-mix(in srgb, var(--seal) 26%, transparent) 12%,
+    color-mix(in srgb, var(--seal) 26%, transparent) 88%, transparent);
+}
+.panel__b{ padding:.8rem .9rem; font-size:.88rem; color:var(--ink-2) }
+.kv{ display:flex; justify-content:space-between; gap:1rem; padding:.25rem 0; font-family:var(--font-mono); font-size:.78rem }
+.kv b{ font-weight:600; color:var(--ink) }
+.hash{ font-family:var(--font-mono); font-size:.74rem; color:var(--seal) }
+
+.plan{ border:1px dashed var(--line-ui); border-radius:var(--radius); padding:.85rem .95rem }
+.tag{
+  display:inline-block; font-family:var(--font-mono); font-size:.66rem; letter-spacing:.1em;
+  text-transform:uppercase; border:1px solid var(--line-ui); border-radius:999px;
+  padding:.1rem .45rem; color:var(--muted); margin-bottom:.45rem;
+}
+.plan p{ margin:0; font-size:.84rem; color:var(--ink-2) }
+
+/* ---------- §6 Fehlende Bauteile ---------- */
+.note{ font-family:var(--font-mono); font-size:var(--step--1); display:flex; align-items:center; gap:.5rem }
+.note--ok{ color:var(--verify) }
+.note--warn{ color:var(--warn) }
+.note--idle{ color:var(--muted) }
+
+.skel{ background:var(--line); border-radius:3px; height:.8rem; animation:pulse 1.6s ease-in-out infinite }
+.skel--w70{ width:70% } .skel--w45{ width:45% } .skel--w90{ width:90% }
+
+.empty{ text-align:left; padding:1.4rem var(--pad-card) }
+.empty h4{ margin:.5rem 0 .3rem; font-size:var(--step-1); font-weight:600 }
+.empty p{ color:var(--muted); margin:0 0 .9rem }
+
+.field{ display:grid; gap:.3rem; max-width:560px; margin-bottom:1rem }
+.field label{ font-size:var(--step--1); color:var(--ink-2) }
+.field input{
+  font:inherit; font-size:.92rem; padding:.6em .7em; border-radius:var(--radius);
+  border:1px solid var(--line-ui); background:var(--field-bg); color:var(--ink);
+}
+.field .help{ font-size:var(--step--1); color:var(--muted) }
+.field.is-bad input{ border-color:var(--warn) }
+.field.is-bad .help{ color:var(--warn) }
+.req{ color:var(--seal) }
+
+.toggle{ display:inline-flex; align-items:center; gap:.5rem; cursor:pointer; user-select:none }
+.toggle input{ position:absolute; opacity:0; pointer-events:none }
+.toggle__track{ width:34px; height:18px; border-radius:999px; background:var(--line); border:1px solid var(--line); position:relative }
+.toggle__dot{ position:absolute; top:1px; left:1px; width:14px; height:14px; border-radius:50%; background:var(--ink) }
+.toggle input:checked+.toggle__track{ background:color-mix(in srgb,var(--seal) 30%,var(--line)) }
+.toggle input:checked+.toggle__track .toggle__dot{ transform:translate(16px); background:var(--seal) }
+.toggle__label{ font-size:var(--step--1); color:var(--ink-2) }
+
+@media (max-width:759.98px){
+  /* §4 Mobile Ersatzform: Punkt statt Strich. */
+  .rail__item.is-active::after{
+    left:0; bottom:auto; top:50%; width:6px; height:6px; border-radius:50%;
+    background:var(--seal); filter:none; transform:translateY(-50%);
+  }
+  .rail__item{ padding-left:1.1rem }
+}
+@media (prefers-reduced-motion:reduce){
+  *{ animation:none !important; transition:none !important }
+}
+
+/* ---------- Ergänzungen für die Anwendung ---------- */
+.tool__who{
+  display:block; font-family:var(--font-mono); font-size:var(--step--1);
+  color:var(--seal-2); margin:.35rem 0 .5rem;
+}
+.rail__none{ font-family:var(--font-mono); font-size:.78rem; color:var(--muted); padding:.35rem .55rem; margin:0 }
+.rail__label{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.rail__item .rail__count{ padding-left:.4rem }
+
+/* Rückmeldezeile, §6: drei Ausgänge, sonst nichts. */
+.saybar{
+  position:fixed; left:50%; bottom:1.2rem; transform:translateX(-50%); z-index:20;
+  background:var(--card-bg); border:1px solid var(--line-ui); border-radius:var(--radius);
+  padding:.55rem .9rem; box-shadow:var(--shadow-2); max-width:min(90vw,40rem);
+}
+.saybar[hidden]{ display:none }
+
+.step__note{ display:flex; align-items:center; gap:.5rem }
+.step__note input{
+  font:inherit; font-size:.86rem; flex:1; min-width:0; color:var(--ink-2);
+  background:transparent; border:0; padding:.15rem 0;
+}
+.step__note input:focus{ outline:none; color:var(--ink) }
+.step__note:focus-within{ border-color:var(--seal) }
+
+.box{ cursor:pointer; font:inherit; font-size:.72rem; line-height:1; padding:0 }
+.file__add .btn--quiet{ padding-inline:0 }
+.tile{ text-decoration:none }
+.empty .btn{ display:inline-block }
+
+@media (max-width:900px){
+  .grid{ grid-template-columns:repeat(auto-fit,minmax(16rem,1fr)) }
+  .split{ grid-template-columns:1fr }
+}
+@media (max-width:759.98px){
+  .app{ grid-template-columns:1fr }
+  .rail{ flex-direction:row; flex-wrap:wrap; align-items:center; gap:.15rem .5rem; padding:.8rem 1rem }
+  .rail .seam::before, .rail__rule, .rail__group, .rail__foot{ display:none }
+  .rail__brand{ padding:0 .5rem 0 0 }
+  .rail__item.is-active{ margin-bottom:0 }
+  .work{ padding:0 1rem }
+  .top{ padding:0 1rem }
+  .search{ display:none }
+}
+
+/* Luft unter der schwebenden Pille, sonst beginnt der erste Block darunter zu eng. */
+.work > .block:first-child{ padding-top:34px }
+.work > .block:first-child.hair::before{ display:none }
+@media (max-width:759.98px){
+  .top{ margin:.6rem 1rem 0; padding-inline:1rem .6rem; top:.6rem }
+  .work > .block:first-child{ padding-top:26px }
+}
+
+.grid--2{ grid-template-columns:repeat(2,1fr) }
+@media (max-width:900px){ .grid--2{ grid-template-columns:1fr } }
+.tool__head{ display:flex; align-items:baseline; gap:.7rem; flex-wrap:wrap }
+.tool__head .h3{ flex:1 1 auto; min-width:12rem }
+.tool__head .note{ font-size:.72rem }
+
+/* ---------- Neues Projekt: Plus-Knopf und Auswahl ---------- */
+.rail__group--act{ display:flex; align-items:center; justify-content:space-between; gap:.5rem }
+.rail__plus{
+  font:inherit; font-size:1rem; line-height:1; cursor:pointer;
+  width:1.4rem; height:1.4rem; display:grid; place-items:center;
+  background:none; color:var(--seal); border:1px solid var(--line-ui); border-radius:var(--radius);
+  padding:0; letter-spacing:0;
+}
+.rail__plus:hover{ border-color:var(--seal); background:color-mix(in srgb, var(--seal) 12%, transparent) }
+
+/* ---------- Die Projektliste in der Leiste ----------
+   Zwei Stellen schreiben in denselben Kasten: rail-projects.js auf jeder
+   Seite, paintNav der Kopie auf /project. Beide liefern dieselbe Form
+   (a|button.navitem > .pdot, Name, .cnt), damit hier ein einziger Regelsatz
+   für das ganze Haus reicht und die Leiste beim Wechsel nicht ihr Aussehen
+   ändert. Masse und Farben stammen von .rail__item (Zeile 142). */
+.nav__projects{ display:flex; flex-direction:column; gap:.05rem }
+.nav__projects .navitem{
+  display:flex; align-items:center; gap:.65rem; width:100%; min-width:0;
+  padding:.42rem .55rem; border:0; background:transparent; text-align:left;
+  text-decoration:none; color:var(--ink-2); font:inherit; font-size:.95rem;
+  letter-spacing:normal; border-radius:var(--radius); cursor:pointer;
+  white-space:nowrap; overflow:hidden;
+}
+.nav__projects .navitem:hover{ color:var(--ink) }
+.nav__projects .navitem.is-on{ color:var(--ink) }
+/* Der Punkt sitzt im selben 1.4rem-Feld wie die Zeichen der Reiter darüber,
+   damit alle Beschriftungen der Leiste auf einer Kante stehen. */
+.nav__projects .pdot{ width:1.4rem; height:1.4rem; flex:none; display:grid; place-items:center }
+.nav__projects .pdot::before{
+  content:""; width:.4rem; height:.4rem; border-radius:999px;
+  background:color-mix(in srgb, var(--seal) 45%, transparent);
+}
+.nav__projects .navitem.is-on .pdot::before{
+  background:var(--seal);
+  box-shadow:0 0 5px color-mix(in srgb, var(--seal) 60%, transparent);
+}
+.nav__projects .cnt{
+  margin-left:auto; padding-left:.5rem; flex:none;
+  font-family:var(--font-mono); font-size:.72rem; color:var(--muted);
+}
+
+.pick{
+  border:1px solid var(--line-ui); border-radius:var(--radius); padding:0;
+  background:var(--card-bg); color:var(--ink); max-width:min(94vw, 34rem); width:100%;
+  box-shadow:var(--shadow-2);
+}
+.pick::backdrop{ background:rgba(0,0,0,.55); backdrop-filter:blur(2px) }
+.pick__box{ padding:var(--pad-card) }
+.pick__box .h3{ margin:0 0 1rem }
+.pick__sec{
+  font-family:var(--font-mono); font-size:var(--step--1); letter-spacing:.16em;
+  text-transform:uppercase; color:var(--muted); margin:1rem 0 .4rem;
+}
+.pick__sec:first-child{ margin-top:0 }
+.pick__seed{
+  display:flex; flex-direction:column; gap:.15rem; width:100%; text-align:left; cursor:pointer;
+  font:inherit; color:var(--ink); background:var(--field-bg);
+  border:1px solid var(--line); border-radius:var(--radius);
+  padding:.55rem .7rem; margin-bottom:.4rem;
+}
+.pick__seed:hover{ border-color:var(--seal); background:color-mix(in srgb, var(--seal) 8%, var(--field-bg)) }
+.pick__t{ font-size:.95rem }
+.pick__m{ font-family:var(--font-mono); font-size:.74rem; color:var(--muted) }
+.pick .field{ margin-top:1.2rem; position:relative; padding-top:1rem }
+.pick .field::before{
+  content:""; position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg, transparent,
+    color-mix(in srgb, var(--seal) 26%, transparent) 18%,
+    color-mix(in srgb, var(--seal) 26%, transparent) 82%, transparent);
+}
+.pick .actions{ margin-top:1.1rem }
+
+/* ---------- Leiste und Kopf schweben ----------
+   Beide Flächen liegen als eigene Körper über dem Untergrund: stark gerundet,
+   mit Rand, tiefem Schatten und einer hellen Oberkante als Lichtkante. Der
+   Untergrundschimmer trägt weiter durch, deshalb bleibt beides durchscheinend. */
+.rail{
+  margin:.85rem 0 .85rem .85rem;
+  border:1px solid var(--line);
+  border-radius:26px;
+  box-shadow:var(--shadow-2), inset 0 1px 0 color-mix(in srgb, var(--seal) 16%, transparent);
+  overflow:hidden;
+}
+/* Der Rand der Leiste übernimmt, was vorher die senkrechte Fuge geleistet hat. */
+.rail.seam::before{ display:none }
+
+.top{
+  border-radius:999px;
+  box-shadow:var(--shadow-2), inset 0 1px 0 color-mix(in srgb, var(--seal) 16%, transparent);
+  margin-inline:1rem 1.5rem;
+}
+
+@media (max-width:759.98px){
+  .rail{ margin:.6rem; border-radius:20px }
+  .top{ margin-inline:.6rem }
+}
+/* Der Auswahlkasten folgt derselben Rundung wie Leiste und Kopf. */
+.pick{ border-radius:22px; box-shadow:var(--shadow-2), inset 0 1px 0 color-mix(in srgb, var(--seal) 16%, transparent) }
+
+/* ---------- Quittung leiser ----------
+   Das Siegel ist ein Beleg, keine Überschrift. Es tritt zurück. */
+.receipt{ box-shadow:var(--shadow-1) }
+.receipt__perf{
+  height:7px;
+  background:repeating-linear-gradient(90deg,
+    color-mix(in srgb, var(--line) 55%, transparent) 0 6px, transparent 6px 12px);
+}
+.receipt__hash{
+  font-size:var(--step-0); letter-spacing:.02em;
+  color:color-mix(in srgb, var(--seal) 55%, var(--ink-2));
+}
+.receipt__status{ opacity:.85 }
+
+/* ---------- Aufgaben: volle Struktur ---------- */
+.sec{ position:relative }
+.sec__h{
+  display:flex; align-items:baseline; gap:.6rem; padding:.9rem var(--pad-card) .35rem;
+  font-family:var(--font-mono); font-size:var(--step--1); letter-spacing:.12em;
+  text-transform:uppercase; color:var(--muted);
+}
+.sec__n{ margin-left:auto; font-size:.72rem }
+
+.step{ align-items:start }
+.step--sub{ padding-left:calc(var(--pad-card) + 1.9rem) }
+.step--sub .step__t{ font-size:.93rem }
+
+/* Rang: nur der vorhandene Vorrat, kein neues Rot. */
+.prio{
+  width:.9rem; height:.9rem; flex:none; border-radius:2px; display:inline-grid; place-items:center;
+  font-family:var(--font-mono); font-size:.6rem; line-height:1;
+  border:1px solid var(--line-ui); color:var(--muted); background:transparent;
+}
+.prio--1{ border-color:var(--warn); color:var(--warn) }
+.prio--2{ border-color:var(--seal); color:var(--seal) }
+.prio--3{ border-color:var(--line-ui); color:var(--ink-2) }
+/* p4 is the default (lowest) rank: show a dashed chip only when it's a button */
+.prio--4:not(.prio--btn){ display:none }
+
+.meta{ display:flex; flex-wrap:wrap; gap:.35rem .5rem; margin-top:.3rem; align-items:center }
+.due{
+  font-family:var(--font-mono); font-size:.72rem; border:1px solid var(--line);
+  border-radius:999px; padding:.05rem .45rem; color:var(--muted); white-space:nowrap;
+}
+.due--today{ border-color:color-mix(in srgb, var(--seal) 45%, var(--line)); color:var(--seal) }
+.due--over{ border-color:color-mix(in srgb, var(--warn) 45%, var(--line)); color:var(--warn) }
+.due--done{ border-color:var(--line); color:var(--muted); opacity:.7 }
+.lbl{
+  font-family:var(--font-mono); font-size:.72rem; color:var(--seal-2);
+  border:1px solid transparent; padding:.05rem .1rem;
+}
+.lbl::before{ content:"@" }
+.rep{ font-family:var(--font-mono); font-size:.72rem; color:var(--muted) }
+.rep::before{ content:"⟳ " }
+
+.qa{ display:flex; gap:.5rem; padding:.75rem var(--pad-card); align-items:center; position:relative }
+.qa::before{
+  content:""; position:absolute; top:0; left:var(--pad-card); right:var(--pad-card); height:1px;
+  background:linear-gradient(90deg, transparent,
+    color-mix(in srgb, var(--seal) 26%, transparent) 12%,
+    color-mix(in srgb, var(--seal) 26%, transparent) 88%, transparent);
+}
+.qa input{
+  flex:1; min-width:0; font:inherit; font-size:.92rem; color:var(--ink);
+  background:var(--field-bg); border:1px solid var(--line); border-radius:var(--radius);
+  padding:.45rem .6rem;
+}
+.qa input:focus{ outline:none; border-color:var(--seal) }
+.qa__hint{ font-family:var(--font-mono); font-size:.7rem; color:var(--muted); flex-basis:100%; margin:0 }
+
+/* Zeichen der drei Abschnitte: Linien, nicht Flächen, damit sie klein tragen. */
+.ico{ width:1.15em; height:1.15em; display:block }
+.rail__glyph .ico{ width:1.05rem; height:1.05rem }
+.tile__glyph .ico{ width:1.7rem; height:1.7rem }
+/* Derselbe Schimmer wie am laufenden Verweis und unter der Marke. */
+.ico{ filter:drop-shadow(0 0 4px color-mix(in srgb, var(--seal) 55%, transparent)) }
+.rail__glyph .ico{ filter:drop-shadow(0 0 3px color-mix(in srgb, var(--seal) 50%, transparent)) }
+.tile__glyph .ico{ filter:drop-shadow(0 0 6px color-mix(in srgb, var(--seal) 55%, transparent)) }
+
+/* Das Eingabefeld wurde vom Hinweis erdrückt: ohne Umbruch teilen sich beide
+   eine Zeile, und flex-basis:100% am Hinweis lässt für das Feld nichts übrig. */
+.qa{ flex-wrap:wrap; align-items:flex-start }
+.qa input{ flex:1 1 100%; min-width:12rem }
+.qa__hint{ flex-basis:100%; margin:.15rem 0 0 }
+
+/* Siegel als Randnotiz: kleinste Stufe, gedämpft, ohne eigene Fläche. */
+.file__seal{
+  display:flex; gap:.5rem; align-items:baseline; flex-wrap:wrap;
+  padding:.5rem var(--pad-card) .7rem;
+  font-family:var(--font-mono); font-size:var(--step--1); color:var(--muted);
+}
+.file__seal b{ font-weight:400; color:color-mix(in srgb, var(--seal) 30%, var(--muted)) }
+
+/* ---------- Werkzeugleiste des Projekts ---------- */
+.bar{
+  display:flex; flex-wrap:wrap; gap:.5rem .7rem; align-items:center;
+  padding:.6rem var(--pad-card); position:relative;
+  font-family:var(--font-mono); font-size:var(--step--1); color:var(--muted);
+}
+.bar::after{
+  content:""; position:absolute; left:var(--pad-card); right:var(--pad-card); bottom:0; height:1px;
+  background:linear-gradient(90deg, transparent,
+    color-mix(in srgb, var(--seal) 26%, transparent) 12%,
+    color-mix(in srgb, var(--seal) 26%, transparent) 88%, transparent);
+}
+.bar__b{
+  font:inherit; cursor:pointer; color:var(--ink-2); background:none;
+  border:1px solid var(--line); border-radius:var(--radius); padding:.2rem .55rem;
+}
+.bar__b:hover{ border-color:var(--seal); color:var(--seal) }
+.seg{ display:inline-flex; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden }
+.seg .bar__b{ border:0; border-radius:0; padding:.2rem .7rem }
+.seg .bar__b.is-on{ background:color-mix(in srgb, var(--seal) 16%, transparent); color:var(--seal) }
+.bar__sel{ display:inline-flex; align-items:center; gap:.35rem }
+.bar__sel select{
+  font:inherit; font-size:var(--step--1); color:var(--ink-2); background:var(--field-bg);
+  border:1px solid var(--line); border-radius:var(--radius); padding:.15rem .35rem;
+}
+
+/* ---------- Zeilenhandlungen ---------- */
+/* Griff · Checkbox · Inhalt · Status (Aktionen absolut, sonst blähen sie die Spalte auf) */
+.step__side{
+  display:flex; align-items:center; justify-content:flex-end; gap:.35rem;
+  min-width:0; position:relative;
+}
+.step__r{ white-space:nowrap }
+.step__act{
+  display:flex; gap:.1rem; position:absolute; right:0; top:-.15rem;
+  opacity:0; pointer-events:none; transition:opacity .12s;
+  background:color-mix(in srgb, var(--paper) 92%, transparent);
+  border:1px solid var(--line); border-radius:var(--radius); padding:.1rem .15rem;
+  box-shadow:var(--shadow-1);
+}
+.step:hover .step__act, .step:focus-within .step__act{
+  opacity:1; pointer-events:auto;
+}
+.act{
+  font:inherit; font-size:.8rem; line-height:1; cursor:pointer; padding:.2rem .3rem;
+  background:none; border:1px solid transparent; border-radius:3px; color:var(--muted);
+}
+.act:hover{ color:var(--seal); border-color:var(--line) }
+.act--prio{ font-family:var(--font-mono); font-size:.7rem; opacity:.55 }
+.card2:hover .act--prio, .card2:focus-within .act--prio{ opacity:1 }
+
+/* Ziehgriff — nur hier greifen, nicht die ganze Zeile */
+.grip{
+  display:inline-grid; place-items:center; width:1.1rem; height:1.4rem;
+  font-size:.85rem; line-height:1; color:var(--muted); cursor:grab;
+  user-select:none; opacity:.35; transition:opacity .12s, color .12s;
+}
+.step:hover .grip, .card2:hover .grip, .sec__h:hover .grip, .col__h:hover .grip,
+.grip:hover, .grip:focus{ opacity:1; color:var(--seal) }
+.grip:active{ cursor:grabbing }
+.prio--btn{
+  cursor:pointer; font:inherit; padding:0; min-width:.9rem; vertical-align:middle;
+  margin-right:.15rem;
+}
+.prio--btn:hover{ filter:brightness(1.15) }
+/* p4 default: no label; faint dashed chip only on row hover */
+.prio--idle{
+  opacity:0; width:.9rem; border-style:dashed; color:transparent;
+  vertical-align:middle;
+}
+.step:hover .prio--idle, .step:focus-within .prio--idle{
+  opacity:.5; color:var(--muted);
+}
+.step:hover .prio--idle:hover, .step:focus-within .prio--idle:hover{
+  opacity:1; color:var(--seal); border-color:var(--seal);
+}
+/* remove duplicate bar rules later in file */
+.bar__note{ display:none !important }
+.sec__body{ min-height:.25rem }
+.sec__empty{
+  margin:0 var(--pad-card) .5rem; padding:.55rem .7rem;
+  border:1px dashed var(--line); border-radius:var(--radius);
+  font-family:var(--font-mono); font-size:.72rem; color:var(--muted);
+  text-align:center;
+}
+.sec__body.is-over .sec__empty,
+.col.is-over .sec__empty{
+  border-color:var(--seal); color:var(--seal);
+  background:color-mix(in srgb, var(--seal) 8%, transparent);
+}
+.sec__h--loose{ opacity:.85 }
+.drop-nest{
+  box-shadow:inset 3px 0 0 var(--seal),
+    inset 0 0 0 1px color-mix(in srgb, var(--seal) 35%, transparent);
+  background:color-mix(in srgb, var(--seal) 8%, transparent);
+}
+.bar{
+  display:flex; flex-wrap:wrap; align-items:center; gap:.45rem .55rem;
+  padding:.55rem var(--pad-card); max-width:100%;
+}
+.bar__note{ display:none } /* hints live in bar title — kept class for old markup */
+
+.edit{ display:flex; flex-wrap:wrap; gap:.4rem .6rem; align-items:center; padding:.6rem var(--pad-card) }
+.edit input{
+  flex:1 1 100%; font:inherit; font-size:.92rem; color:var(--ink);
+  background:var(--field-bg); border:1px solid var(--seal); border-radius:var(--radius);
+  padding:.45rem .6rem;
+}
+.edit input:focus{ outline:none }
+.edit__h{ font-family:var(--font-mono); font-size:.7rem; color:var(--muted) }
+
+/* ---------- Brettansicht ---------- */
+.board{ display:flex; gap:1rem; overflow-x:auto; padding:1rem var(--pad-card) }
+.col{ flex:0 0 15rem; display:flex; flex-direction:column; gap:.5rem }
+.col__h{
+  display:flex; gap:.5rem; align-items:baseline; padding-bottom:.4rem;
+  font-family:var(--font-mono); font-size:var(--step--1); letter-spacing:.12em;
+  text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--line);
+}
+.col__h .sec__n{ margin-left:auto }
+.card2{
+  display:flex; gap:.45rem; align-items:flex-start;
+  border:1px solid var(--line); border-radius:var(--radius);
+  background:var(--card-bg); padding:.6rem .7rem;
+  min-width:0;
+}
+.card2.done .card2__t{ color:var(--muted) }
+.card2__b{ min-width:0; flex:1 }
+.card2__t{ margin:0; font-size:.92rem; line-height:1.35 }
+.rep2{ font-family:var(--font-mono); font-size:.72rem; color:var(--muted) }
+/* Board: one column stack is fine; keep column width stable */
+.col{ min-height:8rem }
+.board{ align-items:flex-start }
+
+/* ---------- Ziehen zum Umsortieren ---------- */
+.is-dragging{ opacity:.4 }
+.drop-before{ box-shadow:inset 0 2px 0 var(--seal) }
+.drop-after{ box-shadow:inset 0 -2px 0 var(--seal) }
+.sec__h.is-over, .col.is-over, .sec__body.is-over{
+  background:color-mix(in srgb, var(--seal) 10%, transparent);
+  border-radius:var(--radius);
+}
+.card2{ position:relative }
+.card2 .grip{ flex:none; margin-top:.15rem }
+
+/* Projektansicht über die volle Breite: keine Seitenspalte mehr, die Angaben
+   zur Datei stehen in der Zeile unter dem Titel. */
+.wide{ display:block }
+.wide .file{ width:100% }
+
+/* ---------- Arbeitsbahnen, übernommen aus dem Vorbau ---------- */
+.lane{
+  font-family:var(--font-mono); font-size:.74rem; color:var(--ink-2);
+  background:var(--field-bg); border:1px solid var(--line); border-radius:var(--radius);
+  padding:.15rem .3rem; max-width:9.5rem;
+}
+.lane:hover{ border-color:var(--seal) }
+.lane:focus{ outline:none; border-color:var(--seal) }
+
+/* Der Zustand der Bahn steht als Punkt im Kopf, im geschlossenen Vorrat (§6). */
+.sec__h::before, .col__h::before{
+  content:""; width:.5rem; height:.5rem; border-radius:999px; flex:none;
+  background:var(--muted); margin-right:.1rem;
+}
+.sec__h[data-lane="in_progress"]::before, .col__h[data-lane="in_progress"]::before{
+  background:var(--seal); animation:pulse 1.6s ease-in-out infinite;
+}
+.sec__h[data-lane="audit"]::before, .col__h[data-lane="audit"]::before{ background:var(--seal-2) }
+.sec__h[data-lane="done"]::before,  .col__h[data-lane="done"]::before { background:var(--verify) }
+.sec__h[data-lane="pending"]::before, .col__h[data-lane="pending"]::before{
+  background:transparent; border:1px solid var(--line-ui);
+}
+
+/* Der Rangsetzer auf p4-Karten erscheint erst beim Überfahren, wie die
+   Zeilenhandlungen. Sonst steht auf jeder Karte ein einzelnes «p». */
+.card2 .act--prio{ opacity:0; transition:opacity .12s }
+.card2:hover .act--prio, .card2:focus-within .act--prio{ opacity:1 }
+
+/* ---------- Details-Fenster, aus dem Vorbau ---------- */
+.modal-back{
+  position:fixed; inset:0; z-index:30; display:grid; place-items:center;
+  background:rgba(0,0,0,.55); backdrop-filter:blur(3px); padding:1.5rem;
+}
+.modal{
+  width:min(94vw, 40rem); max-height:88vh; overflow:auto;
+  background:var(--card-bg); color:var(--ink);
+  border:1px solid var(--line-ui); border-radius:22px; padding:var(--pad-card);
+  box-shadow:var(--shadow-2), inset 0 1px 0 color-mix(in srgb, var(--seal) 16%, transparent);
+}
+.modal__head{ display:flex; align-items:baseline; gap:1rem; padding-bottom:.6rem; position:relative }
+.modal__head::after{
+  content:""; position:absolute; left:0; right:0; bottom:0; height:1px;
+  background:linear-gradient(90deg, transparent,
+    color-mix(in srgb, var(--seal) 26%, transparent) 12%,
+    color-mix(in srgb, var(--seal) 26%, transparent) 88%, transparent);
+}
+.modal__title{ margin:0; font-size:var(--step-1); font-weight:600; letter-spacing:-.015em }
+.modal__x{
+  margin-left:auto; background:none; border:1px solid var(--line); border-radius:var(--radius);
+  color:var(--muted); cursor:pointer; padding:.15rem .45rem; font:inherit;
+}
+.modal__x:hover{ color:var(--seal); border-color:var(--seal) }
+.modal__meta{ font-family:var(--font-mono); font-size:var(--step--1); color:var(--muted); margin:.7rem 0 1rem }
+.modal__label{
+  display:block; font-family:var(--font-mono); font-size:var(--step--1);
+  letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin:.9rem 0 .3rem;
+}
+.modal__input, .modal__area{
+  width:100%; font:inherit; font-size:.95rem; color:var(--ink);
+  background:var(--field-bg); border:1px solid var(--line-ui);
+  border-radius:var(--radius); padding:.5rem .65rem;
+}
+.modal__area{ resize:vertical; line-height:1.5 }
+.modal__area--tall{ min-height:11rem; font-family:var(--font-mono); font-size:.86rem }
+.modal__input:focus, .modal__area:focus{ outline:none; border-color:var(--seal) }
+.modal__foot{ display:flex; gap:.6rem; justify-content:flex-end; margin-top:1.3rem }
+
+/* ---------- Karten und Bahnen im Brett ---------- */
+.card2{ position:relative; flex-wrap:wrap }
+.card2__d{ margin:.25rem 0 0; font-size:.84rem; color:var(--ink-2) }
+.card2 .lane{ margin-top:.45rem; width:100% }
+.card2__act{ position:absolute; top:.35rem; right:.4rem; display:flex; gap:.1rem; opacity:0; transition:opacity .12s }
+.card2:hover .card2__act, .card2:focus-within .card2__act{ opacity:1 }
+
+.col__add{ margin-top:.35rem }
+.col__addb{
+  font:inherit; font-family:var(--font-mono); font-size:.78rem; cursor:pointer;
+  background:none; border:1px dashed var(--line); border-radius:var(--radius);
+  color:var(--muted); padding:.35rem .6rem; width:100%; text-align:left;
+}
+.col__addb:hover{ border-color:var(--seal); color:var(--seal) }
+.col__add input{
+  width:100%; font:inherit; font-size:.88rem; color:var(--ink);
+  background:var(--field-bg); border:1px solid var(--seal);
+  border-radius:var(--radius); padding:.4rem .55rem;
+}
+.col__add input:focus{ outline:none }
+
+.sec__add{
+  font:inherit; font-size:.9rem; line-height:1; cursor:pointer; margin-left:.5rem;
+  background:none; border:1px solid var(--line); border-radius:var(--radius);
+  color:var(--muted); padding:.05rem .35rem;
+}
+.sec__add:hover{ border-color:var(--seal); color:var(--seal) }
+.sec__addin{
+  display:block; width:calc(100% - 2*var(--pad-card)); margin:.4rem var(--pad-card);
+  font:inherit; font-size:.9rem; color:var(--ink);
+  background:var(--field-bg); border:1px solid var(--seal);
+  border-radius:var(--radius); padding:.4rem .55rem;
+}
+.sec__addin:focus{ outline:none }
+
+/* Die Leeransicht steht ausserhalb des Zeilenrasters, sonst quetscht sie sich
+   in die Kästchenspalte von .step. */
+.step--empty{
+  display:block; padding:1.1rem var(--pad-card) 1.3rem;
+  border-bottom:1px solid var(--line);
+}
+.step--empty .step__t{ margin:0; font-size:var(--step-1); font-weight:600; letter-spacing:-.015em }
+.step--empty .step__n{ display:block; margin-top:.35rem; font-weight:400; max-width:60ch }
+
+/* ---------- Brett nach dem Vorbau: Spalte, Körper, Karte mit Leiste ---------- */
+.board{
+  display:flex; gap:1rem; overflow-x:auto; padding:.25rem 0 1.25rem;
+  align-items:stretch; min-height:22rem; width:100%;
+}
+.col{
+  flex:1 1 16rem; min-width:15.5rem; max-width:none;
+  background:var(--paper-2); border:1px solid var(--line);
+  border-radius:16px; padding:.65rem .7rem; min-height:18rem;
+  display:flex; flex-direction:column; max-height:calc(100vh - 14rem);
+}
+.col__h{
+  display:flex; align-items:center; gap:.45rem; padding:.25rem .3rem .55rem;
+  font-family:var(--font-mono); font-size:var(--step--1); letter-spacing:.12em;
+  text-transform:uppercase; color:var(--muted);
+  border-bottom:0; margin-bottom:.45rem; flex:none; position:relative;
+}
+.col__h::after{
+  content:""; position:absolute; left:0; right:0; bottom:0; height:1px;
+  background:linear-gradient(90deg,
+    color-mix(in srgb, var(--seal) 26%, transparent), transparent 88%);
+}
+.col__cnt{
+  margin-left:auto; font-family:var(--font-mono); font-size:.72rem; color:var(--muted);
+  background:var(--field-bg); border-radius:999px; min-width:1.4rem; text-align:center;
+  padding:.1rem .35rem;
+}
+.col__body{ flex:1; overflow:auto; min-height:4rem; border-radius:var(--radius); padding-bottom:.25rem }
+.col__body.is-over{ background:color-mix(in srgb, var(--seal) 10%, transparent) }
+.sec__badge{ width:.55rem; height:.55rem; border-radius:50%; flex:none; background:var(--muted) }
+.sec__badge[data-lane="in_progress"]{ background:var(--seal); animation:pulse 1.6s ease-in-out infinite }
+.sec__badge[data-lane="audit"]{ background:var(--seal-2) }
+.sec__badge[data-lane="done"]{ background:var(--verify) }
+.sec__badge[data-lane="pending"]{ background:transparent; border:1px solid var(--line-ui) }
+.sec__empty{
+  color:var(--muted); font-family:var(--font-mono); font-size:.78rem; text-align:center;
+  padding:.75rem .5rem; border:1px dashed var(--line); border-radius:var(--radius); margin:.25rem 0;
+}
+.col__add{
+  width:100%; border:0; background:transparent; color:var(--muted); cursor:pointer;
+  font:inherit; font-family:var(--font-mono); font-size:.78rem;
+  text-align:left; padding:.45rem .4rem; border-radius:var(--radius); margin-top:.15rem;
+}
+.col__add:hover{ color:var(--seal); background:color-mix(in srgb, var(--seal) 8%, transparent) }
+.col__addin{
+  width:100%; font:inherit; font-size:.88rem; color:var(--ink);
+  background:var(--field-bg); border:1px solid var(--seal);
+  border-radius:var(--radius); padding:.4rem .55rem; margin-top:.15rem;
+}
+.col__addin:focus{ outline:none }
+
+.task{
+  display:flex; flex-direction:row; align-items:flex-start; gap:.5rem;
+  padding:.75rem 2.2rem .75rem .45rem;
+  border-bottom:1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  position:relative; width:100%; max-width:100%; box-sizing:border-box;
+}
+.task:last-of-type{ border-bottom:0 }
+.task.done .task__content{ color:var(--muted) }
+.task__rail{
+  display:flex; flex-direction:column; align-items:center; gap:.45rem;
+  flex:0 0 auto; width:2.15rem; padding-top:.05rem;
+}
+.task__body{ flex:1 1 auto; min-width:0; max-width:100%; padding-top:.05rem }
+.task__content{
+  margin:0; padding:.2rem 0 .4rem; font-size:1rem; line-height:1.5; color:var(--ink);
+  white-space:pre-wrap; overflow-wrap:anywhere; cursor:pointer;
+}
+.task__content:hover{ color:var(--seal) }
+.task__desc{
+  margin:.2rem 0 .4rem; font-size:.86rem; line-height:1.5; color:var(--ink-2);
+  white-space:pre-wrap; overflow-wrap:break-word;
+}
+.task__meta{ display:flex; flex-wrap:wrap; gap:.3rem .4rem; margin-top:.35rem; align-items:center }
+.task__meta .lane{ margin-left:auto }
+.task__actions{
+  position:absolute; top:.45rem; right:.25rem;
+  display:flex; flex-direction:column; gap:0; opacity:0; z-index:2;
+  background:color-mix(in srgb, var(--paper) 88%, transparent);
+  border-radius:var(--radius); transition:opacity .12s;
+}
+.task:hover .task__actions, .task:focus-within .task__actions{ opacity:1 }
+
+.check{
+  width:1.6rem; height:1.6rem; border-radius:50%; padding:0; cursor:pointer;
+  border:2px solid var(--line-ui); background:var(--field-bg);
+  display:grid; place-items:center; flex:none; color:transparent; font-size:0;
+}
+.check:hover{ border-color:var(--seal) }
+.check.on{ background:var(--verify); border-color:var(--verify) }
+.check.on::after{
+  content:"✓"; color:var(--btn-fg); font-size:.8rem; line-height:1;
+}
+.task .prio{
+  min-width:2rem; height:1.6rem; border-radius:2px; padding:0 .35rem; flex:none; cursor:pointer;
+  font-family:var(--font-mono); font-size:.7rem; display:inline-grid; place-items:center;
+  background:transparent; border:1px solid currentColor; color:var(--muted);
+}
+.task .prio--1{ color:var(--warn) }
+.task .prio--2{ color:var(--seal) }
+.task .prio--3{ color:var(--line-ui) }
+.task .grip{ cursor:grab; color:var(--muted); min-height:1.4rem; display:grid; place-items:center }
+/* Der Punkt kommt aus .sec__badge, wie im Vorbau. Der frühere ::before entfällt,
+   sonst stehen zwei Punkte im Spaltenkopf. */
+.col__h::before{ content:none }
+
+
+/* ---------- Grundton eine Stufe heller ----------
+   Bewusste Abweichung von docs/handoff-design.md §3: die Arbeitsfläche wird
+   länger angesehen als eine Werbeseite. Gilt für alle Seiten, damit keine
+   Unterseite anders aussieht als die andere. */
+:root{
+  --paper:#21252C; --paper-2:#272C34;
+  --card-bg:#2A2F39; --field-bg:#242932;
+  --line:#39404C; --line-2:#434B58; --line-ui:#68707F;
+}
+
+/* Der Rollbalken bekommt seine Bahn immer reserviert. Sonst springt die Breite
+   je nachdem, ob eine Seite genug Inhalt zum Rollen hat, und die Kopfpille
+   endet auf der einen Seite 15 px weiter rechts als auf der anderen. */
+html{ scrollbar-gutter:stable }
+
+/* ---------- Erledigt ist grün ----------
+   --verify ist ein Blaugrün (#2FB89E) und liest sich nicht eindeutig als
+   «fertig». Auf Wunsch des Eigentümers bekommt der Zustand einen eigenen
+   grünen Ton. Bewusste Erweiterung des Vorrats aus §8, nur für diesen einen
+   Zustand; --verify bleibt für Geprüftes unverändert. */
+:root{ --done:#35B36B }
+:root[data-theme="light"]{ --done:#1E8E4A }
+
+/* ---------- Projektübersicht ---------- */
+.ov{ display:grid; gap:var(--gap-grid); grid-template-columns:repeat(auto-fill,minmax(18rem,1fr)) }
+.ov__card{
+  display:flex; flex-direction:column; gap:.9rem; text-decoration:none; color:inherit;
+  border-top:2px solid var(--seal);
+}
+.ov__card:hover{ border-color:var(--seal); background:color-mix(in srgb, var(--seal) 6%, var(--card-bg)) }
+.ov__head{ display:flex; gap:.9rem; align-items:center }
+.ov__m{ font-family:var(--font-mono); font-size:var(--step--1); color:var(--muted); margin:.15rem 0 0 }
+.ov__lanes{ display:grid; gap:.3rem }
+.ov__lane{ display:flex; align-items:center; gap:.5rem; font-size:.88rem }
+.ov__dot{ width:.5rem; height:.5rem; border-radius:999px }
+.ov__lname{ color:var(--ink-2) }
+.ov__lcount{ margin-left:auto; font-family:var(--font-mono); font-size:.76rem; color:var(--muted) }
+.ov__foot{
+  display:flex; align-items:center; gap:.6rem; padding-top:.7rem; position:relative;
+  font-family:var(--font-mono); font-size:.76rem; color:var(--muted);
+}
+.ov__foot::before{
+  content:""; position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg, color-mix(in srgb, var(--seal) 26%, transparent), transparent 82%);
+}
+.ov__p1{ color:var(--warn) }
+.ov__go{ margin-left:auto; color:var(--seal) }
+
+/* ---------- Ablegen und Löschen ----------
+   Zwei Handlungen, zwei Gewichte. Ablegen erscheint erst, wenn nichts mehr
+   offen ist, und trägt deshalb die Farbe des Erledigten. Löschen ist nie ein
+   Vorschlag: es steht nur im Dreipunktmenü und dort in --warn. */
+.ov__card--fertig{ border-top-color:var(--done) }
+.ov__titel{ min-width:0; flex:1 1 auto }
+.ov__menu{ position:relative; margin-left:auto; align-self:flex-start }
+.ov__more, .top__more{
+  font:inherit; line-height:1; cursor:pointer; letter-spacing:0;
+  width:1.75rem; height:1.75rem; display:grid; place-items:center; padding:0;
+  background:none; color:var(--muted); border:1px solid transparent; border-radius:var(--radius);
+}
+.ov__more:hover, .top__more:hover, .ov__more[aria-expanded="true"], .top__more[aria-expanded="true"]{
+  color:var(--ink); border-color:var(--line-ui);
+}
+.ov__arch{
+  font-family:var(--font-mono); font-size:.76rem; line-height:1; cursor:pointer;
+  padding:.4rem .6rem; border-radius:var(--radius);
+  background:color-mix(in srgb, var(--done) 14%, transparent);
+  color:var(--done); border:1px solid color-mix(in srgb, var(--done) 42%, transparent);
+}
+.ov__arch:hover{ background:color-mix(in srgb, var(--done) 22%, transparent) }
+.top__menu{ position:relative; display:flex; align-items:center }
+/* Ist alles erledigt, sagt es der Punkt am Knopf — ohne die Pille zu dehnen. */
+.top__more--fertig::after, .ov__more--fertig::after{
+  content:""; position:absolute; top:.15rem; right:.15rem;
+  width:.36rem; height:.36rem; border-radius:999px; background:var(--done);
+  box-shadow:0 0 5px color-mix(in srgb, var(--done) 65%, transparent);
+}
+.top__more, .ov__more{ position:relative }
+
+/* Das Menü selbst. Hängt am Auslöser, nicht am Fenster: so wandert es beim
+   Scrollen mit und braucht keine Rechnerei. */
+.menu{
+  position:absolute; top:calc(100% + .35rem); right:0; z-index:40; min-width:11rem;
+  display:flex; flex-direction:column; padding:.3rem;
+  background:var(--card-bg); border:1px solid var(--line-ui); border-radius:var(--radius);
+  box-shadow:var(--shadow-2);
+}
+.menu__item{
+  font:inherit; font-size:.88rem; text-align:left; cursor:pointer;
+  padding:.45rem .55rem; border:0; border-radius:var(--radius);
+  background:none; color:var(--ink-2);
+}
+.menu__item:hover{ background:color-mix(in srgb, var(--seal) 10%, transparent); color:var(--ink) }
+.menu__item--warn{ color:var(--warn) }
+.menu__item--warn:hover{ background:color-mix(in srgb, var(--warn) 12%, transparent); color:var(--warn) }
+
+/* Die Rückfrage vor dem Löschen. */
+.dlg{
+  position:fixed; inset:0; z-index:60; display:grid; place-items:center; padding:1rem;
+  background:color-mix(in srgb, #000 52%, transparent);
+}
+.dlg__box{
+  width:min(94vw, 27rem); padding:var(--pad-card);
+  background:var(--card-bg); border:1px solid var(--line-ui); border-radius:16px;
+  box-shadow:var(--shadow-2);
+}
+.dlg__title{ font-size:var(--step-1); margin:0 0 .5rem; line-height:1.25 }
+.dlg__text{ font-size:.9rem; color:var(--ink-2); margin:0 }
+.dlg__foot{ display:flex; justify-content:flex-end; gap:.6rem; margin-top:1.1rem }
+.dlg__cancel, .dlg__ok{
+  font:inherit; font-size:.88rem; cursor:pointer; padding:.45rem .9rem;
+  border-radius:var(--radius); border:1px solid var(--line-ui);
+  background:none; color:var(--ink-2);
+}
+.dlg__cancel:hover{ color:var(--ink); border-color:var(--ink-2) }
+.dlg__ok--warn{
+  background:var(--warn); border-color:var(--warn); color:var(--btn-fg, #fff); font-weight:600;
+}
+.dlg__ok--warn:hover{ filter:brightness(1.08) }
+
+/* Das Archiv unter dem Feld: eine ruhige Liste, kein zweites Kartenfeld. */
+.ov__abschnitt{ margin-top:var(--pad-block) }
+.ov__none{ border-top:2px solid var(--line-ui) }
+.ov__archiv{ display:flex; flex-direction:column; gap:.1rem; padding-block:.6rem }
+.ov__row{
+  display:flex; align-items:center; gap:.75rem; padding:.5rem .3rem;
+  font-family:var(--font-mono); font-size:.78rem; color:var(--muted);
+}
+.ov__row + .ov__row{ border-top:1px solid color-mix(in srgb, var(--line) 60%, transparent) }
+.ov__row .pdot{ width:.9rem; height:.9rem; flex:none; display:grid; place-items:center }
+.ov__row .pdot::before{
+  content:""; width:.4rem; height:.4rem; border-radius:999px;
+  background:color-mix(in srgb, var(--muted) 70%, transparent);
+}
+.ov__rname{
+  font-family:var(--font-sans); font-size:.95rem; color:var(--ink-2);
+  min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.ov__rcount{ flex:none }
+.ov__rwhen{ margin-left:auto; flex:none }
+.ov__back{
+  font:inherit; font-size:.76rem; cursor:pointer; flex:none;
+  padding:.3rem .55rem; border-radius:var(--radius);
+  background:none; color:var(--seal); border:1px solid color-mix(in srgb, var(--seal) 38%, transparent);
+}
+.ov__back:hover{ background:color-mix(in srgb, var(--seal) 12%, transparent) }
+.ov__row .ov__go{ margin-left:0; flex:none }
+.ov__row .ov__menu{ margin-left:0 }
+@media (max-width:640px){
+  .ov__rwhen{ display:none }
+}
