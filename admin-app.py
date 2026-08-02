@@ -301,14 +301,21 @@ def cat_entries():
     src = CATALOGUE.read_text(encoding="utf-8")
     slugs = [(m.start(), m.group(1)) for m in SLUG_RE.finditer(src)]
     eintraege = {}
+    # Grenzen: ein Feld gehört zum letzten Slug davor — aber nur, wenn zwischen
+    # beiden kein Abschnittskopf liegt. Sonst schlägt der Titel des Abschnitts
+    # «Tools» dem letzten Modules-Eintrag zu, und ein Speichern benennt den
+    # Abschnitt um statt den Eintrag.
+    koepfe = [m.start() for m in re.finditer(r'\n {1,2}"[a-z-]+":\s*\{', src)]
     for m in STR_RE.finditer(src):
-        gehoert = None
+        gehoert, seit = None, -1
         for pos, slug in slugs:
             if pos < m.start():
-                gehoert = slug
+                gehoert, seit = slug, pos
             else:
                 break
         if gehoert is None:
+            continue
+        if any(seit < k < m.start() for k in koepfe):
             continue
         e = eintraege.setdefault(gehoert, {"slug": gehoert, "felder": {}})
         e["felder"][m.group(1)] = (m.start(2), m.end(2), json.loads('"' + m.group(2) + '"'))
