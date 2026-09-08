@@ -585,3 +585,15 @@ Behoben doppelt: `me.js` liest die Datei als data:-URL (FileReader), und `serve.
 Belegt: Prüflauf `gate-avatar.mjs` im Telefonformat, POST `/api/me/avatar` 200, Bild 3 619 B als JPEG in der
 Datenbank, Rail und öffentliches Profil zeigen es.
 
+**Seitentexte aus der Konsole (Nachtrag, 2026-09-09).** Neben den Checklisten bearbeitet die Hub-Schicht von :8393 nun
+auch die Texte der 14 statischen Seiten: `/hub/pages` listet sie, `/hub/pages/<name>` zeigt jede Textstelle aus `<main>`
+und dem `<title>` als Feld, in Seitenreihenfolge, mit dem Pfad (`h1.work__h`, `a.btn`, `p.mcard__l`) als Beschriftung.
+Anders als der WordPress-Editor fasst dieser Editor kein Markup an: der Parser merkt sich Anfang und Ende jedes
+Textlaufs im Rohtext, ersetzt beim Speichern nur diese Spannen (von hinten nach vorn), faltet Zeilenumbrüche zu
+Leerzeichen und behält führenden wie folgenden Weissraum, damit Inline-Fugen wie «, for a contribution» stehen bleiben.
+Jede Änderung trägt den Ausgangstext mit; stimmt er nicht mehr mit der Datei überein, wird die Stelle als Konflikt
+gemeldet und nicht übernommen. Glyphen, Rail, Suchknopf und Skripte sind ausgeblendet. Speichern legt eine Sicherung
+`<name>.html.<Zeit>.admin` an und versucht einen Commit; die Kante hält HTML nicht vor, der Ursprung liest binnen 5 s neu.
+Nicht von hier editierbar bleiben der Katalog (`assets/catalogue.js`, Kommentare im Objekt, kein striktes JSON) und die
+Texte, die JavaScript erzeugt (Konto, Profil, Status, Suche).
+
