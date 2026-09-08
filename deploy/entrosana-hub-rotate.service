@@ -1,0 +1,7 @@
+[Unit]
+Description=entrosana.app: Protokolle rotieren (14 Tage)
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash %h/entrosana-app/tools/rotate-logs.sh
+StandardOutput=append:%h/.sygnif/logs/entrosana-hub-ops.log
+StandardError=append:%h/.sygnif/logs/entrosana-hub-ops.log

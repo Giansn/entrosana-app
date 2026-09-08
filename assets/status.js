@@ -46,6 +46,16 @@
       ar.appendChild(lab); card.appendChild(ar);
     }
     sec.appendChild(card);
+    if (["received", "confirmed", "reviewing", "withdrawn", "rejected"].indexOf(c.status) >= 0 && token()) {
+      var del = el("button", "btn btn--quiet", "Delete this contribution"); del.type = "button"; del.style.marginTop = "1rem"; del.style.marginRight = ".6rem";
+      del.addEventListener("click", function () {
+        if (!confirm("Delete this contribution entirely? Its text and files leave the Hub; one chain line stays, without your name.")) return;
+        api("/api/contributions/" + c.id, { method: "DELETE" })
+          .then(function (r) { if (r.s === 200) location.href = "/contribute/status"; else sec.appendChild(el("p", "note note--warn", "Not deleted (" + r.s + "): " + (r.j.error || ""))); })
+          .catch(function () { offline(sec); });
+      });
+      sec.appendChild(del);
+    }
     if (["received", "confirmed", "reviewing"].indexOf(c.status) >= 0 && token()) {
       var b = el("button", "btn btn--danger", "Withdraw"); b.type = "button"; b.style.marginTop = "1rem";
       b.addEventListener("click", function () {
@@ -88,6 +98,15 @@
       var tr = el("span", "toggle__track"); tr.appendChild(el("span", "toggle__dot")); lab.appendChild(cb); lab.appendChild(tr);
       lab.appendChild(el("span", "toggle__label", "keep «" + c.title + "» published under my name")); box.appendChild(lab);
     });
+    var ex = el("a", "btn btn--ghost", "Download my data"); ex.href = "/api/me/export"; ex.style.marginTop = ".8rem"; ex.style.marginRight = ".6rem";
+    ex.addEventListener("click", function (ev) {   // mit Marke laden, dann als Datei speichern
+      ev.preventDefault();
+      fetch("/api/me/export", { headers: headers() }).then(function (r) { return r.json(); }).then(function (j) {
+        var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(j, null, 2)], { type: "application/json" }));
+        a.download = "entrosana-hub-export.json"; document.body.appendChild(a); a.click(); a.remove();
+      }).catch(function () { offline(sec); });
+    });
+    box.appendChild(ex);
     var b = el("button", "btn btn--danger", "Erase my data"); b.type = "button"; b.style.marginTop = ".8rem";
     b.addEventListener("click", function () {
       if (!confirm("Erase your data now? This cannot be undone. The chain keeps its lines without your name or address.")) return;

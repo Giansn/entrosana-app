@@ -108,3 +108,43 @@ systemctl --user list-timers entrosana-wp-backup.timer sygnif-t9-sync.timer
 und listet es auf, vergleicht die Prüfsumme der Kopie auf der T9 und endet mit
 einem Fehler, sobald ein Ziel nicht erreicht wurde. Ein Lauf, der „success"
 meldet, hat also wirklich überall geschrieben.
+
+## 5. Die Hub-Datenbank
+
+Seit Phase 7 (2026-09-08) hält der Hub eine SQLite-Datei `api/db/hub.sqlite` mit
+Beiträgen, Akteuren, Marken und der Kette (`audit`). Sie läuft im WAL-Modus,
+also liegen daneben `hub.sqlite-wal` und `hub.sqlite-shm`; ein tar mitten im
+Schreiben kann die drei uneinheitlich erwischen. Deshalb schreibt
+`tools/hub-backup.sh` täglich um 03:20 (`entrosana-hub-backup.timer`, zehn
+Minuten vor `entrosana-wp-backup.timer` um 03:30) eine für sich stimmige Kopie
+`api/db/hub.backup.sqlite` über die SQLite-Sperre (`.backup`) und prüft sie
+(`PRAGMA integrity_check`). Diese Kopie wandert mit dem Ordner in die
+verschlüsselte Sicherung (Abschnitt 3, Bündel `extras.tar.gz`).
+
+Zurückspielen, wenn die laufende Datei kaputt oder falsch ist:
+
+```bash
+systemctl --user stop entrosana-api.service
+cd ~/entrosana-app/api/db && mv hub.sqlite hub.sqlite.kaputt-$(date +%Y%m%d-%H%M)
+rm -f hub.sqlite-wal hub.sqlite-shm            # gehören zur kaputten Datei
+cp hub.backup.sqlite hub.sqlite                # oder aus extras.tar.gz: entrosana-app/api/db/hub.backup.sqlite
+node --no-warnings admin.mjs verify-chain      # muss "ok" und die Zeilenzahl nennen
+systemctl --user start entrosana-api.service
+```
+
+Der Dienst legt beim Start die Migrationen aus `api/db/*.sql` an, die noch
+fehlen (Tabelle `meta`); eine Kopie vom Vortag braucht davon in der Regel
+keine. Was zwischen Kopie und Ausfall passiert ist, fehlt danach: höchstens
+ein Tag Beiträge. Die Betroffenen stehen in `~/.sygnif/logs/entrosana-api.log`
+(Pfad `/api/contributions`, Status 201), soweit das Protokoll noch reicht
+(zwei Wochen, `entrosana-hub-rotate.timer`).
+
+Probe ohne Eingriff, wie oben: die Kopie in einen Nebenordner stellen und
+die Kette dort prüfen. Am 2026-09-08 lief das durch (Abschnitt «Prüfen»
+unten, dritter Block).
+
+```bash
+P=$(mktemp -d) && cp ~/entrosana-app/api/db/hub.backup.sqlite "$P/hub.sqlite"
+DB_PATH="$P/hub.sqlite" node --no-warnings ~/entrosana-app/api/admin.mjs verify-chain
+rm -rf "$P"
+```

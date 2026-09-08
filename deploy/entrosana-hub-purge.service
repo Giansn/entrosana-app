@@ -1,0 +1,8 @@
+[Unit]
+Description=entrosana.app: Aufbewahrungsfrist anwenden (unbestätigte Beiträge, verwaiste Akteure, abgelaufene Marken)
+[Service]
+Type=oneshot
+WorkingDirectory=%h/entrosana-app/api
+ExecStart=/usr/bin/env node --no-warnings %h/entrosana-app/api/admin.mjs purge
+StandardOutput=append:%h/.sygnif/logs/entrosana-hub-ops.log
+StandardError=append:%h/.sygnif/logs/entrosana-hub-ops.log

@@ -17,6 +17,7 @@ import { append as auditAppend, verify as auditVerify } from "./audit.mjs";
 import { can } from "./policy.mjs";
 import { validate as validateContribution, actionFor, verifyTrail, publishChecks } from "./contributions.mjs";
 import { appendEntry, removeEntry, entryFor } from "./publish.mjs";
+import { exportActor } from "./maintenance.mjs";
 import { serviceToken, ensureServiceActor, resolveActor, issueToken, withRoles, newToken, sha } from "./auth.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -261,6 +262,16 @@ patterns.push([/^\/api\/contributions\/(\d{1,12})$/, {
     if (!can(ctx.actor, "read", asResource(c))) throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
     send(ctx.res, 200, { ok: true, item: publicRow(c, true) });
   },
+  DELETE: (ctx, [id]) => {
+    const c = getContribution(id);
+    if (!c) throw new HttpError(404, "not found");
+    const own = ctx.actor && ctx.actor.id === c.actor_id, owner = ctx.actor && ctx.actor.roles.has("owner");
+    if (!own && !owner) throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+    if (!["received", "confirmed", "reviewing", "withdrawn", "rejected"].includes(c.status)) throw new HttpError(409, "only unpublished, undecided or closed contributions can be deleted");
+    db.prepare("DELETE FROM contributions WHERE id = ?").run(c.id);
+    auditAppend(db, { kind: "contribution.deleted", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: own ? "deleted by submitter" : "deleted by owner" });
+    send(ctx.res, 200, { ok: true, deleted: c.id });
+  },
   PATCH: async (ctx, [id]) => {
     const c = getContribution(id);
     if (!c) throw new HttpError(404, "not found");
@@ -314,6 +325,13 @@ patterns.push([/^\/api\/contributions\/(\d{1,12})$/, {
     send(ctx.res, 200, { ok: true, item: publicRow(getContribution(c.id), true) });
   },
 }]);
+
+// Alles über mich, als Datei. Nur mit Marke, nur Eigenes.
+routes.set("GET /api/me/export", (ctx) => {
+  if (!ctx.actor) throw new HttpError(401, "no actor");
+  auditAppend(db, { kind: "export", actor_id: ctx.actor.id, resource: "actor:" + ctx.actor.id, text: "self-service export" });
+  send(ctx.res, 200, exportActor(db, ctx.actor), { "Content-Disposition": `attachment; filename="entrosana-hub-export-${ctx.actor.id}.json"` });
+});
 
 // Löschen der eigenen Daten. Veröffentlichte Module bleiben nur, wenn die Person
 // es so gewählt hat (attribution keep, oder im Aufruf ausdrücklich keep: [ids]);

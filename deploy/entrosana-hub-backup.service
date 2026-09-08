@@ -1,0 +1,7 @@
+[Unit]
+Description=entrosana.app: konsistente Kopie der Hub-Datenbank vor der Sicherung
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash %h/entrosana-app/tools/hub-backup.sh
+StandardOutput=append:%h/.sygnif/logs/entrosana-hub-ops.log
+StandardError=append:%h/.sygnif/logs/entrosana-hub-ops.log

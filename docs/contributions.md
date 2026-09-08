@@ -276,10 +276,42 @@ Formular auf entrosana.com und `contact-send.py` sind davon nicht berührt. Der
 Katalogeintrag «Propose a track» nennt noch `info@entrosana.com` als Ziel; das
 ist ein Text des Eigentümers im Katalog.
 
+## Betrieb (Phase 7, gebaut am 2026-09-08)
+
+Drei Timer unter `~/.config/systemd/user/` (Vorlagen in `deploy/`), alle mit
+`Persistent=true`, Protokoll je Lauf in `~/.sygnif/logs/entrosana-hub-ops.log`:
+
+| Timer | wann | was |
+|---|---|---|
+| `entrosana-hub-purge.timer` | täglich 03:10 | `node api/admin.mjs purge`, Fristen unten |
+| `entrosana-hub-backup.timer` | täglich 03:20 | `tools/hub-backup.sh`: `sqlite3 .backup` nach `api/db/hub.backup.sqlite`, `integrity_check`; zehn Minuten vor `entrosana-wp-backup.timer` (03:30, Streuung 300 s), das den Ordner verschlüsselt sichert |
+| `entrosana-hub-rotate.timer` | Montag 04:00 | `tools/rotate-logs.sh`: `entrosana-api.log` und `entrosana-services-snapshot.log` nach `.1`/`.2`, also 14 Tage |
+
+Zurückspielen der Datenbank: `docs/restore.md`, Abschnitt 5; Probe am
+2026-09-08 gelaufen. Die Drosseln (5 je Stunde je Adresse und je IP,
+`MAIL_CAP` 60 Mails je Stunde) leben im Speicher des Prozesses und beginnen
+bei jedem Neustart bei null; das ist bekannt und für die erwartete Last
+(einstellige Beiträge je Woche) hingenommen.
+
 ## Personendaten
 
 Ein Beitrag enthält Name, E-Mail-Adresse und den Record-Trail der einreichenden
-Person. Was gespeichert wird, wie lange, und der Weg zur Löschung gehören auf
-entrosana.com/privacy/, bevor der erste Beitrag angenommen wird (Phase 7).
-Eine einreichende Person zieht einen offenen Beitrag selbst zurück; das löscht
-Inhalt und Dateien und lässt allein die Kettenzeile stehen.
+Person. Was gespeichert wird, wie lange, und der Weg zur Löschung stehen als
+Entwurf in `docs/privacy-hub.md`; der Eigentümer fügt den Text in
+entrosana.com/privacy/ ein, bevor der erste fremde Beitrag angenommen wird.
+
+Fristen, angewandt von `api/maintenance.mjs` (`purge`, täglich 03:10, geprüft
+in `api/test/maintenance.test.mjs`):
+
+- `received` älter als 7 Tage: Beitrag samt Trail und Dateiliste gelöscht.
+- Akteure der Art `email` ohne Beitrag, Rolle und gültige Marke, älter als 7 Tage: gelöscht.
+- Bestätigungsverweise (1 h gültig) und Zugangsmarken (30 Tage gültig): 7 Tage nach Ablauf gelöscht.
+- Kettenzeilen (`audit`) bleiben; sie tragen Kennungen, keine Adressen. Ein Lauf, der etwas löscht, schreibt eine Zeile `purge` mit den Zahlen.
+- Das Zugriffsprotokoll `entrosana-api.log` trägt Client-Adressen und reicht 14 Tage.
+
+Selbstbedienung unter `/contribute/status` (mit Marke, nur Eigenes):
+
+- Zurückziehen (`PATCH status=withdrawn`, offene Zustände): Zeile bleibt als `withdrawn`.
+- Löschen (`DELETE /api/contributions/<id>`, Zustände received/confirmed/reviewing/withdrawn/rejected; der Eigentümer darf es auch): Zeile weg, eine Kettenzeile `contribution.deleted` bleibt. Angenommene und veröffentlichte Beiträge gehen nur über die Löschung des Kontos.
+- Herunterladen (`GET /api/me/export`): Akteur, eigene Beiträge mit Records und Dateiliste, Kettenzeilen zu den eigenen Beiträgen, Marken ohne Hash; als JSON-Datei. Schreibt eine Kettenzeile `export`.
+- Konto löschen (`DELETE /api/me`, Abschnitt «Namensnennung und Löschung»).

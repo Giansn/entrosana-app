@@ -9,6 +9,7 @@ import { append, verify } from "./audit.mjs";
 import { issueToken } from "./auth.mjs";
 import { appendEntry, removeEntry, entryFor } from "./publish.mjs";
 import { publishChecks } from "./contributions.mjs";
+import { purge } from "./maintenance.mjs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -70,6 +71,8 @@ try {
       append(db, { kind: "unpublish", actor_id: null, resource: "contribution:" + c.id, text: `taken back from the catalogue via cli (modules/${c.slug})` });
       console.log("unpublish: modules/" + c.slug + (r.removed ? "" : " (war nicht in der Datei)"));
     }
+  } else if (cmd === "purge") {
+    console.log(JSON.stringify({ purged: purge(db) }));
   } else if (cmd === "list") {
     for (const r of db.prepare(`SELECT a.id, a.kind, a.email, a.name, GROUP_CONCAT(r.role) AS roles
                                 FROM actors a LEFT JOIN roles r ON r.actor_id = a.id GROUP BY a.id ORDER BY a.id`).all())
@@ -77,7 +80,7 @@ try {
   } else if (cmd === "verify-chain") {
     const v = verify(db); console.log(JSON.stringify(v)); process.exitCode = v.ok ? 0 : 1;
   } else {
-    console.log("Befehle: grant <email> <role> [--by <email>] | revoke <email> <role> | token <email> [tage] | publish <id> | unpublish <id> | list | verify-chain"); process.exitCode = 2;
+    console.log("Befehle: grant <email> <role> [--by <email>] | revoke <email> <role> | token <email> [tage] | publish <id> | unpublish <id> | purge | list | verify-chain"); process.exitCode = 2;
   }
 } catch (e) { console.error("Fehler:", e.message); process.exitCode = 1; }
 finally { db.close(); }
