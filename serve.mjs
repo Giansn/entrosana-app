@@ -91,7 +91,7 @@ const ROUTES = new Map([
 // fremdes Bild. Das einzige Skript ist der Themenumschalter von hier, deshalb
 // 'self' und nicht 'unsafe-inline'. Schriften und das Rauschen im Hintergrund
 // stecken als data:-URI in den eigenen Dateien.
-const CSP = "default-src 'none'; style-src 'self'; script-src 'self'; " +
+const CSP = "default-src 'none'; style-src 'self'; script-src 'self'; connect-src 'self'; " +
             "img-src 'self' data:; font-src data:; " +
             "form-action 'none'; frame-ancestors 'none'; base-uri 'none'";
 

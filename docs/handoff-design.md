@@ -386,6 +386,18 @@ Keine fremden Schriften, keine fremden Skripte, keine externen Bilder. Schriften
 dürfen **nur** als `data:`-URI kommen. `form-action 'none'` heisst: kein Formular
 kann heute absenden.
 
+### Nachtrag 2026-09-08
+
+Die Regel hat `connect-src 'self'` dazubekommen (`serve.mjs`, Zeile 94), damit
+die Seite den eigenen Dienst unter `/api` erreichen kann. Der Dienst ist
+`entrosana-api.service` auf `127.0.0.1:4324` (`api/server.mjs`, `node:http` und
+`node:sqlite`, keine Fremdabhängigkeit); der Tunnel leitet `^/api/.+` für
+entrosana.app und www.entrosana.app dorthin, mit zwei Regeln vor der
+.app-Auffangregel in `~/.cloudflared/config.yml` (geprüft mit
+`cloudflared tunnel ingress validate` und `ingress rule`). Alles Übrige der
+Regel ist unverändert. `form-action 'none'` bleibt, bis Phase 3 ein Formular
+braucht. Entscheid und Weg: `docs/meilenstein-konten.md`, `docs/contributions.md`.
+
 ---
 
 ## 9. Fallen
