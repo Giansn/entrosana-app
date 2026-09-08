@@ -196,19 +196,31 @@
     fileIn.addEventListener("change", function () {
       var f = fileIn.files && fileIn.files[0]; if (!f) return;
       if (!/^image\//.test(f.type)) { note(pout, "warn", "That is not an image."); return; }
-      var url = URL.createObjectURL(f), im = new Image();
-      im.onload = function () {
-        var S = 256, c = document.createElement("canvas"); c.width = S; c.height = S; var g = c.getContext("2d");
-        var s = Math.min(im.width, im.height), sx = (im.width - s) / 2, sy = (im.height - s) / 2;
-        g.drawImage(im, sx, sy, s, s, 0, 0, S, S); URL.revokeObjectURL(url);
-        var data = c.toDataURL("image/jpeg", 0.85);
-        note(pout, "idle", "Uploading…");
-        api("/api/me/avatar", { method: "POST", body: JSON.stringify({ data: data, type: "image/jpeg" }) })
-          .then(function (r) { if (r.s === 200) { var tk = token(); if (tk) { tk.avatar = r.j.avatar; saveToken(tk); } refresh(); } else note(pout, "warn", "Not saved: " + (r.j.error || r.s) + "."); })
-          .catch(function () { note(pout, "warn", "The Hub's server is not reachable right now."); });
+      // 2026-09-09: als data:-URL lesen, nicht als blob: — die CSP (img-src 'self' data:) liess blob:-Bilder nicht laden,
+      // darum kam der Upload nie zustande. Die Pixel werden auf 256×256 beschnitten und als JPEG gesendet.
+      note(pout, "idle", "Reading the picture…");
+      var rd = new FileReader();
+      rd.onerror = function () { note(pout, "warn", "The browser could not read that file."); };
+      rd.onload = function () {
+        var im = new Image();
+        im.onload = function () {
+          var S = 256, c = document.createElement("canvas"); c.width = S; c.height = S; var g = c.getContext("2d");
+          var w = im.naturalWidth || im.width, h = im.naturalHeight || im.height;
+          if (!w || !h) { note(pout, "warn", "The browser could not read that image."); return; }
+          var s = Math.min(w, h), sx = (w - s) / 2, sy = (h - s) / 2;
+          g.fillStyle = "#fff"; g.fillRect(0, 0, S, S); g.drawImage(im, sx, sy, s, s, 0, 0, S, S);
+          var data;
+          try { data = c.toDataURL("image/jpeg", 0.85); } catch (e) { note(pout, "warn", "The browser could not convert that image."); return; }
+          note(pout, "idle", "Uploading…");
+          api("/api/me/avatar", { method: "POST", body: JSON.stringify({ data: data, type: "image/jpeg" }) })
+            .then(function (r) { if (r.s === 200) { var tk = token(); if (tk) { tk.avatar = r.j.avatar; saveToken(tk); } refresh(); } else note(pout, "warn", "Not saved: " + (r.j.error || r.s) + "."); })
+            .catch(function () { note(pout, "warn", "The Hub's server is not reachable right now."); });
+        };
+        im.onerror = function () { note(pout, "warn", "The browser could not read that image. JPEG, PNG or WebP work best."); };
+        im.src = rd.result;
       };
-      im.onerror = function () { URL.revokeObjectURL(url); note(pout, "warn", "The browser could not read that image."); };
-      im.src = url;
+      rd.readAsDataURL(f);
+      fileIn.value = "";
     });
     var pl = el("p", "fine"); pl.appendChild(document.createTextNode("Your public profile: ")); var pa = el("a", null, location.origin + "/p/" + me.id); pa.href = "/p/" + me.id; pl.appendChild(pa); pl.appendChild(document.createTextNode(" — name, picture, standing, profile and public journal entries are visible to anyone.")); idc.appendChild(pl);
 

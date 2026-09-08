@@ -22,6 +22,14 @@
   var drag = { id: null };
 
   function uid(p) { return (p || "x") + Math.random().toString(36).slice(2, 9); }
+  // Fälligkeit in Worten: heute, morgen, in n Tagen, n Tage überfällig.
+  function dueWord(date) {
+    var t0 = new Date(today() + "T00:00:00Z").getTime(), t1 = new Date(date + "T00:00:00Z").getTime(), n = Math.round((t1 - t0) / 86400e3);
+    if (n === 0) return { text: "due today", today: true, over: false };
+    if (n === 1) return { text: "due tomorrow", today: false, over: false };
+    if (n < 0) return { text: (-n) + (n === -1 ? " day overdue" : " days overdue"), today: false, over: true };
+    return { text: n <= 14 ? "due in " + n + " days" : "due " + date, today: false, over: false };
+  }
   function today() {
     var d = new Date();
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") +
@@ -324,6 +332,13 @@
     instIn.placeholder = "Step-by-step instructions, checklist, links, notes for the person doing the work…";
     box.appendChild(instIn);
 
+    // Fälligkeit (2026-09-09): Datum setzen oder leeren; die Karte zeigt es als Pille.
+    box.appendChild(el("label", "modal__label", "Due date"));
+    var dueRow = el("div", "modal__row");
+    var dueIn = el("input", "modal__input modal__input--date"); dueIn.type = "date"; dueIn.value = task.due && task.due.date ? task.due.date : "";
+    var dueClear = el("button", "btn-cancel", "Clear"); dueClear.type = "button"; dueClear.addEventListener("click", function () { dueIn.value = ""; });
+    dueRow.appendChild(dueIn); dueRow.appendChild(dueClear); box.appendChild(dueRow);
+
     var foot = el("div", "modal__foot");
     var cancel = el("button", "btn-cancel", "Cancel");
     cancel.type = "button";
@@ -336,6 +351,7 @@
       task.content = t;
       task.description = descIn.value.trim();
       task.instructions = instIn.value; // keep internal newlines
+      task.due = dueIn.value ? { date: dueIn.value, string: dueIn.value, is_recurring: false } : null;
       save();
       closeDetails();
       paint();
@@ -826,9 +842,10 @@
     });
     meta.appendChild(det);
 
-    if (task.due) {
-      var over = task.due.date < today() && laneOf(task) !== "done";
-      meta.appendChild(el("span", "pill " + (over ? "pill--over" : "pill--due"), task.due.date));
+    if (task.due && task.due.date) {
+      var done = laneOf(task) === "done", d = dueWord(task.due.date);
+      var pd = el("span", "pill " + (done ? "pill--due" : d.over ? "pill--over" : d.today ? "pill--today" : "pill--due"), d.text);
+      pd.title = "Due " + task.due.date; meta.appendChild(pd);
     }
     (task.labels || []).forEach(function (l) {
       meta.appendChild(el("span", "pill pill--lbl", l));

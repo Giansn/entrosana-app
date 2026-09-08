@@ -452,3 +452,8 @@ header.top .view__tools{ display:flex; align-items:center; gap:.5rem; margin-lef
   .lanebar__b.is-on .lanebar__n{ color:var(--seal) }
 }
 
+/* Fälligkeit (2026-09-09): Datumsfeld im Modal, Pillen nach Zustand. */
+.modal__row{ display:flex; gap:.5rem; align-items:center }
+.modal__input--date{ flex:1; font-family:var(--font-mono) }
+.pill--today{ color:var(--seal); border-color:var(--seal) }
+

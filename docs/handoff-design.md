@@ -563,3 +563,25 @@ Palette ein `<dialog>` in `.pick`-Form (640 px, 7 vh von oben; am Telefon
 ganzseitig), Gruppen als Eyebrows, Zeilen mit Titel, Kennung und Zeile.
 Kein neuer Farbwert, keine neue Schrift.
 
+### Nachtrag 2026-09-09 (Fälligkeit, Checklisten-Konsole, Profilbild)
+
+**Fälligkeit im Board.** Das Details-Popup einer Karte hat ein Datumsfeld «Due date» mit «Clear»; gespeichert wird
+`task.due = {date, string, is_recurring:false}` wie bei der Schnelleingabe («today», «tomorrow»). Die Karte zeigt
+das Datum in Worten: «due today» (Siegelfarbe), «due tomorrow», «due in n days» bis 14 Tage, sonst das Datum,
+und «n days overdue» in Rot, solange die Karte nicht in Done liegt. Sortierung «Due date» bestand schon.
+Belegt: Prüflauf `gate-due.mjs` (Modal, Pillen, Speicher, Sortierung, Leeren) ohne Konsolenfehler.
+
+**Checklisten-Konsole.** Die Projektvorlagen (`assets/seeds.js`) waren bislang nirgends editierbar; die alte
+Konsole :8396 kennt nur Beiträge und Bewerbungen, der Texteditor :8393 nur Seitentexte. Neu in der Hub-Schicht
+von :8393: `/hub/checklists` (Liste) und `/hub/checklists/<track>/<nnn>` (Titel, Untertitel, Prompts, Schritte
+mit t/n/i). Speichern legt eine Sicherung `~/entrosana-app-backups/seeds.js.<Zeit>.admin` an, schreibt die Datei
+mit erhaltenem Kommentarkopf, hebt `seeds.js?v=` in allen 14 Seiten und versucht einen Git-Commit der
+betroffenen Dateien. Der Ursprung liest die Datei binnen 5 s neu; wer eine Liste schon auf dem Gerät hat,
+behält seine Kopie (der Import läuft nur beim ersten Öffnen über `?p=`).
+
+**Profilbild.** Der Upload scheiterte an der eigenen CSP: `img-src 'self' data:` liess die `blob:`-Vorschau nicht
+laden, der Browser meldete «could not read that image», es ging nie eine Anfrage ab (API-Log ohne Avatar-Zeilen).
+Behoben doppelt: `me.js` liest die Datei als data:-URL (FileReader), und `serve.mjs` erlaubt `blob:` in `img-src`.
+Belegt: Prüflauf `gate-avatar.mjs` im Telefonformat, POST `/api/me/avatar` 200, Bild 3 619 B als JPEG in der
+Datenbank, Rail und öffentliches Profil zeigen es.
+

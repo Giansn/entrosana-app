@@ -88,7 +88,7 @@ const ROUTES = new Map([
 // 'self' und nicht 'unsafe-inline'. Schriften und das Rauschen im Hintergrund
 // stecken als data:-URI in den eigenen Dateien.
 const CSP = "default-src 'none'; style-src 'self'; script-src 'self'; connect-src 'self'; " +
-            "img-src 'self' data:; font-src data:; " +
+            "img-src 'self' data: blob:; font-src data:; " +
             "form-action 'none'; frame-ancestors 'none'; base-uri 'none'";
 
 // Abgeleitete Routen: der Katalog wird so gelesen, wie der Browser ihn liest

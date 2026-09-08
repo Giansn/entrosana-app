@@ -254,8 +254,6 @@ window.__seeds = {
    "Agree how it gets reviewed"
   ]
  },
-
-
  "contribute/001": {
   "section": "contribute",
   "title": "Review someone else's work",
