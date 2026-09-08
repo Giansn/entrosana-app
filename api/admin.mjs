@@ -1,0 +1,54 @@
+#!/usr/bin/env node
+// admin.mjs — Verwaltung auf der Maschine, als Eigentümer. Kein Netz.
+//   node api/admin.mjs grant <email> <role> [--by <email>]
+//   node api/admin.mjs revoke <email> <role>
+//   node api/admin.mjs list
+//   node api/admin.mjs verify-chain
+import { open } from "./db.mjs";
+import { append, verify } from "./audit.mjs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const { db } = open(process.env.DB_PATH || join(HERE, "db", "hub.sqlite"));
+const [cmd, a, b, flag, byEmail] = process.argv.slice(2);
+const now = () => new Date().toISOString();
+const ROLES = ["submitter", "reviewer", "owner", "editor", "school", "teacher", "parent", "learner"];
+
+function actorByEmail(email, create) {
+  const e = String(email || "").trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(e)) throw new Error("ungültige E-Mail-Adresse");
+  let row = db.prepare("SELECT * FROM actors WHERE email = ?").get(e);
+  if (!row && create) {
+    const id = db.prepare("INSERT INTO actors(kind, email, created) VALUES ('email', ?, ?)").run(e, now()).lastInsertRowid;
+    row = db.prepare("SELECT * FROM actors WHERE id = ?").get(id);
+    append(db, { kind: "actor", actor_id: null, resource: "actor:" + id, text: "actor created by admin cli: " + e });
+  }
+  if (!row) throw new Error("unbekannter Akteur: " + e);
+  return row;
+}
+
+try {
+  if (cmd === "grant" || cmd === "revoke") {
+    if (!ROLES.includes(b)) throw new Error("Rolle muss eine von " + ROLES.join(", ") + " sein");
+    const target = actorByEmail(a, cmd === "grant");
+    const by = flag === "--by" && byEmail ? actorByEmail(byEmail, false).id : null;
+    if (cmd === "grant") {
+      db.prepare("INSERT OR IGNORE INTO roles(actor_id, role, granted_by, granted) VALUES (?,?,?,?)").run(target.id, b, by, now());
+      append(db, { kind: "grant", actor_id: by, resource: "actor:" + target.id, text: `role ${b} granted to ${target.email}` });
+    } else {
+      db.prepare("DELETE FROM roles WHERE actor_id = ? AND role = ?").run(target.id, b);
+      append(db, { kind: "revoke", actor_id: by, resource: "actor:" + target.id, text: `role ${b} revoked from ${target.email}` });
+    }
+    console.log(`${cmd}: ${b} ${cmd === "grant" ? "→" : "←"} ${target.email}`);
+  } else if (cmd === "list") {
+    for (const r of db.prepare(`SELECT a.id, a.kind, a.email, a.name, GROUP_CONCAT(r.role) AS roles
+                                FROM actors a LEFT JOIN roles r ON r.actor_id = a.id GROUP BY a.id ORDER BY a.id`).all())
+      console.log(`${String(r.id).padStart(3)}  ${r.kind.padEnd(8)} ${(r.email || r.name || "").padEnd(32)} ${r.roles || "-"}`);
+  } else if (cmd === "verify-chain") {
+    const v = verify(db); console.log(JSON.stringify(v)); process.exitCode = v.ok ? 0 : 1;
+  } else {
+    console.log("Befehle: grant <email> <role> [--by <email>] | revoke <email> <role> | list | verify-chain"); process.exitCode = 2;
+  }
+} catch (e) { console.error("Fehler:", e.message); process.exitCode = 1; }
+finally { db.close(); }

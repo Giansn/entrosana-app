@@ -85,6 +85,34 @@ dafür schon.
    neue Regel. Auf entrosana.com wurde kein bestehendes Limit gefunden
    (`grep` über `contact-send.py`, `mu-plugins/` und `theme/`, 2026-09-08).
 
+## Bestätigung per Mail (Phase 2, gebaut am 2026-09-08)
+
+Wer einreicht, nennt eine E-Mail-Adresse. `POST /api/verify/request` legt eine
+Bestätigung an (Zufallswert aus 32 Bytes, gespeichert nur als SHA-256, eine
+Stunde gültig) und schickt den Verweis an diese Adresse. Der Versand läuft über
+`tools/mail-send.py`, ein Geschwister von `contact-send.py`: dieselben
+Zugangsdaten aus `~/.config/entrosana-smtp.env`, aber mit frei wählbarem
+Empfänger und Betreff; `contact-send.py` schreibt immer an `MAIL_TO` und bleibt
+für das Formular auf entrosana.com unverändert.
+
+`GET /api/verify?token=…` verbraucht den Verweis, legt den Akteur an
+(`actors.kind = 'email'`) und gibt eine Zugangsmarke aus, 30 Tage gültig,
+ebenfalls nur als Hash gespeichert. Die Marke geht als
+`Authorization: Bearer …` mit; `GET /api/me` sagt, wer man ist. Bis Phase 4 eine
+Seite dafür baut, zeigt der Verweis die Antwort als JSON.
+
+Der Dienstakteur `admin` (Rolle `reviewer`) weist sich mit der Kopfzeile
+`X-Entrosana-Token` aus, deren Wert in `~/.config/entrosana-api.token` liegt
+(0600, beim ersten Start erzeugt), nach dem Muster von `admin-app.py`. Rollen
+vergibt der Eigentümer auf der Maschine: `node api/admin.mjs grant <email> <role>`;
+jede Vergabe ist eine Zeile in der Kette. Die Kette prüft
+`GET /api/audit/verify` (prüfende Rolle oder Eigentümer) und
+`node api/admin.mjs verify-chain`.
+
+Begrenzung: 5 Anfragen je Stunde und IP-Adresse sowie je Adresse, gezählt im
+Speicher des Prozesses (`api/server.mjs`, `RATE`). Ein Neustart setzt die Zähler
+zurück; Phase 3 entscheidet, ob sie in die Datenbank gehören.
+
 ## Personendaten
 
 Ein Beitrag enthält Name, E-Mail-Adresse und den Record-Trail der einreichenden
