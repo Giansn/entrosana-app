@@ -180,7 +180,7 @@
       empty.textContent = box.getAttribute("data-empty");
       box.appendChild(empty);
     }
-    if (!shown) {
+    if (!shown && !box.getAttribute("data-empty")) {   // mit eigenem Leertext keine zweite Leermeldung
       var empty = document.createElement("div");
       empty.className = "card empty";
       empty.innerHTML = "<h4>Nothing here yet.</h4>";
