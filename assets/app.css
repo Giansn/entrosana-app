@@ -252,6 +252,13 @@ p{ margin:0 0 var(--pad-para) }
 }
 .work__h{ font-size:var(--step-2); letter-spacing:-.02em; font-weight:600; margin:0 0 .2rem }
 .work__sub{ color:var(--muted); margin:0 0 1.6rem }
+/* Per-field letter size (set by UX admin on the enclosing element). */
+.fs-xs{ font-size:var(--step--1) !important; }
+.fs-sm{ font-size:calc(var(--step-0) * 0.92) !important; }
+.fs-md{ /* default — no override */ }
+.fs-lg{ font-size:var(--step-1) !important; }
+.fs-xl{ font-size:var(--step-2) !important; }
+.fs-2xl{ font-size:var(--step-3) !important; }
 .h3{ font-size:var(--step-1); font-weight:600; letter-spacing:-.015em; margin:0 }
 
 /* ---------- Karten und Kacheln ---------- */
@@ -1612,3 +1619,10 @@ html{ scrollbar-gutter:stable }
 :root[data-theme="light"] .modal{
   box-shadow:var(--shadow-2), inset 0 1px 0 rgba(255,255,255,.9);
 }
+
+/* Masse und Feingrade als Klassen. Inline-Stile blockiert die CSP (style-src 'self'),
+   geprüft 2026-09-08 an index.html:135. */
+.work__sub--narrow{ max-width:46ch }
+.work__sub--wide{ max-width:62ch }
+.fine{ font-size:.9rem }
+.fine--tight{ font-size:.88rem; margin:0 }

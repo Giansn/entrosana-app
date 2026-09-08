@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Erzeugt die Seiten von entrosana.app aus einer einzigen Quelle.
+"""ACHTUNG (2026-09-08): Die Seiten auf der Platte sind die Quelle. Sie werden von
+admin-app.py (:8396) und admin-modules-ux.py (:8397) direkt beschrieben und tragen
+SEO-Köpfe, die dieses Skript nicht kennt. Ein Lauf überschreibt acht von neun Seiten
+(geprüft mit cmp am 2026-09-08). Vor einem Lauf: in einen Scratch-Ordner bauen und
+gegen die Live-Seiten diffen. Nie direkt gegen ~/entrosana-app laufen lassen.
+
+Erzeugt die Seiten von entrosana.app aus einer einzigen Quelle.
 
 Die Leiste, der Kopf und die Saatdateien stehen genau einmal hier. Aufruf:
 
@@ -161,7 +167,12 @@ def rail(active, variant="hub"):
            '    <div class="rail__rule"></div>', '',
            item("/", "home", "▤", "Workspace"),
            item("/projects", "overview", "▦", "Projects"),
-           item("/services", "services", "◉", "Running Services", "", "svc-count"),
+           item("/services", "services",
+                '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" '
+                'stroke="currentColor" stroke-width="1.4" stroke-linecap="round" '
+                'stroke-linejoin="round"><path d="M4.2 12H15.4"/>'
+                '<path d="M14.9 8.2L20.4 12L14.9 15.8Z" fill="currentColor" stroke="none"/></svg>',
+                "Running Services", "", "svc-count"),
            '', '    <div class="rail__group">Sections</div>']
     for key, (label, glyph, _, _) in SECTIONS.items():
         n = sum(1 for s in SEEDS.values() if s["section"] == key)
@@ -300,7 +311,7 @@ def build():
         <span class="eyebrow">The record</span>
         <div class="split">
           <div>
-            <p class="work__sub" style="max-width:46ch">Every step you finish writes one line, and each
+            <p class="work__sub work__sub--narrow">Every step you finish writes one line, and each
               line is sealed against the one before it. Recomputing the chain is what makes it a record
               rather than a list.</p>
             <p class="note note--idle" id="chain-note">Nothing recorded yet.</p>
@@ -315,7 +326,7 @@ def build():
             f"""          <article class="card">
             <p class="h3">{s['title']}</p>
             <span class="tool__who">{s['who']}</span>
-            <p class="muted" style="font-size:.9rem">{len(s['steps'])} steps &middot; seed <span class="mono">{sid}</span></p>
+            <p class="muted fine">{len(s['steps'])} steps &middot; seed <span class="mono">{sid}</span></p>
             <a class="btn" href="/project?p={sid}">Open project</a>
           </article>""" for sid, s in SEEDS.items() if s["section"] == key)
 
@@ -327,12 +338,12 @@ def build():
               <span class="note note--{t['cls']}"><span class="led"></span> {t['state']}</span></div>
             <span class="tool__who">{t['who']}</span>
             <p>{t['text']}</p>
-            <p class="muted" style="font-size:.88rem;margin:0">{t['next']}</p>
+            <p class="muted fine--tight">{t['next']}</p>
           </article>""" for t in REAL_TOOLS[key])
             real = f"""
       <section class="block hair">
         <span class="eyebrow">What actually runs</span>
-        <p class="work__sub" style="max-width:62ch">Only tools that are running are listed here. Anything
+        <p class="work__sub work__sub--wide">Only tools that are running are listed here. Anything
           still being talked about is not on this page.</p>
         <div class="grid grid--2">
 {items}
@@ -343,7 +354,7 @@ def build():
         written.append(page(f"{key}.html", label, key, f"<b>{label}</b>", f"""      <section class="block hair">
         <span class="eyebrow">{label}</span>
         <h1 class="work__h">{blurb}</h1>
-        <p class="work__sub" style="max-width:62ch">{lede}</p>
+        <p class="work__sub work__sub--wide">{lede}</p>
       </section>
 {real}
       <section class="block hair">

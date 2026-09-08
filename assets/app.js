@@ -233,11 +233,51 @@
   }
 
   function projectList() {
-    return Object.keys(state.projects).map(function (k) { return state.projects[k]; });
+    // Only active hub projects (not archived / soft-deleted).
+    return Object.keys(state.projects).map(function (k) { return state.projects[k]; })
+      .filter(function (p) {
+        return p && !p.is_archived && !p.archived && !p.is_deleted && !p.deleted;
+      });
+  }
+  function isActiveProject(p) {
+    if (!p) return false;
+    if (p.is_archived || p.archived || p.is_deleted || p.deleted) return false;
+    if (p.status === "archived" || p.status === "deleted") return false;
+    return true;
+  }
+  // Workspace counter + resume card — MUST match the rail "Projects" list
+  // (rail-projects.js → entrosana-todo-demo:v3). Never fall back to hub seed
+  // projects (entrosana-app:v1): those made the page say "4 projects open"
+  // while the rail correctly showed "none yet".
+  function activeProjects() {
+    try {
+      var board = JSON.parse(localStorage.getItem("entrosana-todo-demo:v3") || "null");
+      if (!board || !board.projects) return [];
+      return Object.keys(board.projects).filter(function (id) {
+        return isActiveProject(board.projects[id]);
+      }).map(function (id) {
+        var p = board.projects[id];
+        var tasks = p.tasks || [];
+        return {
+          id: id,
+          seed: id,
+          title: p.name || "Untitled",
+          opened: p.updated_at || p.updated || p.created_at || p.opened || "",
+          board: true,
+          steps: tasks.map(function (t) {
+            var done = !!t.checked || t.section_id === "done" || t.status === "done";
+            return { content: t.content || "", checked: done };
+          })
+        };
+      });
+    } catch (e) {
+      return [];
+    }
   }
   function progress(p) {
-    var done = p.steps.filter(function (s) { return s.checked; }).length;
-    return { done: done, total: p.steps.length };
+    var steps = p.steps || [];
+    var done = steps.filter(function (s) { return s.checked; }).length;
+    return { done: done, total: steps.length };
   }
   // Das Dateisiegel deckt, was man sieht: Text, Haken, Abschlusszeit und
   // Notiz jedes Schritts. JSON statt join, damit kein Zeichen im Text die
@@ -326,23 +366,58 @@
 
   // ---------------------------------------------------------------- Ansichten
   function paintWorkspace() {
+    var emptyBox = document.getElementById("state-empty");
+    var resumeBox = document.getElementById("state-resume");
     var resume = document.getElementById("resume");
-    if (!resume) return;
-    var list = projectList().sort(function (a, b) { return (b.opened || "").localeCompare(a.opened || ""); });
-    var g = document.getElementById("greeting"), l = document.getElementById("lede");
-    if (list.length) {
-      g.textContent = "Pick up where you stopped.";
-      l.textContent = list.length === 1 ? "One project open." : list.length + " projects open.";
-      var p = list[0], pr = progress(p);
-      var next = p.steps.filter(function (s) { return !s.checked; })[0];
-      var card = el("div", "card resume");
-      card.innerHTML = ring(pr.done, pr.total) +
-        '<div><p class="h3"></p><p class="resume__m"></p></div>' +
-        '<a class="btn" href="/project?p=' + encodeURIComponent(p.seed) + '">Open project</a>';
-      card.querySelector(".h3").textContent = p.title;
-      card.querySelector(".resume__m").textContent =
-        p.seed + " · " + pr.done + "/" + pr.total + " done" + (next ? " · next: " + next.content.toLowerCase() : " · finished");
-      resume.appendChild(card);
+    // Active only: not archived, not deleted (board store — same as rail).
+    var list = activeProjects().sort(function (a, b) {
+      return (b.opened || "").localeCompare(a.opened || "");
+    });
+    // Two separate DOM blocks so admin can edit both empty + resume copy
+    // without JS overwriting the editable nodes.
+    if (emptyBox) emptyBox.hidden = !!list.length;
+    if (resumeBox) resumeBox.hidden = !list.length;
+    if (resume) resume.textContent = "";
+    if (list.length && resumeBox) {
+      var one = document.getElementById("lede-resume-one");
+      var many = document.getElementById("lede-resume-many");
+      var lede = document.getElementById("lede-resume");
+      if (lede) {
+        if (list.length === 1) {
+          lede.textContent = (one && one.textContent.trim()) || "One project open.";
+        } else {
+          var manyTpl = (many && many.textContent.trim()) || "{n} projects open.";
+          lede.textContent = manyTpl.replace(/\{n\}/g, String(list.length));
+        }
+      }
+      if (resume) {
+        var p = list[0], pr = progress(p);
+        var next = (p.steps || []).filter(function (s) { return !s.checked; })[0];
+        var card = el("div", "card resume");
+        var openHref = p.board
+          ? "/project"
+          : "/project?p=" + encodeURIComponent(p.seed);
+        card.innerHTML = ring(pr.done, pr.total) +
+          '<div><p class="h3"></p><p class="resume__m"></p></div>' +
+          '<a class="btn" href="' + openHref + '">Open project</a>';
+        card.querySelector(".h3").textContent = p.title;
+        card.querySelector(".resume__m").textContent =
+          (p.board ? p.title : p.seed) + " · " + pr.done + "/" + pr.total + " done" +
+          (next ? " · next: " + (next.content || "").toLowerCase() : " · finished");
+        if (p.board) {
+          card.querySelector("a.btn").addEventListener("click", function () {
+            try {
+              var raw = localStorage.getItem("entrosana-todo-demo:v3");
+              var s = raw ? JSON.parse(raw) : null;
+              if (s) {
+                s.active = p.id;
+                localStorage.setItem("entrosana-todo-demo:v3", JSON.stringify(s));
+              }
+            } catch (e) { /* storage locked */ }
+          });
+        }
+        resume.appendChild(card);
+      }
     }
     // Kette und Quittung
     var note = document.getElementById("chain-note"), box = document.getElementById("chain-receipt");

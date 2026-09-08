@@ -108,11 +108,17 @@ SKIP = {"script", "style", "svg", "noscript", "template"}
 
 
 def spans(src):
-    """[(start, end, umgebendes Tag)] für jede Textstelle mit Inhalt."""
-    out, pos, skip, stack = [], 0, 0, []
+    """[(start, end, umgebendes Tag, open_tag_start)] für jede Textstelle mit Inhalt.
+
+    open_tag_start is the index of the enclosing element's opening '<'
+    (or -1 if none), used to set per-field letter-size classes.
+    """
+    out, pos, skip, stack = [], 0, 0, []  # stack: [(name, open_start)]
     for m in TAG_RE.finditer(src):
         if skip == 0 and src[pos:m.start()].strip():
-            out.append((pos, m.start(), stack[-1] if stack else "?"))
+            parent = stack[-1][0] if stack else "?"
+            open_start = stack[-1][1] if stack else -1
+            out.append((pos, m.start(), parent, open_start))
         pos = m.end()
         name = (m.group(2) or "").lower()
         if not name:
@@ -125,12 +131,14 @@ def spans(src):
                 skip += 1
         if skip == 0 and name not in ("br", "img", "input", "meta", "link", "hr"):
             if closing:
-                if stack and stack[-1] == name:
+                if stack and stack[-1][0] == name:
                     stack.pop()
             elif not selfclose:
-                stack.append(name)
+                stack.append((name, m.start()))
     if skip == 0 and src[pos:].strip():
-        out.append((pos, len(src), stack[-1] if stack else "?"))
+        parent = stack[-1][0] if stack else "?"
+        open_start = stack[-1][1] if stack else -1
+        out.append((pos, len(src), parent, open_start))
     return out
 
 
@@ -144,10 +152,63 @@ def glatt(t: str) -> str:
     return re.sub(r"\s+", " ", t).strip()
 
 
+# Per-field letter size. Each box gets its own <span class="fs-…"> so two
+# fields in one <p> (e.g. split by <br>) can differ. CSP forbids inline styles.
+FS_KEYS = ("xs", "sm", "md", "lg", "xl", "2xl")
+FS_CLASS = {k: f"fs-{k}" for k in FS_KEYS}
+FS_CLASS_RE = re.compile(r"\bfs-(?:xs|sm|md|lg|xl|2xl)\b")
+
+
+def fs_from_open_tag(tag_html: str) -> str:
+    m = FS_CLASS_RE.search(tag_html or "")
+    if not m:
+        return "md"
+    return m.group(0)[3:]  # strip "fs-"
+
+
+def _class_list(tag_html: str) -> list[str]:
+    cm = re.search(r'\sclass=(["\'])(.*?)\1', tag_html or "", re.S)
+    if not cm:
+        return []
+    return cm.group(2).split()
+
+
+def is_fs_wrap_tag(tag_html: str) -> bool:
+    """True if this is our dedicated size wrapper (<span class="fs-lg"> only)."""
+    if not tag_html:
+        return False
+    m = re.match(r"<\s*([a-zA-Z][\w:-]*)", tag_html)
+    if not m or m.group(1).lower() != "span":
+        return False
+    classes = _class_list(tag_html)
+    return bool(classes) and all(FS_CLASS_RE.fullmatch(c) for c in classes)
+
+
+def field_sized_html(text: str, size: str) -> str:
+    """Plain text (+ optional <br>) wrapped so this box alone has a size."""
+    size = size if size in FS_KEYS else "md"
+    if size == "md":
+        return text
+    return f'<span class="{FS_CLASS[size]}">{text}</span>'
+
+
 def page_read(name):
     src = (APP / name).read_text(encoding="utf-8")
-    return src, [{"i": i, "tag": t, "text": glatt(src[a:b])}
-                 for i, (a, b, t) in enumerate(spans(src))]
+    stellen = []
+    for i, (a, b, t, open_start) in enumerate(spans(src)):
+        size = "md"
+        if open_start >= 0:
+            m = TAG_RE.match(src, open_start)
+            if m:
+                size = fs_from_open_tag(m.group(0))
+        stellen.append({
+            "i": i,
+            "tag": t,
+            "text": glatt(src[a:b]),
+            "size": size,
+            "open_start": open_start,
+        })
+    return src, stellen
 
 
 def bereiche(src):
@@ -179,7 +240,7 @@ def gruppiere(src, stellen):
     ber = bereiche(src)
     sp = spans(src)
     zuordnung = []
-    for i, (a, b, _t) in enumerate(sp):
+    for i, (a, b, _t, _open) in enumerate(sp):
         if a < body:
             zuordnung.append("kopf")
             continue
@@ -246,7 +307,7 @@ def preview_html(name):
     src = (APP / name).read_text(encoding="utf-8")
     body = src.lower().find("<body")
     out = src
-    for i, (a, b, _t) in reversed(list(enumerate(spans(src)))):
+    for i, (a, b, _t, _open) in reversed(list(enumerate(spans(src)))):
         if a < body:                       # Kopfbereich bleibt unangetastet
             continue
         roh = src[a:b]
@@ -265,27 +326,118 @@ def preview_html(name):
     return out.replace("</body>", PREVIEW_JS + "</body>", 1)
 
 
-def page_write(name, neu: list):
-    """neu = Liste der Texte in derselben Reihenfolge wie page_read."""
+# Line breaks in plain text fields: only these tokens may use angle brackets.
+# Written into the HTML as real <br> so the page shows a break.
+_BR_TOKEN = re.compile(r"<br\s*/?>", re.I)
+
+
+def text_allows_markup(t: str) -> None:
+    """Reject HTML except <br> / <br/> / <br /> (case-insensitive)."""
+    cleaned = _BR_TOKEN.sub("", t)
+    if "<" in cleaned or ">" in cleaned:
+        raise ValueError(
+            "Only line breaks with <br> are allowed; other < or > markup is rejected"
+        )
+
+
+def normalize_breaks(t: str) -> str:
+    """Canonicalise break tokens to <br> before writing into the page."""
+    return _BR_TOKEN.sub("<br>", t)
+
+
+def apply_fs_class_strip(tag_html: str) -> str:
+    """Remove fs-* classes from a tag (legacy parent-level sizes)."""
+    cm = re.search(r'\sclass=(["\'])(.*?)\1', tag_html, re.S)
+    if not cm:
+        return tag_html
+    quote, classes = cm.group(1), cm.group(2)
+    parts = [c for c in classes.split() if not FS_CLASS_RE.fullmatch(c)]
+    if parts:
+        new_class = f' class={quote}{" ".join(parts)}{quote}'
+    else:
+        new_class = ""
+    return tag_html[: cm.start()] + new_class + tag_html[cm.end() :]
+
+
+def page_write(name, neu: list, sizes: dict | None = None):
+    """neu = texts in page_read order. sizes = optional {index: xs|sm|md|lg|xl|2xl}.
+
+    Each field gets its own <span class="fs-…"> so every box is independent
+    (two text nodes in one <p> can have different sizes).
+    """
     f = APP / name
     src = f.read_text(encoding="utf-8")
     sp = spans(src)
     if len(neu) != len(sp):
         raise ValueError(f"{len(neu)} Texte für {len(sp)} Stellen — abgelehnt")
+    sizes = {str(k): v for k, v in (sizes or {}).items()}
     out = src
     geaendert = []
-    for i in range(len(sp) - 1, -1, -1):          # von hinten, sonst wandern die Positionen
-        a, b, tag = sp[i]
+
+    for i in range(len(sp) - 1, -1, -1):
+        a, b, tag, open_start = sp[i]
         t = neu[i]
-        if "<" in t or ">" in t:
-            raise ValueError(f"Stelle {i + 1}: < und > sind nicht erlaubt, hier steht nur Text")
-        alt = src[a:b]
-        if glatt(alt) == t.strip():
-            continue                               # unberührt: Datei bleibt wie sie ist
-        geaendert.append((f"Stelle {i + 1} · <{tag}>", glatt(alt), t.strip()))
-        vor = alt[:len(alt) - len(alt.lstrip())]   # Einrückung erhalten
-        nach = alt[len(alt.rstrip()):]
-        out = out[:a] + vor + t.strip() + nach + out[b:]
+        text_allows_markup(t)
+        t = normalize_breaks(t.strip())
+        alt = out[a:b]
+
+        wrap_m = TAG_RE.match(out, open_start) if open_start >= 0 else None
+        in_wrap = bool(wrap_m and is_fs_wrap_tag(wrap_m.group(0)))
+        cur_size = fs_from_open_tag(wrap_m.group(0)) if wrap_m else "md"
+
+        new_size = sizes[str(i)] if str(i) in sizes else cur_size
+        if new_size not in FS_KEYS:
+            new_size = "md"
+
+        plain_same = (
+            ("<br>" not in t and glatt(alt) == t)
+            or normalize_breaks(alt.strip()) == t
+            or alt.strip() == t
+        )
+        # Already correct: plain text + matching size, or sized wrap with same size+text
+        if plain_same and new_size == cur_size:
+            if in_wrap and new_size != "md":
+                continue
+            if not in_wrap and new_size == "md":
+                continue
+            if not in_wrap and new_size != "md":
+                pass  # need to add wrap
+            elif in_wrap and new_size == "md":
+                pass  # need to unwrap
+            else:
+                continue
+
+        new_html = field_sized_html(t, new_size)
+        vor = alt[: len(alt) - len(alt.lstrip())]
+        nach = alt[len(alt.rstrip()) :]
+
+        if in_wrap:
+            close = out.find("</span>", b)
+            if close < 0:
+                raise ValueError(f"Stelle {i + 1}: size wrapper not closed")
+            start, end = open_start, close + len("</span>")
+            out = out[:start] + new_html + out[end:]
+        else:
+            out = out[:a] + vor + new_html + nach + out[b:]
+            # Remove legacy fs-* on the real parent (shared by siblings)
+            if open_start >= 0:
+                pm = TAG_RE.match(out, open_start)
+                if pm and not is_fs_wrap_tag(pm.group(0)) and FS_CLASS_RE.search(pm.group(0)):
+                    cleaned = apply_fs_class_strip(pm.group(0))
+                    if cleaned != pm.group(0):
+                        out = (
+                            out[:open_start]
+                            + cleaned
+                            + out[open_start + len(pm.group(0)) :]
+                        )
+
+        if not plain_same:
+            geaendert.append(
+                (f"Stelle {i + 1} · <{tag}>", glatt(alt), glatt(_BR_TOKEN.sub(" ↵ ", t)))
+            )
+        if new_size != cur_size or (in_wrap != (new_size != "md")):
+            geaendert.append((f"Stelle {i + 1} · size", cur_size, new_size))
+
     if out == src:
         return None
     b_name = backup(f)
@@ -540,7 +692,8 @@ def dash():
         f"<p class='mono'>Dienst entrosana-app: {act} &middot; serve.mjs liest Änderungen alle 5 Sekunden neu ein</p>"
         "<h2>Seiten</h2>"
         "<p class='note'>Geändert wird ausschliesslich Text zwischen den Tags. Markup, Klassen und "
-        "Attribute bleiben unberührt; wer spitze Klammern eintippt, bekommt eine Ablehnung.</p>"
+        "Attribute bleiben unberührt. Zeilenumbruch: <span class='mono'>&lt;br&gt;</span> ist erlaubt; "
+        "andere spitze Klammern werden abgelehnt.</p>"
         f"<table>{zeilen}</table>"
         "<h2>Katalog</h2>"
         "<p class='note'>Die Karten für Tools und Modules aus <span class='mono'>assets/catalogue.js</span>. "

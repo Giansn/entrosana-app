@@ -63,6 +63,7 @@ const ROUTES = new Map([
   ["/contribute/review-someones-work", { file: "detail.html", type: HTML }],
   ["/contribute/ask-for-runway",       { file: "detail.html", type: HTML }],
   ["/assets/catalogue.js",   { file: "assets/catalogue.js",   type: JS }],
+  ["/assets/catalogue-sizes.js", { file: "assets/catalogue-sizes.js", type: JS }],
   ["/assets/cards.js",       { file: "assets/cards.js",       type: JS }],
   ["/assets/detail.js",      { file: "assets/detail.js",      type: JS }],
   ["/assets/services-ui.js", { file: "assets/services-ui.js", type: JS }],

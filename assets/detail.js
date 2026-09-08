@@ -20,6 +20,13 @@
     return n;
   }
   function block() { var s = el("section", "block hair"); host.appendChild(s); return s; }
+  function fsClass(key) {
+    if (!e) return "";
+    var row = (window.__catalogueSizes || {})[e.slug] || {};
+    var s = row[key];
+    if (!s || s === "md") return "";
+    return " fs-" + s;
+  }
 
   if (!e) {
     var b = block();
@@ -60,9 +67,9 @@
     head.appendChild(led);
   }
   b1.appendChild(head);
-  b1.appendChild(el("h1", "work__h", e.title));
-  if (e.who) b1.appendChild(el("p", "mod__who", e.who));
-  b1.appendChild(el("p", "mod__lede", e.lede));
+  b1.appendChild(el("h1", "work__h" + fsClass("title"), e.title));
+  if (e.who) b1.appendChild(el("p", "mod__who" + fsClass("who"), e.who));
+  b1.appendChild(el("p", "mod__lede" + fsClass("lede"), e.lede));
   if (e.draft) {
     b1.appendChild(el("p", "draftnote",
       "Draft page — the wording below is a placeholder until it is replaced."));
@@ -71,8 +78,8 @@
   // Was es ist
   var b2 = block();
   b2.appendChild(el("span", "eyebrow", "What it is"));
-  b2.appendChild(el("p", "measure" + (e.draft ? " draft" : ""), e.about));
-  if (e.note) b2.appendChild(el("p", "hint", e.note));
+  b2.appendChild(el("p", "measure" + (e.draft ? " draft" : "") + fsClass("about"), e.about));
+  if (e.note) b2.appendChild(el("p", "hint" + fsClass("note"), e.note));
 
   // Eckdaten
   if (e.facts && e.facts.length) {

@@ -1,7 +1,6 @@
-# Nichts ausgeschlossen ausser dem, was sich neu erzeugt.
-# Die .bak-Dateien bleiben drin: sie sind der Stand vor dem Umbau.
-*.pyc
+# Sicherungen der Editoren und Werkzeugausgaben, nicht Quelle
+.bak-seo/
+graphify-out/
 __pycache__/
-
-# Laufprotokoll der Admin-Oberflaeche, kein Bestandteil des Stands.
-admin-app.log
+*.bak
+*.bak-*

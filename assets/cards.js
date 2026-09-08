@@ -11,6 +11,15 @@
     return s && s.steps ? s.steps.length : 0;
   }
 
+  // Per-card field letter size from catalogue-sizes.js (slug → { title: "lg", … }).
+  function fsClass(e, key) {
+    var all = window.__catalogueSizes || {};
+    var row = all[e.slug] || {};
+    var s = row[key];
+    if (!s || s === "md") return "";
+    return " fs-" + s;
+  }
+
   function card(section, e) {
     var a = document.createElement("a");
     a.className = "mcard";
@@ -34,25 +43,26 @@
     a.appendChild(head);
 
     var t = document.createElement("p");
-    t.className = "mcard__t";
+    t.className = "mcard__t" + fsClass(e, "title");
     t.textContent = e.title;
     a.appendChild(t);
 
     if (e.who) {
       var w = document.createElement("p");
-      w.className = "mcard__who";
+      w.className = "mcard__who" + fsClass(e, "who");
       w.textContent = e.who;
       a.appendChild(w);
     }
 
     var l = document.createElement("p");
-    l.className = "mcard__l";
+    l.className = "mcard__l" + fsClass(e, "lede");
     l.textContent = e.lede;
     a.appendChild(l);
 
     var m = document.createElement("span");
     m.className = "mcard__m";
     var c = document.createElement("span");
+    c.className = (c.className || "") + fsClass(e, "meta");
     c.textContent = [e.seed ? steps(e) + " steps" : "", e.meta]
       .filter(function (x) { return x; }).join(" · ");
     var go = document.createElement("span");
@@ -145,9 +155,9 @@
       });
       panel.setAttribute("aria-labelledby", btns[idx].id);
       panel.textContent = "";
-      if (e.who) panel.appendChild(line("tabpanel__who mono", e.who));
-      if (e.lede) panel.appendChild(line("tabpanel__l", e.lede));
-      if (e.about) panel.appendChild(line("tabpanel__a", e.about));
+      if (e.who) panel.appendChild(line("tabpanel__who mono" + fsClass(e, "who"), e.who));
+      if (e.lede) panel.appendChild(line("tabpanel__l" + fsClass(e, "lede"), e.lede));
+      if (e.about) panel.appendChild(line("tabpanel__a" + fsClass(e, "about"), e.about));
       var go = document.createElement("a");
       go.className = "tabpanel__go";
       go.href = "/" + section + "/" + e.slug;

@@ -9,7 +9,7 @@ set -uo pipefail
 
 OUT="$(cd "$(dirname "$0")/.." && pwd)/assets/services.js"
 HOST="$(hostname)"
-READ_AT="$(date '+%H:%M')"
+READ_AT="$(date '+%Y-%m-%d %H:%M')"
 
 unit_state() { systemctl --user is-active "$1" 2>/dev/null; }
 docker_status() { docker ps --filter "name=^${1}$" --format '{{.Status}}' 2>/dev/null | head -1; }

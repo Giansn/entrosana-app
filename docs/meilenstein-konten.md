@@ -192,3 +192,26 @@ Sync-Kanten in S3.
 S0 sofort (unabhängig, macht den Pilot kontrollierbar), danach S1→S4 in
 Folge. Registrierungs- und Login-Seiten entstehen in S2 — mit dem
 Unterbau, nicht vor ihm.
+
+## Entscheid vom 2026-09-08: der Hub bekommt einen schreibenden Server
+
+Die offene Frage aus `handoff-design.md` §10 ist entschieden. entrosana.app
+erhält einen Dienst, der schreiben kann: `api/` mit `node:http` und
+`node:sqlite` auf `127.0.0.1:4324` (Port frei, geprüft mit `ss -ltnp` am
+2026-09-08), als eigene Einheit `entrosana-api.service` neben
+`entrosana-app.service`, erreichbar über den bestehenden Tunnel mit einer
+Pfadregel `^/api/.+` vor der Auffangregel. `serve.mjs` bleibt reine
+Auslieferung; seine Inhaltssicherheitsregel erhält `connect-src 'self'`. Der
+Entscheid setzt die Architekturentscheide 1 und 2 um.
+
+Der Weg dahin steht in `docs/contributions.md` (Zustände, Regeln, Rollen, die
+vier Entscheide des Eigentümers) und folgt dem Stufenplan: S1 zuerst, Beiträge
+vor Konten. Identität (S2, Passkeys) kommt danach auf derselben
+Akteurs-Nahtstelle an, ohne die Annahme neu zu öffnen.
+
+Ursprung bleibt e14. x1 (`thinkx1`, 8 Kerne, 15 GiB, `node` v22.23.2 mit
+`node:sqlite`, gemessen am 2026-09-08) dient als Vorstufe für den Bau der
+Phasen 1 bis 6 und höchstens als zweiter, zustandsloser Tunnel-Anschluss für
+die statischen Seiten, nie für `api/`. Gründe: x1 war Anfang September vier
+Tage offline, seine Platte ist unverschlüsselt und reist mit, und die
+Sicherungskette läuft von e14.
