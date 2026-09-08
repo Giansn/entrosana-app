@@ -59,6 +59,11 @@
   var hub = window.__hub || null;
   function roleWord(r) { for (var i = 0; i < ROLES.length; i++) if (ROLES[i][0] === r) return ROLES[i][1]; return r || ""; }
   function when2(iso) { return iso ? String(iso).replace("T", " ").slice(0, 16) : ""; }
+  // Handlungen nach Tagen (Wunsch des Eigentümers, 2026-09-09): heute, gestern, dann das Datum.
+  function dayLabel(iso) { var d = String(iso).slice(0, 10), today = new Date().toISOString().slice(0, 10), yest = new Date(Date.now() - 86400e3).toISOString().slice(0, 10); return d === today ? "Today" : d === yest ? "Yesterday" : d; }
+  function timeOf(iso) { return String(iso).slice(11, 16); }
+  function byDay(items, getIso) { var groups = [], map = {}; items.forEach(function (it) { var d = String(getIso(it)).slice(0, 10); if (!map[d]) { map[d] = { label: dayLabel(getIso(it)), items: [] }; groups.push(map[d]); } map[d].items.push(it); }); return groups; }
+  function dayHead(list, g) { var li = el("li", "me__day"); li.appendChild(el("span", null, g.label)); li.appendChild(el("span", "me__n", g.items.length + (g.items.length === 1 ? " entry" : " entries"))); list.appendChild(li); }
   // Projekte auf diesem Gerät: die Hub-Dateien (Saat-Checklisten) und das Brett der Projektverwaltung.
   function deviceProjects() {
     var out = [];
@@ -266,16 +271,16 @@
       api("/api/me/journal").then(function (r) {
         jlist.textContent = ""; var items = r.s === 200 ? r.j.items : [];
         if (!items.length) { jlist.appendChild(el("li", "me__row fine", "No entries yet.")); return; }
-        items.forEach(function (e) {
+        byDay(items, function (e) { return e.created; }).forEach(function (g) { dayHead(jlist, g); g.items.forEach(function (e) {
           var li = el("li", "me__row journal__e"); li.id = "j" + e.id;
-          var top = el("div", "journal__top"); top.appendChild(el("span", "me__n", when2(e.created) + (e.updated ? " · edited" : ""))); top.appendChild(el("span", "chip" + (e.public ? "" : " chip--muted"), e.public ? "public" : "private")); li.appendChild(top);
+          var top = el("div", "journal__top"); top.appendChild(el("span", "me__n", timeOf(e.created) + (e.updated ? " · edited" : ""))); top.appendChild(el("span", "chip" + (e.public ? "" : " chip--muted"), e.public ? "public" : "private")); li.appendChild(top);
           var txt = el("p", "journal__t", e.text); li.appendChild(txt);
           var acts = el("div", "actions journal__acts");
           var tg = el("button", "btn btn--quiet", e.public ? "Make private" : "Make public"); tg.type = "button"; tg.addEventListener("click", function () { api("/api/me/journal/" + e.id, { method: "PATCH", body: JSON.stringify({ public: !e.public }) }).then(paintJournal); });
           var ed = el("button", "btn btn--quiet", "Edit"); ed.type = "button"; ed.addEventListener("click", function () { var ta = el("textarea"); ta.value = e.text; ta.rows = 3; ta.maxLength = 2000; li.replaceChild(ta, txt); var sv = el("button", "btn btn--ghost", "Save"); sv.type = "button"; sv.addEventListener("click", function () { api("/api/me/journal/" + e.id, { method: "PATCH", body: JSON.stringify({ text: ta.value }) }).then(paintJournal); }); acts.replaceChild(sv, ed); ta.focus(); });
           var dl = el("button", "btn btn--quiet", "Delete"); dl.type = "button"; dl.addEventListener("click", function () { if (!confirm("Delete this entry?")) return; api("/api/me/journal/" + e.id, { method: "DELETE" }).then(paintJournal); });
           acts.appendChild(tg); acts.appendChild(ed); acts.appendChild(dl); li.appendChild(acts); jlist.appendChild(li);
-        });
+        }); });
       }).catch(function () { jlist.textContent = ""; jlist.appendChild(el("li", "me__row fine", "The Hub's server is not reachable; entries wait.")); });
     }
     jf.addEventListener("submit", function (ev) { ev.preventDefault(); var v = jta.value.trim(); if (!v) { bad(fJ, "Write a line first."); return; } jb.disabled = true; note(jout, "idle", "Saving…");
@@ -283,8 +288,8 @@
     paintJournal(); secW.appendChild(wbox);
 
     var secJ = block("Records on this device", null, null), jbox = el("div", "card me");
-    jbox.appendChild(el("p", "fine", recs.length ? recs.length + " record(s) on this device; the last " + Math.min(6, recs.length) + ":" : "Nothing recorded on this device yet. A record appears the moment you finish a step."));
-    if (recs.length) { var jl = el("ul", "me__list"); recs.slice(-6).reverse().forEach(function (r) { var li = el("li", "me__row"); li.appendChild(el("span", "me__n", when2(r.t))); li.appendChild(el("span", "me__t", r.text)); if (r.project) li.appendChild(el("span", "me__next", r.project)); jl.appendChild(li); }); jbox.appendChild(jl); }
+    jbox.appendChild(el("p", "fine", recs.length ? recs.length + " record(s) on this device, by day; the last " + Math.min(30, recs.length) + ":" : "Nothing recorded on this device yet. A record appears the moment you finish a step."));
+    if (recs.length) { var jl = el("ul", "me__list"); byDay(recs.slice().sort(function (a, b) { return String(b.t).localeCompare(String(a.t)); }).slice(0, 30), function (r) { return r.t; }).forEach(function (g) { dayHead(jl, g); g.items.forEach(function (r) { var li = el("li", "me__row"); li.appendChild(el("span", "me__n", timeOf(r.t))); li.appendChild(el("span", "me__t", r.text)); if (r.project) li.appendChild(el("span", "me__next", r.project)); jl.appendChild(li); }); }); jbox.appendChild(jl); }
     secJ.appendChild(jbox);
 
     var sec3 = block("Your data", null, null), dbox = el("div", "card me");

@@ -1813,4 +1813,8 @@ html{ scrollbar-gutter:stable }
   .palette__list{ max-height:calc(100dvh - 8.5rem) }
   .palette__row{ padding:.75rem .6rem }
 }
+/* Tagesköpfe in Journal und Records (2026-09-09). */
+.me__day{ display:flex; justify-content:space-between; align-items:baseline; gap:.6rem; padding:.9rem 0 .25rem; border-top:0; font-family:var(--font-mono); font-size:var(--step--1); letter-spacing:.12em; text-transform:uppercase; color:var(--seal) }
+.me__day .me__n{ letter-spacing:0; text-transform:none }
+.me__day + .me__row{ border-top:0 }
 
