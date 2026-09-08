@@ -1,5 +1,8 @@
 // contributions.mjs — Prüfung der Eingabe und die Zustandsmaschine. Reine
 // Funktionen, damit die Tests sie ohne Netz und ohne Datenbank treffen.
+import { createHash } from "node:crypto";
+const sha = s => createHash("sha256").update(s).digest("hex");
+
 export const AREAS = ["social", "nature-based", "technical", "other"];
 export const OPEN = ["received", "confirmed", "reviewing"];
 export const EMAIL = /^[^@\s]{1,64}@[^@\s]{1,189}\.[A-Za-z]{2,}$/;
@@ -41,7 +44,28 @@ export function validate(body) {
     org_id = Number(body.org_id);
     if (!Number.isInteger(org_id) || org_id <= 0) return { ok: false, error: "org_id must be a positive integer" };
   }
-  return { ok: true, value: { email, name, title, area, summary, trail, files, org_id } };
+  const records = Array.isArray(body.records) ? body.records : [];
+  const chain = Array.isArray(body.chain) ? body.chain : [];
+  return { ok: true, value: { email, name, title, area, summary, trail, files, org_id, records, chain } };
+}
+
+// Der Trail des Geräts, serverseitig nachgerechnet. Der Client schickt die Hashes
+// der ganzen Kette (nur Hashes, kein Inhalt fremder Projekte) und die vollen
+// Zeilen dieses Projekts mit ihrer Stelle i. Rezept wie in app.js:
+// sha256(prev + "|" + [t, kind, project, text].join("|")).
+export const TRAIL = { chain: 4000, records: 400 };
+export const recordPayload = r => [r.t, r.kind, r.project || "", r.text].join("|");
+export function verifyTrail(chain, records) {
+  if (!Array.isArray(chain) || !Array.isArray(records)) return { ok: false, why: "chain and records must be lists" };
+  if (chain.length > TRAIL.chain || records.length > TRAIL.records) return { ok: false, why: "trail too long" };
+  if (!chain.every(h => typeof h === "string" && /^[0-9a-f]{64}$/.test(h))) return { ok: false, why: "chain entries must be sha256 hex" };
+  for (const r of records) {
+    if (!r || !Number.isInteger(r.i) || r.i < 0 || r.i >= chain.length) return { ok: false, why: "record index outside chain" };
+    if (["t", "kind", "text", "h"].some(k => typeof r[k] !== "string")) return { ok: false, why: "record fields" };
+    if (chain[r.i] !== r.h) return { ok: false, why: `record ${r.i} not in chain` };
+    if (sha((r.i > 0 ? chain[r.i - 1] : "") + "|" + recordPayload(r)) !== r.h) return { ok: false, why: `record ${r.i} hash mismatch` };
+  }
+  return { ok: true, n: records.length, chain: chain.length };
 }
 
 // Welche Handlung führt von current nach target? null, wenn der Übergang nicht existiert.

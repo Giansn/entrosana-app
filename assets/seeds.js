@@ -230,8 +230,8 @@ window.__seeds = {
     "n": "Who reads it, against what, and when they say yes or no."
    },
    {
-    "t": "Send the proposal in",
-    "n": "Export this checklist and mail it to info@entrosana.com, or use entrosana.com/request-access. A proposal that arrives with its trail gets a shorter answer."
+    "t": "Submit to the Hub",
+    "n": "Open entrosana.app/contribute/submit. It sends these steps with their records to the Hub and mails you a link to confirm."
    }
   ]
  },

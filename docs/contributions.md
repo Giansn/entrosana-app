@@ -144,6 +144,45 @@ Pflicht) und `received | confirmed | reviewing → withdrawn` (einreichende
 Person für Eigenes, Eigentümer für alles). Jeder Übergang ist eine Kettenzeile
 `contribution.<zustand>` mit Akteur und Begründung. Alles andere ist `409`.
 
+## Einreichen (Phase 4, gebaut am 2026-09-08)
+
+Eigene Seite `/contribute/submit?seed=…` (`submit.html`, `assets/submit.js`),
+absichtlich unabhängig von der Projektansicht: `/project` wird von `project.js`
+gezeichnet, einem Vorführ-Projekt mit eigenem Speicher
+(`entrosana-todo-demo:v3`), und hat kein `#project-view` mehr. Die Seite
+benutzt die schmale Nahtstelle `window.__hub` aus `app.js` (`state`, `save`,
+`record`, `say`, `markdown`, `download`, `paint`). Liegt zur Saat eine Hub-Datei
+auf dem Gerät, werden Titel, Schritte und Aufzeichnungen vorbelegt und Schritt 6
+«Submit to the Hub» wird nach dem Senden abgehakt und in die Kette geschrieben;
+sonst arbeitet das Formular leer.
+
+Gesendet werden Name, Adresse, Titel, Bereich, Vorschlag, höchstens ein
+Dateiverweis, der Markdown-Export der Datei (`trail`) sowie der Trail als Daten:
+die vollen Zeilen dieses Projekts mit ihrer Stelle `i` und von der ganzen Kette
+des Geräts **nur die Hashes** (`chain`). Der Server rechnet jede Zeile nach
+(`verifyTrail`, `api/contributions.mjs`) und speichert `trail_ok` (1 stimmt,
+0 stimmt nicht, NULL nichts mitgeschickt). Inhalte anderer Projekte verlassen
+das Gerät nicht. Grenzen: 4000 Hashes, 400 Zeilen, 256 KB.
+
+Die Rückmeldung hat drei Ausgänge in den Farben des Vorrats: gesendet
+(`--verify`), abgewiesen mit Grund (`--warn`), Server nicht erreichbar
+(`--muted`). Im dritten Fall bleibt der alte Weg sichtbar: Datei herunterladen
+und an info@entrosana.com mailen. Nichts, was heute geht, hört auf zu gehen.
+
+`/contribute/status` (`status.html`, `assets/status.js`) löst den Verweis aus
+der Mail ein (`?verify=`), legt die Zugangsmarke im Browser ab
+(`entrosana-app:token`, 30 Tage), zeigt eigene Beiträge und zu `?id=` den Stand
+mit Begründung, und führt zum Einreichen. Zurückziehen geht dort, solange der
+Beitrag offen ist. Der Verweis in der Mail zeigt auf diese Seite.
+
+Auf der Maschine gibt `node api/admin.mjs token <email> [tage]` eine Marke ohne
+Mail aus, für Prüfung und Eigentümer; auch das ist eine Kettenzeile.
+
+Am Rand fügt Cloudflare in jede HTML-Antwort ein Inline-Skript für seine
+Bot-Erkennung ein (`/cdn-cgi/challenge-platform/…`). Die Regel `script-src 'self'`
+blockiert es; für den Hub folgenlos, aber die Erkennung läuft damit nicht. Das
+ist eine Zoneneinstellung, keine Datei im Baum.
+
 ## Personendaten
 
 Ein Beitrag enthält Name, E-Mail-Adresse und den Record-Trail der einreichenden

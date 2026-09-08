@@ -62,6 +62,9 @@ const ROUTES = new Map([
   ["/contribute/propose-a-track",      { file: "detail.html", type: HTML }],
   ["/contribute/review-someones-work", { file: "detail.html", type: HTML }],
   ["/contribute/ask-for-runway",       { file: "detail.html", type: HTML }],
+  // Stand eines Beitrags und Einlösen des Bestätigungsverweises (Phase 4). Nicht in SITEMAP.
+  ["/contribute/status",               { file: "status.html", type: HTML }],
+  ["/contribute/submit",               { file: "submit.html", type: HTML }],
   ["/assets/catalogue.js",   { file: "assets/catalogue.js",   type: JS }],
   ["/assets/catalogue-sizes.js", { file: "assets/catalogue-sizes.js", type: JS }],
   ["/assets/cards.js",       { file: "assets/cards.js",       type: JS }],
@@ -79,6 +82,8 @@ const ROUTES = new Map([
   ["/assets/seeds.js",    { file: "assets/seeds.js",    type: JS }],
   ["/assets/services.js", { file: "assets/services.js", type: JS }],
   ["/assets/theme.js",    { file: "assets/theme.js",    type: JS }],
+  ["/assets/status.js",   { file: "assets/status.js",   type: JS }],
+  ["/assets/submit.js",   { file: "assets/submit.js",   type: JS }],
   ["/assets/mark.svg",    { file: "assets/mark.svg",    type: "image/svg+xml" }],
   // Vorschaubild für geteilte Links. Wird nicht von der Seite geladen, sondern
   // von fremden Diensten geholt, deshalb greift die CSP hier nicht.

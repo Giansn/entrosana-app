@@ -1762,4 +1762,13 @@
   paintProject();
   paintTrail();
   paintServices();
+
+  // Schmale Nahtstelle für submit.js (Phase 4). Ändert hier nichts, gibt nur
+  // die vorhandenen Helfer heraus.
+  window.__hub = {
+    state: function () { return state; },
+    save: function () { save(state); },
+    record: record, say: say, markdown: markdown, download: download,
+    paint: function (host, p) { drawProject(host, p); paintRail(); }
+  };
 })();

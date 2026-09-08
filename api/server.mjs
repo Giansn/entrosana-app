@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 import { open } from "./db.mjs";
 import { append as auditAppend, verify as auditVerify } from "./audit.mjs";
 import { can } from "./policy.mjs";
-import { validate as validateContribution, actionFor } from "./contributions.mjs";
+import { validate as validateContribution, actionFor, verifyTrail } from "./contributions.mjs";
 import { serviceToken, ensureServiceActor, resolveActor, issueToken, withRoles, newToken, sha } from "./auth.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -25,7 +25,7 @@ const DB_PATH = process.env.DB_PATH || join(HERE, "db", "hub.sqlite");
 const LOG = process.env.LOG || join(process.env.HOME || HERE, ".sygnif", "logs", "entrosana-api.log");
 const PUBLIC = process.env.PUBLIC_ORIGIN || "https://entrosana.app";
 const MAIL = process.env.MAIL_SEND || join(HERE, "..", "tools", "mail-send.py");
-const BODY_CAP = 32 * 1024;   // Trail eines Projekts passt hinein
+const BODY_CAP = 256 * 1024;  // Kette eines Geräts als Hashes passt hinein
 const RATE = { limit: 5, windowMs: 3600e3 };   // docs/contributions.md, Entscheid 5
 
 mkdirSync(dirname(LOG), { recursive: true });
@@ -107,7 +107,7 @@ async function startVerification(email, name, purpose) {
   const token = newToken(), now = new Date();
   db.prepare("INSERT INTO verifications(email, token_hash, created, expires) VALUES (?,?,?,?)")
     .run(email, sha(token), now.toISOString(), new Date(now.getTime() + 3600e3).toISOString());
-  const link = `${PUBLIC}/api/verify?token=${token}`;
+  const link = `${PUBLIC}/contribute/status?verify=${token}`;
   const what = purpose === "contribution" ? "a contribution to the entrosana Hub under this address" : "this address on entrosana.app";
   const r = await mail(email, purpose === "contribution" ? "entrosana Hub: confirm your contribution" : "entrosana Hub: confirm your address",
     `Hello${name ? " " + name : ""},\n\nsomeone (probably you) entered ${what}.\n` +
@@ -183,8 +183,9 @@ const asResource = c => ({ kind: "contribution", actor_id: c.actor_id, status: c
 function publicRow(c, full) {
   const r = { id: c.id, kind: c.kind, status: c.status, title: c.title, area: c.area, org_id: c.org_id,
               created: c.created, confirmed: c.confirmed, decided: c.decided, reason: c.reason };
+  r.trail_ok = c.trail_ok;
   if (full) Object.assign(r, { summary: c.summary, files: JSON.parse(c.files_json || "[]"), trail: c.trail_md,
-                               actor_id: c.actor_id, decided_by: c.decided_by });
+                               records: JSON.parse(c.trail_json || "[]"), actor_id: c.actor_id, decided_by: c.decided_by });
   return r;
 }
 const getContribution = id => db.prepare("SELECT * FROM contributions WHERE id = ?").get(Number(id));
@@ -198,19 +199,25 @@ routes.set("POST /api/contributions", async (ctx) => {
     return send(ctx.res, 202, { ok: true, received: true });
   }
   if (!v.ok) throw new HttpError(400, v.error);
-  const { email, name, title, area, summary, trail, files, org_id } = v.value;
+  const { email, name, title, area, summary, trail, files, org_id, records, chain } = v.value;
+  let trailOk = null, trailJson = "[]";
+  if (records.length || chain.length) {
+    const tv = verifyTrail(chain, records);
+    trailOk = tv.ok ? 1 : 0; trailJson = JSON.stringify(records);
+    if (!tv.ok) auditAppend(db, { kind: "trail.mismatch", actor_id: null, resource: null, text: tv.why });
+  }
   if (limited("ip:" + ctx.ip) || limited("email:" + email)) throw new HttpError(429, "too many requests");
   const actor = actorForEmail(email, name);
   // Wer schon eine gültige Marke für dieselbe Adresse trägt, hat sie bestätigt.
   const known = !!(ctx.actor && ctx.actor.id === actor.id);
   const now = new Date().toISOString();
-  const id = Number(db.prepare(`INSERT INTO contributions(kind, status, actor_id, org_id, title, area, summary, files_json, trail_md, created, confirmed)
-    VALUES ('module', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-    .run(known ? "confirmed" : "received", actor.id, org_id, title, area, summary, JSON.stringify(files), trail, now, known ? now : null).lastInsertRowid);
+  const id = Number(db.prepare(`INSERT INTO contributions(kind, status, actor_id, org_id, title, area, summary, files_json, trail_md, trail_json, trail_ok, created, confirmed)
+    VALUES ('module', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(known ? "confirmed" : "received", actor.id, org_id, title, area, summary, JSON.stringify(files), trail, trailJson, trailOk, now, known ? now : null).lastInsertRowid);
   auditAppend(db, { kind: known ? "contribution.confirmed" : "contribution.received", actor_id: actor.id, resource: "contribution:" + id, text: `${area}: ${title}` });
   let mailed = null;
   if (!known) mailed = (await startVerification(email, name, "contribution")).ok;
-  send(ctx.res, 202, { ok: true, id, status: known ? "confirmed" : "received", mail: mailed });
+  send(ctx.res, 202, { ok: true, id, status: known ? "confirmed" : "received", mail: mailed, trail_ok: trailOk });
 });
 
 // Prüfende und Eigentümer sehen die Schlange, alle anderen nur Eigenes.

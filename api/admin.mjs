@@ -6,6 +6,7 @@
 //   node api/admin.mjs verify-chain
 import { open } from "./db.mjs";
 import { append, verify } from "./audit.mjs";
+import { issueToken } from "./auth.mjs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -41,6 +42,13 @@ try {
       append(db, { kind: "revoke", actor_id: by, resource: "actor:" + target.id, text: `role ${b} revoked from ${target.email}` });
     }
     console.log(`${cmd}: ${b} ${cmd === "grant" ? "→" : "←"} ${target.email}`);
+  } else if (cmd === "token") {
+    // Zugangsmarke für eine bekannte Adresse ausgeben, ohne Mail. Wird einmal gezeigt.
+    const target = actorByEmail(a, false);
+    const days = Number(b) > 0 ? Number(b) : 30;
+    const t = issueToken(db, target.id, days);
+    append(db, { kind: "token.cli", actor_id: null, resource: "actor:" + target.id, text: `token issued on the machine for ${target.email}, ${days} days` });
+    console.log(t.token);
   } else if (cmd === "list") {
     for (const r of db.prepare(`SELECT a.id, a.kind, a.email, a.name, GROUP_CONCAT(r.role) AS roles
                                 FROM actors a LEFT JOIN roles r ON r.actor_id = a.id GROUP BY a.id ORDER BY a.id`).all())
@@ -48,7 +56,7 @@ try {
   } else if (cmd === "verify-chain") {
     const v = verify(db); console.log(JSON.stringify(v)); process.exitCode = v.ok ? 0 : 1;
   } else {
-    console.log("Befehle: grant <email> <role> [--by <email>] | revoke <email> <role> | list | verify-chain"); process.exitCode = 2;
+    console.log("Befehle: grant <email> <role> [--by <email>] | revoke <email> <role> | token <email> [tage] | list | verify-chain"); process.exitCode = 2;
   }
 } catch (e) { console.error("Fehler:", e.message); process.exitCode = 1; }
 finally { db.close(); }

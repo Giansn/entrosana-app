@@ -1626,3 +1626,18 @@ html{ scrollbar-gutter:stable }
 .work__sub--wide{ max-width:62ch }
 .fine{ font-size:.9rem }
 .fine--tight{ font-size:.88rem; margin:0 }
+
+/* Phase 4: Einreichen aus der Projektdatei. */
+.field select, .field textarea{
+  font:inherit; font-size:.92rem; padding:.6em .7em; border-radius:var(--radius);
+  border:1px solid var(--line-ui); background:var(--field-bg); color:var(--ink);
+}
+.field textarea{ min-height:7.5em; resize:vertical }
+.hp{ position:absolute; left:-9999px; width:1px; height:1px; opacity:0 }   /* Honigfalle */
+.submit{ margin-top:1.2rem }
+.submit__grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(15rem,1fr)); gap:0 1.2rem }
+.submit .field{ max-width:none }
+.submit__out{ margin-top:.8rem }
+.status__row{ display:grid; grid-template-columns:9rem 1fr; gap:.3rem 1rem; padding:.45rem 0; border-bottom:1px solid var(--line) }
+.status__row:last-child{ border-bottom:0 }
+.status__k{ font-family:var(--font-mono); font-size:var(--step--1); color:var(--muted); letter-spacing:.08em; text-transform:uppercase }
