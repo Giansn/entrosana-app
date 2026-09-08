@@ -305,6 +305,7 @@
       api("/api/me/token", { method: "DELETE" }).then(done, done);
     });
     da.appendChild(ex); da.appendChild(er); da.appendChild(so); dbox.appendChild(da); sec3.appendChild(dbox);
+    host.appendChild(secJ);   // der Record Trail steht zuletzt (Wunsch des Eigentümers, 2026-09-09)
   }
 
   function refresh() {
