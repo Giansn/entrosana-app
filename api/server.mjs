@@ -120,6 +120,7 @@ routes.set("GET /api/me", (ctx) => {
   if (!ctx.actor) return send(ctx.res, 401, { error: "no actor" });
   const a = ctx.actor, app = a.kind === "email" ? currentApplication(db, a.id) : null;
   send(ctx.res, 200, { id: a.id, kind: a.kind, email: a.email, name: a.name, created: a.created, roles: [...a.roles], standing: standingOf(a.roles),
+    profile: { org: a.org || "", role: a.role || "", about: a.about || "", website: a.website || "", langs: a.langs || [] },
     application: app ? { id: app.id, created: app.created, decided: app.decided, outcome: app.outcome, reason: app.reason } : null });
 });
 
@@ -254,6 +255,11 @@ routes.set("POST /api/contributions", async (ctx) => {
     VALUES ('module', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .run(known ? "confirmed" : "received", actor.id, org_id, title, area, summary, JSON.stringify(files), trail, trailJson, trailOk, now, known ? now : null, attribution).lastInsertRowid);
   auditAppend(db, { kind: known ? "contribution.confirmed" : "contribution.received", actor_id: actor.id, resource: "contribution:" + id, text: `${area}: ${title}` });
+  // Mit Marke eingereicht heisst sofort bestätigt: das Postfach erfährt es hier, nicht erst über den Verweis.
+  if (known && !limited("mail:global", MAIL_CAP)) mail(INBOX, `entrosana Hub: contribution #${id} «${title}» waits for review`,
+    `${actor.name || name || "(no name yet)"} <${email}> submitted contribution #${id} «${title}» (${area}) from a signed-in device.\n\n` +
+    `Read and decide in the console (tailnet): http://100.115.236.97:8396/contributions/${id}\nStatus page of the submitter: ${PUBLIC}/contribute/status?id=${id}\n\nentrosana`)
+    .then(r => auditAppend(db, { kind: "review.mail", actor_id: null, resource: "contribution:" + id, text: r.ok ? "inbox notified of confirmed contribution" : "inbox mail failed: " + (r.err || r.code) }));
   let mailed = null;
   if (!known) mailed = (await startVerification(email, name, "contribution")).ok;
   send(ctx.res, 202, { ok: true, id, status: known ? "confirmed" : "received", mail: mailed, trail_ok: trailOk });
@@ -344,16 +350,27 @@ patterns.push([/^\/api\/contributions\/(\d{1,12})$/, {
 
 function lift(fn) { try { return fn(); } catch (e) { if (e && e.status) throw new HttpError(e.status, e.message); throw e; } }
 
-// Name setzen: Beiträge und Freigaben laufen unter diesem Namen.
+// Profil: Name (Pflicht vor dem Beitragen), Organisation, Rolle, eine Zeile,
+// Website, Sprachen. Nur was mitkommt, wird gesetzt; leer löscht das Feld.
+const ROLES = ["teacher", "student", "parent", "social-worker", "developer", "researcher", "other"];
+const LANGS = ["de", "fr", "it", "en"];
 routes.set("PATCH /api/me", async (ctx) => {
   if (!ctx.actor) throw new HttpError(401, "no actor");
   if (ctx.actor.kind !== "email") throw new HttpError(403, "not for service actors");
   const body = await readJson(ctx.req);
-  const name = String(body.name || "").trim().slice(0, 120);
-  if (name.length < 2) throw new HttpError(400, "name too short");
-  db.prepare("UPDATE actors SET name = ? WHERE id = ?").run(name, ctx.actor.id);
-  auditAppend(db, { kind: "profile.name", actor_id: ctx.actor.id, resource: "actor:" + ctx.actor.id, text: "name set" });
-  send(ctx.res, 200, { ok: true, name });
+  const sets = [], vals = [], changed = [];
+  const str = (v, max) => String(v == null ? "" : v).trim().slice(0, max);
+  if (body.name !== undefined) { const name = str(body.name, 120); if (name.length < 2) throw new HttpError(400, "name too short"); sets.push("name = ?"); vals.push(name); changed.push("name"); }
+  if (body.org !== undefined) { sets.push("org = ?"); vals.push(str(body.org, 200) || null); changed.push("org"); }
+  if (body.role !== undefined) { const role = str(body.role, 40); if (role && !ROLES.includes(role)) throw new HttpError(400, "role unknown"); sets.push("role = ?"); vals.push(role || null); changed.push("role"); }
+  if (body.about !== undefined) { sets.push("about = ?"); vals.push(str(body.about, 280) || null); changed.push("about"); }
+  if (body.website !== undefined) { const w = str(body.website, 200); if (w && !/^https:\/\/[^\s]+$/.test(w)) throw new HttpError(400, "website must be an https link"); sets.push("website = ?"); vals.push(w || null); changed.push("website"); }
+  if (body.langs !== undefined) { const l = Array.isArray(body.langs) ? body.langs.map(x => String(x)).filter(x => LANGS.includes(x)) : []; sets.push("langs = ?"); vals.push(l.length ? [...new Set(l)].join(",") : null); changed.push("langs"); }
+  if (!sets.length) throw new HttpError(400, "nothing to change");
+  db.prepare(`UPDATE actors SET ${sets.join(", ")} WHERE id = ?`).run(...vals, ctx.actor.id);
+  auditAppend(db, { kind: "profile.update", actor_id: ctx.actor.id, resource: "actor:" + ctx.actor.id, text: "profile fields set: " + changed.join(", ") });
+  const a = withRoles(db, db.prepare("SELECT * FROM actors WHERE id = ?").get(ctx.actor.id));
+  send(ctx.res, 200, { ok: true, name: a.name, profile: { org: a.org || "", role: a.role || "", about: a.about || "", website: a.website || "", langs: a.langs || [] } });
 });
 
 // Abmelden: nur die vorgelegte Marke wird gelöscht, andere Geräte bleiben angemeldet.
@@ -423,6 +440,35 @@ routes.set("POST /api/requests", async (ctx) => {
   send(ctx.res, 202, { ok: true, id });
 });
 
+// Verwaltung (Team): Konten mit Profil und Stand, Anfragen mit Erledigt-Marke.
+const isTeam = a => !!(a && (a.roles.has("reviewer") || a.roles.has("owner")));
+routes.set("GET /api/actors", (ctx) => {
+  if (!isTeam(ctx.actor)) throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+  const rows = db.prepare(`SELECT a.*, (SELECT COUNT(*) FROM contributions c WHERE c.actor_id = a.id) contributions,
+      (SELECT COUNT(*) FROM applications p WHERE p.actor_id = a.id AND p.decided IS NULL) open_applications,
+      (SELECT COUNT(*) FROM actor_tokens t WHERE t.actor_id = a.id AND t.expires > ?) devices FROM actors a ORDER BY a.id`).all(new Date().toISOString());
+  send(ctx.res, 200, { ok: true, items: rows.map(r => { const roles = rolesOf(db, r.id); return { id: r.id, kind: r.kind, email: r.email, name: r.name, created: r.created, roles: [...roles], standing: r.kind === "email" ? standingOf(roles) : r.kind,
+    profile: { org: r.org || "", role: r.role || "", about: r.about || "", website: r.website || "", langs: r.langs ? String(r.langs).split(",").filter(Boolean) : [] },
+    contributions: r.contributions, open_applications: r.open_applications, devices: r.devices }; }) });
+});
+routes.set("GET /api/requests", (ctx) => {
+  if (!isTeam(ctx.actor)) throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+  const all = ctx.query.get("all") === "1";
+  send(ctx.res, 200, { ok: true, items: db.prepare(`SELECT * FROM requests ${all ? "" : "WHERE handled IS NULL"} ORDER BY id DESC`).all() });
+});
+patterns.push([/^\/api\/requests\/(\d{1,12})$/, {
+  PATCH: async (ctx, [id]) => {
+    if (!isTeam(ctx.actor)) throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+    const body = await readJson(ctx.req);
+    const r = db.prepare("SELECT * FROM requests WHERE id = ?").get(Number(id));
+    if (!r) throw new HttpError(404, "not found");
+    const handled = body.handled ? new Date().toISOString() : null;
+    db.prepare("UPDATE requests SET handled = ? WHERE id = ?").run(handled, r.id);
+    auditAppend(db, { kind: handled ? "request.handled" : "request.reopened", actor_id: ctx.actor.id, resource: "request:" + r.id, text: handled ? "marked handled" : "reopened" });
+    send(ctx.res, 200, { ok: true, item: db.prepare("SELECT * FROM requests WHERE id = ?").get(r.id) });
+  },
+}]);
+
 // Alles über mich, als Datei. Nur mit Marke, nur Eigenes.
 routes.set("GET /api/me/export", (ctx) => {
   if (!ctx.actor) throw new HttpError(401, "no actor");
@@ -454,8 +500,10 @@ routes.set("DELETE /api/me", async (ctx) => {
     db.prepare("DELETE FROM actor_tokens WHERE actor_id = ?").run(ctx.actor.id);
     db.prepare("DELETE FROM verifications WHERE email = ?").run(ctx.actor.email);
     db.prepare("DELETE FROM roles WHERE actor_id = ?").run(ctx.actor.id);
+    db.prepare("DELETE FROM applications WHERE actor_id = ?").run(ctx.actor.id);          // Bewerbungstexte gehen mit
+    if (ctx.actor.email) db.prepare("DELETE FROM requests WHERE email = ?").run(ctx.actor.email);   // Anfragen unter derselben Adresse
     // Name bleibt nur, wenn ein Modul unter ihm stehen bleibt; die Adresse geht immer.
-    db.prepare("UPDATE actors SET email = NULL, name = ?, org_id = NULL WHERE id = ?").run(kept ? ctx.actor.name : "(erased)", ctx.actor.id);
+    db.prepare("UPDATE actors SET email = NULL, name = ?, org_id = NULL, org = NULL, role = NULL, about = NULL, website = NULL, langs = NULL WHERE id = ?").run(kept ? ctx.actor.name : "(erased)", ctx.actor.id);
     db.exec("COMMIT");
   } catch (e) { db.exec("ROLLBACK"); throw e; }
   auditAppend(db, { kind: "erase", actor_id: ctx.actor.id, resource: "actor:" + ctx.actor.id, text: `personal data erased; ${kept} module(s) kept under the name, ${unpublished} unpublished, ${deleted} contribution(s) deleted` });

@@ -318,6 +318,38 @@ nichts verloren geht, wenn eine Mail nicht ankommt. Die Telefonnummer
 077 529 73 01 steht auf `/contribute`, im Formular und in der Bestätigung als
 dritter Weg für Beiträge und Anfragen (Wunsch des Eigentümers, 2026-09-08).
 
+## Verwaltung im Tailnet (2026-09-08, abends)
+
+Zwei Konsolen, beide nur aus dem Tailnet erreichbar (`_src_ok()`: Loopback und
+100.64.0.0/10), beide seit heute **ohne Schlüssel** für Geräte im Tailnet
+(Entscheid des Eigentümers: «open decider platform to devices in tailnet without
+further auth»; `TAILNET_OPEN = True` in beiden Skripten, der Schlüssel bleibt als
+zweiter Weg). Tailscale Serve und Funnel leiten nichts auf diese Ports.
+
+| Konsole | Adresse | Was |
+|---|---|---|
+| Site-Admin (`~/entrosana-site/admin.py`) | http://100.115.236.97:8393/hub | Übersicht; `/hub/accounts` Konten mit Profil, Stand, Rollen, Geräten; `/hub/applications` Bewerbungen freigeben oder ablehnen; `/hub/requests` Anfragen, «erledigt»-Marke (`PATCH /api/requests/<id>`) |
+| Hub-Konsole (`admin-app.py`) | http://100.115.236.97:8396/contributions | Beiträge prüfen, annehmen, veröffentlichen; `/applications` ebenfalls |
+
+Beide sprechen mit dem Dienst über die Dienstmarke (`~/.config/entrosana-api.token`,
+Rolle reviewer); Rollen vergibt allein `node api/admin.mjs grant`. Neue
+Team-Endpunkte: `GET /api/actors` (Konten mit Profil und Stand), `GET /api/requests`
+(offene, `?all=1` alle), `PATCH /api/requests/<id>` (`handled`). Migration 010.
+
+## Profil (2026-09-08, abends)
+
+Unter `/me`, Abschnitt «Edit profile» (offen, solange kein Name steht): Name,
+Organisation oder Schule, Rolle (teacher, student, parent, social-worker,
+developer, researcher, other), eine Zeile (280 Zeichen), Website (https),
+Sprachen (de, fr, it, en). `PATCH /api/me` setzt nur, was mitkommt; leer löscht.
+Migration 009 (fünf Spalten in `actors`), Export und Löschung umfassen sie.
+Darunter, dem Dreischritt von LearningView folgend (planen, begleiten,
+reflektieren): **Tasks** (Projekte dieses Geräts mit erledigt/gesamt und
+nächstem Schritt, aus der Hub-Datei und dem Brett), **Documents** (eigene
+Vorschläge mit Stand und Dateiverweisen, Hub-Dateien als .md, Weg zum Trail),
+**Journal** (die letzten sechs Records des Geräts). Alles Gerätebezogene bleibt
+auf dem Gerät; der Dienst sieht nur Profil und Vorschläge.
+
 ## Postfach
 
 Beiträge und Antworten laufen über `sygnif@entrosana.com`, registriert am

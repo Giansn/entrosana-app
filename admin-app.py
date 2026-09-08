@@ -53,6 +53,7 @@ if not TOKEN_FILE.exists():
     TOKEN_FILE.write_text(secrets.token_urlsafe(24) + "\n")
     TOKEN_FILE.chmod(0o600)
 TOKEN = TOKEN_FILE.read_text().strip()
+TAILNET_OPEN = True   # Konsole im Tailnet ohne Schlüssel; _src_ok() lässt nur Loopback und 100.64.0.0/10 durch
 
 
 def backup(p: Path) -> str:
@@ -1229,6 +1230,8 @@ class H(BaseHTTPRequestHandler):
         self._send(code, json.dumps(obj), "application/json")
 
     def _authed(self):
+        if TAILNET_OPEN and self._src_ok():   # Entscheid des Eigentümers, 2026-09-08: im Tailnet reicht das Tailnet
+            return True
         c = self.headers.get("Cookie", "")
         m = re.search(r"eaa=([^;]+)", c)
         return bool(m and TOKEN and hmac.compare_digest(m.group(1), TOKEN))

@@ -1728,3 +1728,20 @@ html{ scrollbar-gutter:stable }
 .me textarea{ min-height:6em }
 /* Der dritte Weg unter den Knöpfen braucht etwas Luft. */
 .actions + .fine{ margin-top:.7rem }
+
+/* /me: Profil bearbeiten, Aufgaben, Dokumente, Journal (Vorbild LearningView:
+   planen, begleiten, reflektieren). Listen in einer Spalte, Mono für Zahlen. */
+.me__edit summary{ list-style:none; display:inline-block; cursor:pointer }
+.me__edit summary::-webkit-details-marker{ display:none }
+.me__edit[open] summary{ margin-bottom:.9rem }
+.me__edit form{ display:grid; gap:.9rem }
+.me__langs{ display:flex; flex-wrap:wrap; gap:.4rem 1rem }
+.me__lang{ display:inline-flex; align-items:center; gap:.35rem; font-size:var(--step--1); color:var(--ink-2); cursor:pointer }
+.me__list{ list-style:none; margin:0; padding:0; display:grid; gap:.1rem }
+.me__row{ display:flex; flex-wrap:wrap; align-items:baseline; gap:.3rem .8rem; padding:.5rem 0; border-top:1px solid var(--line) }
+.me__row:first-child{ border-top:0 }
+.me__t{ color:var(--ink); flex:1 1 14rem; min-width:0 }
+.me__n{ font-family:var(--font-mono); font-size:var(--step--1); color:var(--muted); white-space:nowrap }
+.me__next{ font-family:var(--font-mono); font-size:var(--step--1); color:var(--seal); flex:1 1 100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.me__file{ font-family:var(--font-mono); font-size:var(--step--1); color:var(--seal) }
+

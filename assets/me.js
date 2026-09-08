@@ -9,6 +9,19 @@
   if (!host) return;
   var q = new URLSearchParams(location.search), TOKEN_KEY = "entrosana-app:token", uid = 0;
   var WORDS = { collector: "Collector", contributor: "Contributor", reviewer: "Team", owner: "Owner" };
+  var ROLES = [["", "—"], ["teacher", "Teacher"], ["student", "Student"], ["parent", "Parent"], ["social-worker", "Social worker"], ["developer", "Developer"], ["researcher", "Researcher"], ["other", "Other"]];
+  var LANGS = [["de", "Deutsch"], ["fr", "Français"], ["it", "Italiano"], ["en", "English"]];
+  var hub = window.__hub || null;
+  function roleWord(r) { for (var i = 0; i < ROLES.length; i++) if (ROLES[i][0] === r) return ROLES[i][1]; return r || ""; }
+  function when2(iso) { return iso ? String(iso).replace("T", " ").slice(0, 16) : ""; }
+  // Projekte auf diesem Gerät: die Hub-Dateien (Saat-Checklisten) und das Brett der Projektverwaltung.
+  function deviceProjects() {
+    var out = [];
+    try { var st = hub ? hub.state() : null; if (st && st.projects) Object.keys(st.projects).forEach(function (id) { var p = st.projects[id]; var steps = p.steps || []; out.push({ id: id, title: p.title || id, kind: "file", href: "/project?p=" + encodeURIComponent(id), total: steps.length, done: steps.filter(function (s) { return s.checked || s.done; }).length, next: (steps.filter(function (s) { return !(s.checked || s.done); })[0] || {}).content || null, p: p }); }); } catch (e) {}
+    try { var b = JSON.parse(localStorage.getItem("entrosana-todo-demo:v3") || "null"); if (b && b.projects) Object.keys(b.projects).forEach(function (id) { var p = b.projects[id]; if (p.is_archived) return; var tasks = p.tasks || []; var isDone = function (x) { return !!x.checked || x.section_id === "done" || x.status === "done"; }; out.push({ id: id, title: p.name || "Untitled", kind: "board", href: "/project", total: tasks.length, done: tasks.filter(isDone).length, next: (tasks.filter(function (x) { return !isDone(x); })[0] || {}).content || null }); }); } catch (e) {}
+    return out;
+  }
+  function deviceRecords() { try { var st = hub ? hub.state() : null; return (st && st.records) ? st.records.slice() : []; } catch (e) { return []; } }
   var EXPLAIN = { collector: "You keep projects and records on this device, send proposals and follow them. Publishing under your name needs contributor standing, which the team grants.",
                   contributor: "Approved: admitted proposals of yours are published under your name.",
                   reviewer: "You read and decide on proposals and applications.", owner: "The last word on every decision." };
@@ -84,21 +97,40 @@
     var meta = el("div", "me__meta");
     meta.appendChild(el("span", "chip", WORDS[me.standing] || me.standing));
     meta.appendChild(el("p", "me__line", EXPLAIN[me.standing] || ""));
+    var pr = me.profile || {};
+    var who = [roleWord(pr.role), pr.org].filter(Boolean).join(" · "); if (who) meta.appendChild(el("p", "me__line", who));
+    if (pr.about) meta.appendChild(el("p", "me__line", pr.about));
+    if (pr.website) { var wl = el("p", "me__line"); var wa = el("a", null, pr.website.replace(/^https:\/\//, "")); wa.href = pr.website; wa.rel = "noopener"; wl.appendChild(wa); meta.appendChild(wl); }
+    if (pr.langs && pr.langs.length) meta.appendChild(el("p", "me__line fine", "Languages: " + pr.langs.map(function (l) { for (var i = 0; i < LANGS.length; i++) if (LANGS[i][0] === l) return LANGS[i][1]; return l; }).join(", ")));
     meta.appendChild(el("p", "me__line fine", "Registered " + when(me.created) + " · signed in on this device until " + when(t && t.expires) + "."));
     head.appendChild(meta); idc.appendChild(head);
 
-    var nf = el("form"); nf.noValidate = true;
+    // Profil bearbeiten: Name, Organisation, Rolle, eine Zeile, Website, Sprachen.
+    var det = el("details", "me__edit"); var sum = el("summary", "btn btn--ghost", "Edit profile"); det.appendChild(sum);
+    var nf = el("form"); nf.noValidate = true; det.appendChild(nf); idc.appendChild(det);
     var nameIn = el("input"); nameIn.type = "text"; nameIn.maxLength = 120; nameIn.autocomplete = "name"; nameIn.value = me.name || "";
-    var fN = field("Your name", nameIn, me.name ? "Contributions are published under this name." : "Needed before you apply or contribute; publications carry it."); nf.appendChild(fN);
-    var na = el("div", "actions"), nb = el("button", "btn btn--ghost", me.name ? "Change name" : "Save name"); nb.type = "submit"; na.appendChild(nb); nf.appendChild(na);
-    var nout = live(); nf.appendChild(nout); idc.appendChild(nf);
+    var orgIn = el("input"); orgIn.type = "text"; orgIn.maxLength = 200; orgIn.autocomplete = "organization"; orgIn.value = pr.org || "";
+    var roleIn = el("select"); ROLES.forEach(function (r) { var o = el("option", null, r[1]); o.value = r[0]; roleIn.appendChild(o); }); roleIn.value = pr.role || "";
+    var aboutIn = el("textarea"); aboutIn.rows = 2; aboutIn.maxLength = 280; aboutIn.value = pr.about || "";
+    var webIn = el("input"); webIn.type = "url"; webIn.maxLength = 200; webIn.placeholder = "https://…"; webIn.value = pr.website || "";
+    var fN = field("Your name", nameIn, me.name ? "Contributions are published under this name." : "Needed before you apply or contribute; publications carry it.");
+    var fO = field("School or organisation", orgIn, null, true), fR = field("Role", roleIn, null, true);
+    var fA = field("One line about you", aboutIn, "Up to 280 characters; shown with your published modules.", true), fW = field("Website", webIn, "https only.", true);
+    var fL = el("div", "field"); fL.appendChild(el("label", null, "Languages")); var lw = el("div", "me__langs"); var langBoxes = {};
+    LANGS.forEach(function (l) { var lab = el("label", "me__lang"); var cb = el("input"); cb.type = "checkbox"; cb.value = l[0]; cb.checked = (pr.langs || []).indexOf(l[0]) >= 0; langBoxes[l[0]] = cb; lab.appendChild(cb); lab.appendChild(document.createTextNode(" " + l[1])); lw.appendChild(lab); }); fL.appendChild(lw);
+    var fs1 = el("fieldset"); [fN, fO, fR, fA, fW, fL].forEach(function (f) { fs1.appendChild(f); }); nf.appendChild(fs1);
+    var na = el("div", "actions"), nb = el("button", "btn", "Save profile"); nb.type = "submit"; na.appendChild(nb); nf.appendChild(na);
+    var nout = live(); nf.appendChild(nout);
+    if (!me.name) det.open = true;
     nf.addEventListener("submit", function (ev) {
       ev.preventDefault(); var v = nameIn.value.trim();
       if (v.length < 2) { bad(fN, "At least two characters."); return; }
-      if (v === (me.name || "")) { note(nout, "idle", "That is the name on record."); return; }
-      api("/api/me", { method: "PATCH", body: JSON.stringify({ name: v }) })
-        .then(function (r) { if (r.s === 200) { var tk = token(); if (tk) { tk.name = v; saveToken(tk); } refresh(); } else note(nout, "warn", "Not saved: " + (r.j.error || r.s) + "."); })
-        .catch(function () { note(nout, "warn", "The Hub's server is not reachable right now."); });
+      var w = webIn.value.trim(); if (w && !/^https:\/\/\S+$/.test(w)) { bad(fW, "An https:// link."); return; }
+      var langs = Object.keys(langBoxes).filter(function (k) { return langBoxes[k].checked; });
+      nb.disabled = true; note(nout, "idle", "Saving…");
+      api("/api/me", { method: "PATCH", body: JSON.stringify({ name: v, org: orgIn.value.trim(), role: roleIn.value, about: aboutIn.value.trim(), website: w, langs: langs }) })
+        .then(function (r) { nb.disabled = false; if (r.s === 200) { var tk = token(); if (tk) { tk.name = v; saveToken(tk); } refresh(); } else note(nout, "warn", "Not saved: " + (r.j.error || r.s) + "."); })
+        .catch(function () { nb.disabled = false; note(nout, "warn", "The Hub's server is not reachable right now."); });
     });
 
     var sec2 = block("Contributing", null, null), box = el("div", "card me");
@@ -131,6 +163,27 @@
     var l1 = el("a", "btn btn--ghost", "Your contributions"); l1.href = "/contribute/status";
     var l2 = el("a", "btn btn--ghost", "Propose a track"); l2.href = "/contribute/submit";
     links.appendChild(l1); links.appendChild(l2); box.appendChild(links); sec2.appendChild(box);
+
+    // Plan → Begleiten → Reflektieren (Vorbild LearningView): Aufgaben, Dokumente, Journal.
+    var projs = deviceProjects(), recs = deviceRecords();
+    var secT = block("Tasks", null, null), tbox = el("div", "card me");
+    tbox.appendChild(el("p", "fine", "Your projects and their steps live on this device. " + (projs.length ? projs.length + " project(s), " + projs.reduce(function (n, p) { return n + (p.total - p.done); }, 0) + " open step(s)." : "None yet.")));
+    if (projs.length) { var tl = el("ul", "me__list"); projs.forEach(function (p) { var li = el("li", "me__row"); var a = el("a", "me__t", p.title); a.href = p.href; li.appendChild(a); li.appendChild(el("span", "me__n", p.done + "/" + p.total)); if (p.next) li.appendChild(el("span", "me__next", "next: " + p.next)); tl.appendChild(li); }); tbox.appendChild(tl); }
+    var ta2 = el("div", "actions"); var np = el("a", "btn btn--ghost", "New project"); np.href = "/project"; var ap = el("a", "btn btn--ghost", "All projects"); ap.href = "/projects"; ta2.appendChild(np); ta2.appendChild(ap); tbox.appendChild(ta2); secT.appendChild(tbox);
+    var secD = block("Documents", null, null), dbx = el("div", "card me");
+    dbx.appendChild(el("p", "fine", "What you sent, what you host, and the files on this device."));
+    var dl = el("ul", "me__list"); dbx.appendChild(dl);
+    api("/api/contributions").then(function (r) {
+      var items = r.s === 200 ? (r.j.items || []) : [];
+      if (!items.length) dl.appendChild(el("li", "me__row fine", "No proposals sent from this account yet."));
+      items.forEach(function (c) { var li = el("li", "me__row"); var a = el("a", "me__t", c.title); a.href = "/contribute/status?id=" + c.id; li.appendChild(a); li.appendChild(el("span", "me__n", c.status)); (c.files || []).forEach(function (f) { var fa = el("a", "me__file", f.label || f.url); fa.href = f.url; fa.rel = "noopener"; li.appendChild(fa); }); dl.appendChild(li); });
+    }).catch(function () { dl.appendChild(el("li", "me__row fine", "The Hub's server is not reachable; the list of proposals waits.")); });
+    projs.filter(function (p) { return p.kind === "file" && hub; }).forEach(function (p) { var li = el("li", "me__row"); li.appendChild(el("span", "me__t", p.title + " (file on this device)")); var b = el("button", "btn btn--quiet", "Download .md"); b.type = "button"; b.addEventListener("click", function () { hub.download(String(p.id).replace("/", "-") + ".md", hub.markdown(p.p)); }); li.appendChild(b); dl.appendChild(li); });
+    var da2 = el("div", "actions"); var rl = el("a", "btn btn--ghost", "Record trail and export"); rl.href = "/records"; da2.appendChild(rl); dbx.appendChild(da2); secD.appendChild(dbx);
+    var secJ = block("Journal", null, null), jbox = el("div", "card me");
+    jbox.appendChild(el("p", "fine", recs.length ? recs.length + " record(s) on this device; the last " + Math.min(6, recs.length) + ":" : "Nothing recorded on this device yet. A record appears the moment you finish a step."));
+    if (recs.length) { var jl = el("ul", "me__list"); recs.slice(-6).reverse().forEach(function (r) { var li = el("li", "me__row"); li.appendChild(el("span", "me__n", when2(r.t))); li.appendChild(el("span", "me__t", r.text)); if (r.project) li.appendChild(el("span", "me__next", r.project)); jl.appendChild(li); }); jbox.appendChild(jl); }
+    secJ.appendChild(jbox);
 
     var sec3 = block("Your data", null, null), dbox = el("div", "card me");
     dbox.appendChild(el("p", "fine", "Download everything the Hub holds about you, or erase it. Erasing removes your address and name; published modules stay only where you asked them to."));
