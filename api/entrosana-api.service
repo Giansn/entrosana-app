@@ -1,0 +1,18 @@
+# Nach ~/.config/systemd/user/ kopieren. Spiegelt entrosana-app.service.
+[Unit]
+Description=entrosana.app API — schreibender Dienst (node:http + node:sqlite) auf :4324
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/entrosana-app/api
+ExecStart=/usr/bin/env node --no-warnings %h/entrosana-app/api/server.mjs
+Environment=PORT=4324
+Environment=HOST=127.0.0.1
+Restart=always
+RestartSec=2
+StandardOutput=append:%h/.sygnif/logs/entrosana-api.log
+StandardError=append:%h/.sygnif/logs/entrosana-api.log
+
+[Install]
+WantedBy=default.target
