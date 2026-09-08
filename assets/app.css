@@ -1635,7 +1635,6 @@ html{ scrollbar-gutter:stable }
 .field textarea{ min-height:7.5em; resize:vertical }
 .hp{ position:absolute; left:-9999px; width:1px; height:1px; opacity:0 }   /* Honigfalle */
 .submit{ margin-top:1.2rem }
-.submit__grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(15rem,1fr)); gap:0 1.2rem }
 .submit .field{ max-width:none }
 .submit__out{ margin-top:.8rem }
 .status__row{ display:grid; grid-template-columns:9rem 1fr; gap:.3rem 1rem; padding:.45rem 0; border-bottom:1px solid var(--line) }
@@ -1644,3 +1643,57 @@ html{ scrollbar-gutter:stable }
 
 /* Phase 6: Beiträge aus der Gemeinschaft tragen den Namen der einreichenden Person. */
 .mod__by, .mcard__by{ font-family:var(--font-mono); font-size:var(--step--1); color:var(--muted); margin:.1rem 0 .4rem }
+
+/* ---------- Die Leiste steht (2026-09-08) ----------
+   Sie war eine Rasterspalte, die mit der Seite wuchs: auf /contribute 3628 px
+   hoch, Marke und Konto beim Scrollen fort. Jetzt klebt sie wie die Pille bei
+   .85rem, ist so hoch wie das Fenster und rollt für sich, wenn sie mehr trägt.
+   Unter 760 px bleibt sie die zugeklappte Zeile im Fluss. */
+.rail{
+  position:sticky; top:.85rem; align-self:start;
+  height:calc(100dvh - 1.7rem); overflow:hidden auto; scrollbar-width:thin;
+}
+@media (max-width:759.98px){
+  .rail{ position:relative; top:auto; height:auto; overflow:hidden }
+  .rail:not(.is-open) .nav__filters{ display:none }
+}
+
+/* ---------- Einreichen: eine Spalte, drei Gruppen (2026-09-08) ----------
+   Vier Felder nebeneinander mit je eigenem Hilfetext liefen ungleich hoch, und
+   die Beschriftungen hingen nicht an den Feldern. Jetzt eine Spalte auf 560 px
+   wie .form auf entrosana.com (Handoff §6), drei Gruppen durch den Trennstrich
+   (§4, 26 %) gegliedert; Pflicht ist die Regel, «optional» die Ausnahme.
+   Kontrast bleibt, wo er trägt: Schaltfläche, Fehler, die Entscheidung zur
+   Namensnennung. */
+.submit{ max-width:560px }
+.submit fieldset{ border:0; padding:0; margin:0; min-width:0; display:grid; gap:.9rem }
+.submit fieldset + fieldset{ margin-top:1.4rem; padding-top:1.3rem; position:relative }
+.submit fieldset + fieldset::before{
+  content:""; position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg,
+    color-mix(in srgb, var(--seal) 26%, transparent) 0,
+    color-mix(in srgb, var(--seal) 26%, transparent) 60%, transparent);
+}
+.submit legend{
+  font-family:var(--font-mono); font-size:var(--step--1); letter-spacing:.14em;
+  text-transform:uppercase; color:var(--muted); padding:0; margin-bottom:.2rem;
+}
+.submit .field{ margin-bottom:0 }
+.field input, .field select, .field textarea{ line-height:1.35; min-height:2.6rem; width:100%; box-sizing:border-box }
+.field textarea{ min-height:7.5em }
+.field.is-bad select, .field.is-bad textarea{ border-color:var(--warn) }
+.field .help{ line-height:1.4 }
+.field label .opt{ font-size:var(--step--1); color:var(--muted); font-weight:400 }
+.submit__rule{ font-size:var(--step--1); color:var(--muted); margin:0 0 1.1rem }
+.submit__choice{
+  display:grid; gap:.5rem; padding:.85rem .95rem; border-radius:var(--radius);
+  border:1px solid var(--line); background:color-mix(in srgb, var(--seal) 4%, transparent);
+}
+.submit__choice .toggle{ align-items:flex-start }
+.submit__choice .toggle__track{ flex:none; margin-top:.15rem }
+.submit__choice .toggle__label{ color:var(--ink) }
+.submit__choice .help{ font-size:var(--step--1); color:var(--muted); margin:0 }
+.submit__choice a{ color:var(--seal) }
+.submit .actions{ margin-top:1.4rem; display:flex; flex-wrap:wrap; gap:.6rem; align-items:center }
+.submit__out:empty{ display:none }
+.submit__out .note{ align-items:flex-start; flex-wrap:wrap }

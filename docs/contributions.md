@@ -215,6 +215,15 @@ Bot-Erkennung ein (`/cdn-cgi/challenge-platform/…`). Die Regel `script-src 'se
 blockiert es; für den Hub folgenlos, aber die Erkennung läuft damit nicht. Das
 ist eine Zoneneinstellung, keine Datei im Baum.
 
+Umbau vom 2026-09-08, abends (Durchsicht, `docs/handoff-design.md` §11): eine
+Spalte auf 560 px, drei Gruppen (Wer, Vorschlag, Dateien und Daten), jedes Feld
+mit `for`/`id` und `aria-describedby`, Prüfung vor dem Senden (Name ≥ 2, Adresse,
+Titel ≥ 3, Vorschlag nicht leer und nicht nur die Vorlage, Verweise nur https),
+Rückmeldung in einer `role="status"`-Zeile. Dateien kommen als Zeilen «Name
+https://…» in einem Feld; die Beschriftung wird, wenn sie fehlt, aus dem letzten
+Pfadteil oder dem Hostnamen abgeleitet; höchstens 10, wie `validate()` im Dienst
+verlangt. Am Dienst ändert sich nichts: `files` bleibt `[{label, url}]`.
+
 ## Prüfkonsole (Phase 5, gebaut am 2026-09-08)
 
 Kein viertes Verwaltungswerkzeug: `admin-app.py` auf `:8396` (Tailnet, Cookie

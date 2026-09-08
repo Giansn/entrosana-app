@@ -393,3 +393,30 @@ header.top .view__tools{ display:flex; align-items:center; gap:.5rem; margin-lef
 /* Weiss auf Farbfläche gehört nicht zum Haus: dunkle Schrift wie auf .btn. */
 .btn-primary{ color:var(--btn-fg) }
 .composer{ box-shadow:var(--shadow-2) }
+
+/* ---------- Unter 760 px (2026-09-08) ----------
+   project.css und diese Datei setzen die Rasterspalten ohne Medienbedingung
+   und überschreiben damit die Handy-Regel aus app.css (gleiche Spezifität,
+   später in der Kaskade): die Leiste blieb offen, und das Brett behielt mit
+   .view{margin:0 auto} seine Inhaltsbreite von 980 px, wodurch das Fenster auf
+   1269 px aufging. Jetzt: eine Spalte, die Leiste faltet sich wie überall, das
+   Brett rollt für sich, Bahn für Bahn mit Einrasten. */
+@media (max-width:759.98px){
+  .app{ grid-template-columns:1fr }
+  .main{ min-height:0 }
+  .view{ margin:0; max-width:100%; min-width:0; align-self:stretch }
+  .board{
+    margin-inline:.6rem; max-width:none; overflow-x:auto; gap:.6rem; padding-bottom:.75rem;
+    scroll-snap-type:x mandatory; scroll-padding-inline:.6rem;
+  }
+  .col{ flex:0 0 min(86vw, 20rem); min-width:0; max-height:none; scroll-snap-align:start }
+  .view > .lanes, .view > .sec, .view > .section{ margin-inline:.6rem }
+  .addbar{ margin:.75rem .6rem 1rem }
+  /* #filters trägt in dieser Datei display:flex per ID, das schlägt jede Klassenregel. */
+  .rail:not(.is-open) #filters, .rail:not(.is-open) .nav__filters{ display:none }
+  header.top{ height:auto; min-height:62px; flex-wrap:wrap; padding-block:.5rem; border-radius:26px }
+  header.top .crumb{ margin-right:auto; min-width:0 }
+  header.top .view__tools{ flex:1 1 100%; flex-wrap:wrap; gap:.4rem; margin-left:0 }
+  header.top .view__tools select{ min-width:0 }
+}
+

@@ -458,3 +458,71 @@ gestaltet werden kann. **Nicht entschieden.**
 es `currentColor` nicht erben. Empfohlen wird, es wie auf entrosana.com in die
 Seite einzubetten und auf `currentColor` zu stellen. Das ist eine kleine Änderung
 mit grosser Wirkung und hängt an keiner anderen Entscheidung. **Steht noch aus.**
+
+---
+
+## 11. Nachtrag 2026-09-08, abends: drei Eingriffe nach der Durchsicht
+
+Eine Durchsicht aller 13 Seiten (Schreibtisch dunkel und hell, Telefon 390 px;
+39 Ladevorgänge, DOM-Prüfung je Seite, Bilder unter dem Scratchpad der Sitzung)
+fand drei strukturelle Fehler. Alle drei sind seit 21:55 live, ohne Neustart:
+`serve.mjs` liest geänderte Dateien binnen 5 s (`setInterval`, Zeile 126); die
+Kante hängt an Stilblättern und Skripten `max-age=14400` (gemessen an
+`/assets/app.css`, Ursprung sendet `no-cache`), deshalb tragen alle 11 Seiten
+jetzt `?v=20260908d`, project.html zusätzlich für `project.css` und
+`project-shell.css`, submit.html für `submit.js`.
+
+**`/project` war am Telefon unbenutzbar.** `project.css` (Zeile 59) und
+`project-shell.css` (Zeilen 5 und 262) setzen die Rasterspalten ohne
+Medienbedingung und überschrieben damit die Handy-Regel `.app{grid-template-columns:1fr}`
+aus `app.css` (gleiche Spezifität, später in der Kaskade). Dazu hielt
+`.view{margin:0 auto}` das Brett auf seiner Inhaltsbreite: gemessen 980 px Brett
+in 142 px Hauptspalte, Fensterbreite 1269 px statt 390. Neu am Ende von
+`project-shell.css` ein Block unter 760 px: eine Spalte, `.view` gestreckt,
+`.board` rollt für sich mit `scroll-snap-type:x mandatory`, Bahnen
+`flex:0 0 min(86vw, 20rem)`, die Kopfzeile darf umbrechen (`height:auto`,
+`flex-wrap`), die Bahnenliste `#filters` faltet sich mit (per ID, weil
+`#filters{display:flex}` jede Klassenregel schlägt). Gemessen danach:
+Fensterbreite 390 px, Brett 371 px sichtbar bei 1309 px Inhalt, vier Bahnen zu
+320 px, Kopfzeile 123 px (zwei Zeilen), keine Konsolenfehler. Schreibtisch
+unverändert: Brett 1137 px, vier Bahnen zu 272 px, kein Querlauf.
+
+**Die Leiste stand nicht.** `.rail` war `position:relative` in einer Rasterspalte,
+die mit der Seite wuchs: auf `/contribute` 3628 px hoch, bei 1500 px Rolltiefe
+Marke und Konto ausser Sicht, während die Pille klebte. Neu (`app.css`, Block
+«Die Leiste steht»): `position:sticky; top:.85rem; align-self:start;
+height:calc(100dvh - 1.7rem); overflow:hidden auto`. Gemessen bei 1440 × 900:
+Leiste 873 px, Oberkante 14 px bei Rolltiefe 0 und 1500, Marke und Konto
+sichtbar; bei 700 px Fensterhöhe 673 px und die Leiste rollt für sich. Unter
+760 px bleibt sie die zugeklappte Zeile im Fluss (`position:relative`).
+
+**Das Formular unter `/contribute/submit`.** Vier Felder nebeneinander liefen
+ungleich hoch (Eingaben 44 px, Auswahl 63 px), acht von neun Beschriftungen
+hingen nicht am Feld (`label` ohne `for`), `novalidate` ohne eigene Prüfung
+schickte leere Pflichtfelder an den Dienst («Sending…»), keine Live-Region,
+Sternchen ohne Legende, der Hinweis zur Namensnennung in Fliesstextgrösse.
+Neu in `submit.js`: eine Spalte auf 560 px wie `.form` auf entrosana.com (§6),
+drei `fieldset` mit `legend` in Mono («Who you are», «The proposal», «Files and
+your data»), zwischen den Gruppen der Trennstrich in 26 % (§4); jedes Feld mit
+`for`/`id` und `aria-describedby` auf seinen Hilfetext; Pflicht ist die Regel,
+ein Feld trägt «(optional)»; Prüfung vor dem Senden mit Fehlertext im
+Hilfe-Platz, `aria-invalid`, Fokus auf das erste fehlerhafte Feld und Zählung in
+einer `role="status"`-Zeile; die beiden Dateifelder wurden eine Zeile je Datei
+(«Slides https://…», Beschriftung frei oder aus dem Verweis abgeleitet, höchstens
+zehn, nur https); die Wahl zur Namensnennung steht als eigener Kasten mit dem
+Verweis auf entrosana.com/privacy. Kontrast bleibt, wo er trägt: Schaltfläche in
+`--seal`, Fehler in `--warn`, Erfolg in `--verify`. Gemessen: 3 Gruppen, 6 Felder,
+6 beschriftet, 6 beschrieben, alle Felder 42 px hoch, 0 Sternchen; leeres
+Absenden: 0 Anfragen, 4 Fehler, Fokus auf dem Namen; ungültige Zeile im
+Dateifeld: 0 Anfragen, 1 Fehler; gültig: 1 Anfrage mit
+`files:[{label:"Slides",url:…},{label:"sheet.pdf",url:…}]`, Schaltfläche danach
+«Sent» und gesperrt. Telefon: Karte 358 px in 390, kein Querlauf.
+
+Offen geblieben aus der Durchsicht, in dieser Reihenfolge: Eyebrows als
+Überschriften (`h2`) statt `span`, damit die Seiten eine Gliederung tragen;
+`aria-current` auch auf Detailseiten; Escape und Fokus für die Schublade; die
+Suchattrappe mit `⌘K` entfernen, bis es eine Suche gibt; die Zähler «3» in der
+Leiste benennen; Abschnittspolster 56 px → 40 px (§7); Tippfehler «avaiable»,
+«verfied», «Whre»; `/contribute` führt weiter mit «Write to info@» statt mit
+dem Formular.
+
