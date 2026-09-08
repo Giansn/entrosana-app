@@ -183,6 +183,24 @@ Bot-Erkennung ein (`/cdn-cgi/challenge-platform/…`). Die Regel `script-src 'se
 blockiert es; für den Hub folgenlos, aber die Erkennung läuft damit nicht. Das
 ist eine Zoneneinstellung, keine Datei im Baum.
 
+## Prüfkonsole (Phase 5, gebaut am 2026-09-08)
+
+Kein viertes Verwaltungswerkzeug: `admin-app.py` auf `:8396` (Tailnet, Cookie
+`eaa`) hat einen Abschnitt «Beiträge» bekommen. Die Übersicht zeigt die Schlange
+mit Filter nach Zustand (`/contributions?status=`), die Detailseite
+(`/contributions/<id>`) Fakten, Vorschlag, Dateiverweise, die Aufzeichnungen
+der einreichenden Person mit Stelle und Siegel, die Datei als Text und den
+Stand der Serverkette. Die Verwaltung entscheidet nicht selbst, sie ruft `api/`
+auf `127.0.0.1:4324` als Dienstakteur auf (`X-Entrosana-Token` aus
+`~/.config/entrosana-api.token`, Rolle `reviewer`).
+
+Das Formular kennt nur die erlaubten Übergänge (`confirmed → reviewing`,
+`reviewing → admitted | rejected`) und schickt ohne Begründung nichts ab; die
+Verwaltung prüft das vor dem Aufruf (`contrib_decide`, «Begründung fehlt»), und
+der Dienst würde es ohnehin abweisen (`PATCH`, `reason required`). Jede
+Entscheidung erscheint in der Kette mit Akteur 1 (`service admin`) und
+Begründung.
+
 ## Personendaten
 
 Ein Beitrag enthält Name, E-Mail-Adresse und den Record-Trail der einreichenden

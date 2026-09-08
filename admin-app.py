@@ -668,6 +668,15 @@ def page(title, body):
             f"<body><div class='wrap'>{body}</div></body></html>")
 
 
+def _beitraege_kurz():
+    code, j = api_call("GET", "/api/contributions")
+    if code != 200:
+        return f"<p class='err'>api/: {html.escape(str(j.get('error', code)))}</p>"
+    offen = [c for c in j.get("items", []) if c["status"] in ("received", "confirmed", "reviewing")]
+    return (f"<table><tr><td><b>Schlange</b><br><span class='mono'>{len(offen)} offen · {len(j.get('items', []))} gesamt</span></td>"
+            "<td><a href='/contributions'>öffnen</a></td><td></td><td></td></tr></table>")
+
+
 def dash():
     zeilen = ""
     for name, label, pfad in PAGES:
@@ -699,6 +708,8 @@ def dash():
         "<p class='note'>Die Karten für Tools und Modules aus <span class='mono'>assets/catalogue.js</span>. "
         "Diese Texte erscheinen auf der Übersicht und auf der Detailseite des Eintrags.</p>"
         f"<table>{krows}</table>"
+        "<h2>Beiträge</h2>"
+        + _beitraege_kurz() +
         "<h2>Gestaltung</h2>"
         "<table><tr><td><b>Design controls</b><br><span class='mono'>Farbe &middot; Raster &middot; Schriftgrösse</span></td>"
         "<td class='mono'>assets/app.css</td>"
@@ -996,6 +1007,122 @@ def design_editor():
         ".catch(function(e){m.textContent='Fehler: '+e});};</script>")
 
 
+# ── Beiträge (Phase 5) ──────────────────────────────────────────────────────
+# Die Verwaltung entscheidet nicht selbst; sie ruft api/ auf :4324 als
+# Dienstakteur (Rolle reviewer) auf. Jede Entscheidung braucht eine Begründung,
+# und die Prüfung darauf steht hier UND im Dienst (docs/contributions.md).
+API_URL = "http://127.0.0.1:4324"
+API_TOKEN_FILE = HOME / ".config" / "entrosana-api.token"
+
+def api_call(method, path, body=None):
+    import urllib.request, urllib.error
+    tok = API_TOKEN_FILE.read_text().strip() if API_TOKEN_FILE.exists() else ""
+    data = json.dumps(body).encode("utf-8") if body is not None else None
+    req = urllib.request.Request(API_URL + path, data=data, method=method, headers={
+        "X-Entrosana-Token": tok, "Content-Type": "application/json", "Accept": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return r.status, json.loads(r.read() or b"{}")
+    except urllib.error.HTTPError as e:
+        try:
+            return e.code, json.loads(e.read() or b"{}")
+        except Exception:
+            return e.code, {"error": str(e)}
+    except Exception as e:
+        return 0, {"error": f"API nicht erreichbar: {e}"}
+
+STATUS_DE = {"received": "eingegangen, unbestätigt", "confirmed": "bestätigt, wartet auf Prüfung",
+             "reviewing": "in Prüfung", "admitted": "angenommen", "rejected": "abgelehnt", "withdrawn": "zurückgezogen"}
+NEXT = {"confirmed": [("reviewing", "in Prüfung nehmen")],
+        "reviewing": [("admitted", "annehmen"), ("rejected", "ablehnen")]}
+ALLE_STATI = ["received", "confirmed", "reviewing", "admitted", "rejected", "withdrawn"]
+
+def _wann(iso):
+    return html.escape((iso or "")[:16].replace("T", " ")) if iso else "—"
+
+def contrib_list(status_filter=""):
+    if status_filter and status_filter not in ALLE_STATI:
+        status_filter = ""
+    code, j = api_call("GET", "/api/contributions" + (f"?status={status_filter}" if status_filter else ""))
+    kopf = "<h1>entro<span style='color:#2BD4E8'>sana</span>.app admin · Beiträge</h1><p class='mono'><a href='/'>← Übersicht</a></p>"
+    if code != 200:
+        return page("Beiträge", kopf + f"<p class='err'>{html.escape(str(j.get('error', code)))}</p>")
+    filt = " · ".join(("<b>alle</b>" if not status_filter else "<a href='/contributions'>alle</a>"),) + " · " + " · ".join(
+        (f"<b>{s}</b>" if s == status_filter else f"<a href='/contributions?status={s}'>{s}</a>") for s in ALLE_STATI)
+    zeilen = ""
+    for c in j.get("items", []):
+        tr = {1: "geprüft", 0: "stimmt nicht", None: "—"}.get(c.get("trail_ok"), "—")
+        zeilen += (f"<tr><td class='mono'>#{c['id']}<br>{_wann(c.get('created'))}</td>"
+                   f"<td><b>{html.escape(c['title'])}</b><br><span class='mono'>{html.escape(c['area'])}</span></td>"
+                   f"<td>{html.escape(STATUS_DE.get(c['status'], c['status']))}</td><td class='mono'>Trail: {tr}</td>"
+                   f"<td><a href='/contributions/{c['id']}'>öffnen</a></td></tr>")
+    if not zeilen:
+        zeilen = "<tr><td colspan='5' class='mono'>keine Beiträge in dieser Auswahl</td></tr>"
+    return page("Beiträge", kopf + f"<p class='mono'>{filt}</p>"
+        "<p class='note'>Die Schlange kommt aus <span class='mono'>api/</span>, nicht aus einer Datei. "
+        "Entschieden wird auf der Detailseite, immer mit Begründung.</p>"
+        f"<table>{zeilen}</table>")
+
+def contrib_detail(cid):
+    code, j = api_call("GET", f"/api/contributions/{cid}")
+    kopf = f"<h1>entro<span style='color:#2BD4E8'>sana</span>.app admin · Beitrag #{cid}</h1><p class='mono'><a href='/contributions'>← Beiträge</a></p>"
+    if code != 200:
+        return page(f"Beitrag #{cid}", kopf + f"<p class='err'>{html.escape(str(j.get('error', code)))}</p>")
+    c = j["item"]
+    fakten = "".join(f"<tr><td class='mono'>{k}</td><td>{v}</td></tr>" for k, v in [
+        ("Titel", html.escape(c["title"])), ("Bereich", html.escape(c["area"])),
+        ("Stand", html.escape(STATUS_DE.get(c["status"], c["status"]))),
+        ("eingegangen", _wann(c.get("created"))), ("bestätigt", _wann(c.get("confirmed"))),
+        ("entschieden", _wann(c.get("decided")) + (f" · Akteur {c['decided_by']}" if c.get("decided_by") else "")),
+        ("Begründung", html.escape(c.get("reason") or "—")),
+        ("Akteur", f"<span class='mono'>{c['actor_id']}</span>"),
+        ("Trail", {1: "<span class='ok'>serverseitig geprüft</span>", 0: "<span class='err'>stimmt nicht</span>"}.get(c.get("trail_ok"), "nichts mitgeschickt"))])
+    dateien = "".join(f"<li><a href='{html.escape(f['url'])}' rel='noopener' target='_blank'>{html.escape(f['label'])}</a> <span class='mono'>{html.escape(f['url'])}</span></li>"
+                      for f in c.get("files", [])) or "<li class='mono'>keine</li>"
+    recs = "".join(f"<tr><td class='mono'>{r.get('i')}</td><td class='mono'>{_wann(r.get('t'))}</td><td class='mono'>{html.escape(r.get('kind',''))}</td>"
+                   f"<td>{html.escape(r.get('text',''))}</td><td class='mono'>{html.escape((r.get('h') or '')[:10])}</td></tr>"
+                   for r in c.get("records", [])) or "<tr><td colspan='5' class='mono'>keine Zeilen</td></tr>"
+    form = ""
+    if c["status"] in NEXT:
+        opts = "".join(f"<option value='{s}'>{l}</option>" for s, l in NEXT[c["status"]])
+        form = ("<h2>Entscheiden</h2>"
+                "<p class='note'>Ohne Begründung geht nichts hinaus: die Verwaltung schickt es nicht ab, und der Dienst würde es abweisen.</p>"
+                f"<div class='f'><select id='next'>{opts}</select></div>"
+                "<div class='f'><textarea id='reason' rows='4' placeholder='Begründung, mindestens drei Zeichen'></textarea></div>"
+                "<div class='bar'><button class='btn' id='decide'>Entscheiden</button> <span id='msg' class='mono'></span></div>"
+                "<script>"
+                "document.getElementById('decide').addEventListener('click',function(){"
+                "var r=document.getElementById('reason').value.trim(),m=document.getElementById('msg');"
+                "if(r.length<3){m.textContent='Begründung fehlt.';m.className='err';return;}"
+                "m.textContent='…';m.className='mono';"
+                f"fetch('/api/contributions/{cid}/decide',{{method:'POST',headers:{{'Content-Type':'application/json'}},"
+                "body:JSON.stringify({status:document.getElementById('next').value,reason:r})}).then(function(x){return x.json()})"
+                ".then(function(j){if(j.ok){location.reload();}else{m.textContent=j.error||'Fehler';m.className='err';}})"
+                ".catch(function(){m.textContent='Dienst nicht erreichbar';m.className='err';});});"
+                "</script>")
+    kcode, kj = api_call("GET", "/api/audit/verify")
+    kette = (f"<span class='ok'>in Ordnung, {kj.get('n')} Zeilen</span>" if kcode == 200 and kj.get("ok")
+             else f"<span class='err'>{html.escape(str(kj))}</span>")
+    return page(f"Beitrag #{cid}", kopf + f"<table>{fakten}</table>"
+        f"<h2>Vorschlag</h2><pre style='white-space:pre-wrap'>{html.escape(c.get('summary',''))}</pre>"
+        f"<h2>Dateien</h2><ul>{dateien}</ul>"
+        f"<h2>Aufzeichnungen der einreichenden Person</h2><table>{recs}</table>"
+        f"<h2>Datei als Text</h2><pre style='white-space:pre-wrap'>{html.escape(c.get('trail') or '—')}</pre>"
+        + form + f"<p class='mono' style='margin-top:1.5rem'>Kette des Dienstes: {kette}</p>")
+
+def contrib_decide(cid, data):
+    status = str(data.get("status", ""))
+    reason = str(data.get("reason", "")).strip()
+    if status not in ("reviewing", "admitted", "rejected"):
+        raise ValueError("unbekannter Zielzustand")
+    if len(reason) < 3:
+        raise ValueError("Begründung fehlt")
+    code, j = api_call("PATCH", f"/api/contributions/{cid}", {"status": status, "reason": reason[:2000]})
+    if code != 200:
+        raise ValueError(j.get("error", f"API {code}"))
+    return j
+
+
 class H(BaseHTTPRequestHandler):
     server_version = "entrosana-app-admin"
 
@@ -1070,6 +1197,13 @@ class H(BaseHTTPRequestHandler):
         if u.path == "/design":
             self._send(200, design_editor())
             return
+        if u.path == "/contributions":
+            self._send(200, contrib_list(parse_qs(u.query).get("status", [""])[0]))
+            return
+        m = re.match(r"^/contributions/(\d{1,12})$", u.path)
+        if m:
+            self._send(200, contrib_detail(int(m.group(1))))
+            return
         self._send(404, "not found", "text/plain")
 
     def do_POST(self):
@@ -1096,6 +1230,9 @@ class H(BaseHTTPRequestHandler):
             elif u.path == "/api/design":
                 b = design_write(design_check(data))
                 self._json({"ok": True, "backup": b})
+            elif re.match(r"^/api/contributions/\d{1,12}/decide$", u.path):
+                cid = int(u.path.split("/")[3])
+                self._json({"ok": True, "item": contrib_decide(cid, data).get("item")})
             else:
                 self._json({"ok": False, "error": "unbekannter Pfad"}, 404)
         except Exception as e:
