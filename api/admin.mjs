@@ -7,6 +7,7 @@
 import { open } from "./db.mjs";
 import { append, verify } from "./audit.mjs";
 import { issueToken } from "./auth.mjs";
+import { appendEntry, removeEntry, entryFor } from "./publish.mjs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -49,6 +50,24 @@ try {
     const t = issueToken(db, target.id, days);
     append(db, { kind: "token.cli", actor_id: null, resource: "actor:" + target.id, text: `token issued on the machine for ${target.email}, ${days} days` });
     console.log(t.token);
+  } else if (cmd === "publish" || cmd === "unpublish") {
+    const c = db.prepare("SELECT * FROM contributions WHERE id = ?").get(Number(a));
+    if (!c) throw new Error("kein Beitrag #" + a);
+    if (cmd === "publish") {
+      if (c.status !== "admitted") throw new Error("nur angenommene Beiträge werden veröffentlicht (Stand: " + c.status + ")");
+      if (c.slug) throw new Error("schon veröffentlicht als modules/" + c.slug);
+      const actor = db.prepare("SELECT * FROM actors WHERE id = ?").get(c.actor_id);
+      const r = appendEntry("modules", entryFor(c, actor));
+      db.prepare("UPDATE contributions SET slug = ? WHERE id = ?").run(r.slug, c.id);
+      append(db, { kind: "publish", actor_id: null, resource: "contribution:" + c.id, text: `catalogue entry modules/${r.slug} written (draft) via cli` });
+      console.log("publish: modules/" + r.slug + " (Sicherung " + r.backup + ")");
+    } else {
+      if (!c.slug) throw new Error("nicht veröffentlicht");
+      const r = removeEntry("modules", c.slug);
+      db.prepare("UPDATE contributions SET slug = NULL WHERE id = ?").run(c.id);
+      append(db, { kind: "unpublish", actor_id: null, resource: "contribution:" + c.id, text: `catalogue entry modules/${c.slug} removed via cli` });
+      console.log("unpublish: modules/" + c.slug + (r.removed ? "" : " (war nicht in der Datei)"));
+    }
   } else if (cmd === "list") {
     for (const r of db.prepare(`SELECT a.id, a.kind, a.email, a.name, GROUP_CONCAT(r.role) AS roles
                                 FROM actors a LEFT JOIN roles r ON r.actor_id = a.id GROUP BY a.id ORDER BY a.id`).all())
@@ -56,7 +75,7 @@ try {
   } else if (cmd === "verify-chain") {
     const v = verify(db); console.log(JSON.stringify(v)); process.exitCode = v.ok ? 0 : 1;
   } else {
-    console.log("Befehle: grant <email> <role> [--by <email>] | revoke <email> <role> | token <email> [tage] | list | verify-chain"); process.exitCode = 2;
+    console.log("Befehle: grant <email> <role> [--by <email>] | revoke <email> <role> | token <email> [tage] | publish <id> | unpublish <id> | list | verify-chain"); process.exitCode = 2;
   }
 } catch (e) { console.error("Fehler:", e.message); process.exitCode = 1; }
 finally { db.close(); }

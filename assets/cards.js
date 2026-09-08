@@ -54,6 +54,13 @@
       a.appendChild(w);
     }
 
+    if (e.by) {
+      var by = document.createElement("p");
+      by.className = "mcard__by";
+      by.textContent = "by " + e.by;
+      a.appendChild(by);
+    }
+
     var l = document.createElement("p");
     l.className = "mcard__l" + fsClass(e, "lede");
     l.textContent = e.lede;

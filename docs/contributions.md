@@ -167,7 +167,7 @@ das Gerät nicht. Grenzen: 4000 Hashes, 400 Zeilen, 256 KB.
 Die Rückmeldung hat drei Ausgänge in den Farben des Vorrats: gesendet
 (`--verify`), abgewiesen mit Grund (`--warn`), Server nicht erreichbar
 (`--muted`). Im dritten Fall bleibt der alte Weg sichtbar: Datei herunterladen
-und an info@entrosana.com mailen. Nichts, was heute geht, hört auf zu gehen.
+und an sygnif@entrosana.com mailen, das Beitragspostfach (seit 2026-09-08 registriert, von SYGNIF sortiert). Nichts, was heute geht, hört auf zu gehen.
 
 `/contribute/status` (`status.html`, `assets/status.js`) löst den Verweis aus
 der Mail ein (`?verify=`), legt die Zugangsmarke im Browser ab
@@ -200,6 +200,49 @@ Verwaltung prüft das vor dem Aufruf (`contrib_decide`, «Begründung fehlt»), 
 der Dienst würde es ohnehin abweisen (`PATCH`, `reason required`). Jede
 Entscheidung erscheint in der Kette mit Akteur 1 (`service admin`) und
 Begründung.
+
+## Veröffentlichung (Phase 6, gebaut am 2026-09-08)
+
+Angenommen heisst veröffentlicht, als Entwurf. Beim Übergang nach `admitted`
+schreibt `api/publish.mjs` einen Eintrag in `assets/catalogue.js`: Abschnitt
+`modules`, Gleis `contributed` (wird beim ersten Mal angelegt), `state: draft`,
+`draft: true`, `by` mit dem Namen der einreichenden Person, Titel, Bereich,
+der Vorschlag als `about`, Dateiverweise als `downloads`. Der Slug entsteht aus
+dem Titel und ist eindeutig (`-2`, `-3` bei Wiederholung). Die Datei wird nicht
+neu erzeugt, sondern der Eintrag wortgetreu vor die schliessende Klammer der
+Liste eingefügt, mit der Einrückung des letzten Eintrags; vorher wird eine
+Kopie nach `~/entrosana-app-backups/` gelegt. Der Test
+(`api/test/publish.test.mjs`) verlangt, dass Anhängen und Entfernen die Datei
+Byte für Byte wiederherstellen, bis auf die eine Gleiszeile.
+
+`serve.mjs` kennt die Detailrouten nicht mehr als Zeilen: `deriveRoutes()` liest
+den Katalog im Sandkasten (`node:vm`) so, wie der Browser ihn liest, und leitet
+`/modules/<slug>`, `/tools/<slug>`, `/contribute/<slug>` daraus ab; ändert sich
+die Datei, wird innerhalb von 5 Sekunden neu abgeleitet. Die Allowlist bleibt:
+ein Slug ausserhalb des Katalogs ist 404. Die Sitemap folgt derselben Ableitung
+und lässt Entwürfe aus. Ein neuer Eintrag braucht damit weder einen Eingriff in
+`serve.mjs` noch einen Neustart (Gate 6, geprüft am 2026-09-08 mit #2 und #1).
+
+`detail.js` zeigt «Contributed by …», `cards.js` «by …» (`.mod__by`,
+`.mcard__by`). Rückzug oder Ablehnung eines veröffentlichten Beitrags nimmt den
+Eintrag wieder heraus (`removeEntry`); auf der Maschine gehen
+`node api/admin.mjs publish <id>` und `unpublish <id>`. Jede Entscheidung geht
+per Mail an die einreichende Person, mit Begründung und, bei Annahme, dem
+Verweis auf die Seite; die globale Obergrenze von 60 Briefen je Stunde gilt
+auch dafür.
+
+Weil die Veröffentlichung den Namen trägt, ist der Name seit dieser Phase bei
+der Einreichung Pflicht (`validate`, «name missing»).
+
+## Postfach
+
+Beiträge und Antworten laufen über `sygnif@entrosana.com`, registriert am
+2026-09-08, sortiert von SYGNIF. Jede Mail des Hubs trägt diese Adresse als
+`Reply-To` (`tools/mail-send.py`, überschreibbar mit `MAIL_REPLY_TO` in
+`~/.config/entrosana-smtp.env`); Absender bleibt das SMTP-Konto `info@`. Das
+Formular auf entrosana.com und `contact-send.py` sind davon nicht berührt. Der
+Katalogeintrag «Propose a track» nennt noch `info@entrosana.com` als Ziel; das
+ist ein Text des Eigentümers im Katalog.
 
 ## Personendaten
 

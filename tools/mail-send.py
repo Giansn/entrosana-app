@@ -32,6 +32,7 @@ try:
     m["From"] = user
     m["To"] = to
     m["Subject"] = subject
+    m["Reply-To"] = cfg.get("MAIL_REPLY_TO", "sygnif@entrosana.com")   # Beitragspostfach, sortiert von SYGNIF
     m["Auto-Submitted"] = "auto-generated"
     m.set_content(text)
     with smtplib.SMTP(cfg.get("SMTP_HOST", "smtp.protonmail.ch"), int(cfg.get("SMTP_PORT", "587")), timeout=20) as s:

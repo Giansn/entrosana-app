@@ -15,7 +15,8 @@ window.__catalogue = {
   // Die Gebietsnamen sind die von entrosana.com/modules, die Absaetze auch.
   "tracks": [
    {"id":"available", "name":"Available now", "short":"self-implementation"},
-   {"id":"onrequest", "name":"On request",    "short":"on request"}
+   {"id":"onrequest", "name":"On request",    "short":"on request"},
+   {"id":"contributed", "name":"Contributed", "short":"contributed"}
   ],
   "list": [
    {

@@ -1641,3 +1641,6 @@ html{ scrollbar-gutter:stable }
 .status__row{ display:grid; grid-template-columns:9rem 1fr; gap:.3rem 1rem; padding:.45rem 0; border-bottom:1px solid var(--line) }
 .status__row:last-child{ border-bottom:0 }
 .status__k{ font-family:var(--font-mono); font-size:var(--step--1); color:var(--muted); letter-spacing:.08em; text-transform:uppercase }
+
+/* Phase 6: Beiträge aus der Gemeinschaft tragen den Namen der einreichenden Person. */
+.mod__by, .mcard__by{ font-family:var(--font-mono); font-size:var(--step--1); color:var(--muted); margin:.1rem 0 .4rem }

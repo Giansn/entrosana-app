@@ -16,6 +16,7 @@ import { open } from "./db.mjs";
 import { append as auditAppend, verify as auditVerify } from "./audit.mjs";
 import { can } from "./policy.mjs";
 import { validate as validateContribution, actionFor, verifyTrail } from "./contributions.mjs";
+import { appendEntry, removeEntry, entryFor } from "./publish.mjs";
 import { serviceToken, ensureServiceActor, resolveActor, issueToken, withRoles, newToken, sha } from "./auth.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -27,6 +28,7 @@ const PUBLIC = process.env.PUBLIC_ORIGIN || "https://entrosana.app";
 const MAIL = process.env.MAIL_SEND || join(HERE, "..", "tools", "mail-send.py");
 const BODY_CAP = 256 * 1024;  // Kette eines Geräts als Hashes passt hinein
 const RATE = { limit: 5, windowMs: 3600e3 };   // docs/contributions.md, Entscheid 5
+const MAIL_CAP = 60;                            // Briefe je Stunde insgesamt, gegen Verstärkung
 
 mkdirSync(dirname(LOG), { recursive: true });
 const { db, migrations } = open(DB_PATH);
@@ -67,9 +69,9 @@ function readJson(req) {
 
 // Zähler je Schlüssel (ip:… und email:…), Fenster eine Stunde, im Speicher.
 const hits = new Map();
-function limited(key) {
+function limited(key, limit = RATE.limit) {
   const now = Date.now(), arr = (hits.get(key) || []).filter(t => now - t < RATE.windowMs);
-  if (arr.length >= RATE.limit) { hits.set(key, arr); return true; }
+  if (arr.length >= limit) { hits.set(key, arr); return true; }
   arr.push(now); hits.set(key, arr); return false;
 }
 setInterval(() => { const now = Date.now(); for (const [k, v] of hits) { const a = v.filter(t => now - t < RATE.windowMs); a.length ? hits.set(k, a) : hits.delete(k); } }, 600e3).unref();
@@ -104,6 +106,10 @@ routes.set("GET /api/me", (ctx) => {
 // Bestätigung anlegen und den Verweis verschicken. Die Adresse kommt nicht in
 // die Kette, nur ein Kürzel ihres Hashes.
 async function startVerification(email, name, purpose) {
+  if (limited("mail:global", MAIL_CAP)) {
+    auditAppend(db, { kind: "mail.capped", actor_id: null, resource: null, text: `global mail cap ${MAIL_CAP}/h reached, verification not sent` });
+    return { ok: false, code: 429, err: "mail cap" };
+  }
   const token = newToken(), now = new Date();
   db.prepare("INSERT INTO verifications(email, token_hash, created, expires) VALUES (?,?,?,?)")
     .run(email, sha(token), now.toISOString(), new Date(now.getTime() + 3600e3).toISOString());
@@ -183,7 +189,7 @@ const asResource = c => ({ kind: "contribution", actor_id: c.actor_id, status: c
 function publicRow(c, full) {
   const r = { id: c.id, kind: c.kind, status: c.status, title: c.title, area: c.area, org_id: c.org_id,
               created: c.created, confirmed: c.confirmed, decided: c.decided, reason: c.reason };
-  r.trail_ok = c.trail_ok;
+  r.trail_ok = c.trail_ok; r.slug = c.slug || null;
   if (full) Object.assign(r, { summary: c.summary, files: JSON.parse(c.files_json || "[]"), trail: c.trail_md,
                                records: JSON.parse(c.trail_json || "[]"), actor_id: c.actor_id, decided_by: c.decided_by });
   return r;
@@ -255,6 +261,36 @@ patterns.push([/^\/api\/contributions\/(\d{1,12})$/, {
                 reason = COALESCE(?, reason) WHERE id = ?`).run(target, final ? now : null, final ? ctx.actor.id : null, reason || null, c.id);
     auditAppend(db, { kind: "contribution." + target, actor_id: ctx.actor.id, resource: "contribution:" + c.id,
       text: reason || (action === "withdraw" ? "withdrawn by submitter" : target) });
+    // Angenommen heisst veröffentlicht: als Entwurf in den Katalog, unter dem Namen
+    // der einreichenden Person (docs/contributions.md). Zurückgezogen oder
+    // abgelehnt nach einer Veröffentlichung nimmt den Eintrag wieder heraus.
+    const submitter = db.prepare("SELECT * FROM actors WHERE id = ?").get(c.actor_id);
+    if (target === "admitted") {
+      try {
+        const r = appendEntry("modules", entryFor(getContribution(c.id), submitter));
+        db.prepare("UPDATE contributions SET slug = ? WHERE id = ?").run(r.slug, c.id);
+        auditAppend(db, { kind: "publish", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: `catalogue entry modules/${r.slug} written (draft)` });
+      } catch (e) {
+        auditAppend(db, { kind: "publish.failed", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: String(e.message).slice(0, 200) });
+      }
+    } else if (c.slug && (target === "rejected" || target === "withdrawn")) {
+      try {
+        const r = removeEntry("modules", c.slug);
+        if (r.removed) auditAppend(db, { kind: "unpublish", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: `catalogue entry modules/${c.slug} removed` });
+      } catch (e) {
+        auditAppend(db, { kind: "unpublish.failed", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: String(e.message).slice(0, 200) });
+      }
+    }
+    // Die einreichende Person erfährt jede Entscheidung mit ihrer Begründung.
+    if (submitter && submitter.email && (target === "admitted" || target === "rejected") && !limited("mail:global", MAIL_CAP)) {
+      const fresh = getContribution(c.id);
+      const where = target === "admitted" && fresh.slug ? `\nIt is now listed as a draft at ${PUBLIC}/modules/${fresh.slug} under your name.` : "";
+      mail(submitter.email, `entrosana Hub: your contribution «${c.title}» was ${target}`,
+        `Hello${submitter.name ? " " + submitter.name : ""},\n\nyour contribution #${c.id} «${c.title}» was ${target}.\n\nReason given by the reviewer:\n${reason}${where}\n\n` +
+        `Its status page: ${PUBLIC}/contribute/status?id=${c.id}\n\nentrosana`).then(r => {
+          auditAppend(db, { kind: "decision.mail", actor_id: null, resource: "contribution:" + c.id, text: r.ok ? "decision mail sent" : "decision mail failed: " + (r.err || r.code) });
+        });
+    }
     send(ctx.res, 200, { ok: true, item: publicRow(getContribution(c.id), true) });
   },
 }]);

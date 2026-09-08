@@ -4,17 +4,18 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { validate, actionFor } from "../contributions.mjs";
 
-const good = { email: "a@b.ch", name: "A", title: "A module", area: "social", summary: "What it does.", trail: "", files: [{ label: "Slides", url: "https://example.org/s.pdf" }] };
+const good = { email: "a@b.ch", name: "Anna B.", title: "A module", area: "social", summary: "What it does.", trail: "", files: [{ label: "Slides", url: "https://example.org/s.pdf" }] };
 
 test("gültige eingabe geht durch, normalisiert", () => {
   const v = validate(good);
   assert.equal(v.ok, true); assert.equal(v.value.email, "a@b.ch"); assert.equal(v.value.files.length, 1); assert.equal(v.value.org_id, null);
 });
 
-test("sechs ungültige eingaben, je mit begründung", () => {
+test("sieben ungültige eingaben, je mit begründung", () => {
   const cases = [
     [{ ...good, email: undefined },            /email/],
     [{ ...good, email: "not-an-address" },     /email/],
+    [{ ...good, name: "" },                    /name missing/],
     [{ ...good, title: "" },                   /title/],
     [{ ...good, area: "religion" },            /area/],
     [{ ...good, summary: "x".repeat(4001) },   /summary longer/],

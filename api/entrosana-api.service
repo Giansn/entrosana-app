@@ -9,6 +9,8 @@ WorkingDirectory=%h/entrosana-app/api
 ExecStart=/usr/bin/env node --no-warnings %h/entrosana-app/api/server.mjs
 Environment=PORT=4324
 Environment=HOST=127.0.0.1
+MemoryMax=256M
+NoNewPrivileges=yes
 Restart=always
 RestartSec=2
 StandardOutput=append:%h/.sygnif/logs/entrosana-api.log

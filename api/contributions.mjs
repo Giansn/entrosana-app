@@ -18,6 +18,7 @@ export function validate(body) {
   const email = str(body.email, 254).toLowerCase();
   if (!EMAIL.test(email)) return { ok: false, error: "email missing or malformed" };
   const name = str(body.name, LIMITS.name);
+  if (name.length < 2) return { ok: false, error: "name missing: contributions are published under the submitter's name" };
   if (name.length > LIMITS.name) return { ok: false, error: `name longer than ${LIMITS.name}` };
   const title = str(body.title, LIMITS.title[1]);
   if (title.length < LIMITS.title[0]) return { ok: false, error: `title missing or shorter than ${LIMITS.title[0]}` };

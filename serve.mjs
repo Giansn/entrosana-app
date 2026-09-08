@@ -6,6 +6,7 @@
 // bloss abgesichert. Neue Seite heisst: neuer Eintrag in ROUTES.
 import { createServer } from "node:http";
 import { readFileSync, statSync } from "node:fs";
+import vm from "node:vm";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -26,13 +27,9 @@ const INDEXABLE = false;
 // Was in die sitemap.xml gehört: die inhaltlichen Seiten. /records, /projects
 // und /services zeigen, was auf dem jeweiligen Gerät liegt, /project ist noch
 // nicht gebaut — nichts davon hat in einem Suchindex etwas verloren.
-const SITEMAP = ["/", "/tools", "/modules", "/contribute",
-  "/modules/your-value-system", "/modules/social", "/modules/nature-based",
-  "/modules/technical", "/tools/lehrplan21-citation",
-  "/tools/lehrplan21-stand-in", "/tools/auditable-back-office",
-  "/tools/payroll-run", "/tools/second-opinion",
-  "/contribute/propose-a-track", "/contribute/review-someones-work",
-  "/contribute/ask-for-runway"];
+const SITEMAP_BASE = ["/", "/tools", "/modules", "/contribute"];
+// Dazu kommen die abgeleiteten Detailseiten ohne Entwurfsmarke, siehe deriveRoutes().
+const SITEMAP = { get list() { return SITEMAP_BASE.concat([...DERIVED].filter(([, r]) => !r.draft).map(([p]) => p)); } };
 
 const HTML = "text/html; charset=utf-8";
 const CSS = "text/css; charset=utf-8";
@@ -46,23 +43,10 @@ const ROUTES = new Map([
   ["/records",    { file: "records.html",    type: HTML }],
   ["/projects",  { file: "projects.html",  type: HTML }],
   ["/services",   { file: "services.html",   type: HTML }],
-  // Je Modul ein eigener Eintrag, alle auf dieselbe Datei: die Allowlist
-  // bleibt, und module.js liest den Slug aus dem Pfad.
-  // Je Katalogeintrag ein eigener Eintrag, alle auf dieselbe Datei: die
-  // Allowlist bleibt, und detail.js liest Abteilung und Slug aus dem Pfad.
-  ["/modules/your-value-system",     { file: "detail.html", type: HTML }],
-  ["/modules/social",                { file: "detail.html", type: HTML }],
-  ["/modules/nature-based",          { file: "detail.html", type: HTML }],
-  ["/modules/technical",             { file: "detail.html", type: HTML }],
-  ["/tools/lehrplan21-citation",     { file: "detail.html", type: HTML }],
-  ["/tools/lehrplan21-stand-in",     { file: "detail.html", type: HTML }],
-  ["/tools/auditable-back-office",   { file: "detail.html", type: HTML }],
-  ["/tools/payroll-run",             { file: "detail.html", type: HTML }],
-  ["/tools/second-opinion",          { file: "detail.html", type: HTML }],
-  ["/contribute/propose-a-track",      { file: "detail.html", type: HTML }],
-  ["/contribute/review-someones-work", { file: "detail.html", type: HTML }],
-  ["/contribute/ask-for-runway",       { file: "detail.html", type: HTML }],
-  // Stand eines Beitrags und Einlösen des Bestätigungsverweises (Phase 4). Nicht in SITEMAP.
+  // Detailseiten (/modules/*, /tools/*, /contribute/*) stehen nicht mehr hier:
+  // sie werden aus assets/catalogue.js abgeleitet, siehe deriveRoutes(). Die
+  // Allowlist bleibt: ein Slug, der nicht im Katalog steht, ist weiterhin 404.
+  // Stand eines Beitrags und Einreichen (Phase 4). Nicht in der Sitemap.
   ["/contribute/status",               { file: "status.html", type: HTML }],
   ["/contribute/submit",               { file: "submit.html", type: HTML }],
   ["/assets/catalogue.js",   { file: "assets/catalogue.js",   type: JS }],
@@ -100,6 +84,31 @@ const CSP = "default-src 'none'; style-src 'self'; script-src 'self'; connect-sr
             "img-src 'self' data:; font-src data:; " +
             "form-action 'none'; frame-ancestors 'none'; base-uri 'none'";
 
+// Abgeleitete Routen: der Katalog wird so gelesen, wie der Browser ihn liest
+// (im Sandkasten, ohne Netz), und je Eintrag entsteht /abschnitt/slug auf
+// detail.html. Ändert sich die Datei, wird neu abgeleitet, ohne Neustart.
+const CATALOGUE = join(ROOT, "assets", "catalogue.js");
+let DERIVED = new Map(), catalogueTag = "";
+function deriveRoutes() {
+  const s = statSync(CATALOGUE);
+  const tag = `${s.mtimeMs}-${s.size}`;
+  if (tag === catalogueTag) return;
+  const sandbox = { window: {} };
+  vm.runInNewContext(readFileSync(CATALOGUE, "utf8"), sandbox, { timeout: 1000 });
+  const cat = sandbox.window.__catalogue || {};
+  const m = new Map();
+  for (const sec of ["modules", "tools", "contribute"]) {
+    for (const e of ((cat[sec] || {}).list || [])) {
+      if (typeof e.slug === "string" && /^[a-z0-9][a-z0-9-]{0,60}$/.test(e.slug)) {
+        m.set(`/${sec}/${e.slug}`, { file: "detail.html", type: HTML, draft: !!e.draft });
+      }
+    }
+  }
+  DERIVED = m; catalogueTag = tag;
+  console.log(`entrosana-app derived ${m.size} detail routes from catalogue.js`);
+}
+try { deriveRoutes(); } catch (e) { console.error("catalogue.js not derivable:", e.message); }
+
 const cache = new Map();
 function load(route) {
   const path = join(ROOT, route.file);
@@ -107,11 +116,16 @@ function load(route) {
   const etag = `W/"${statSync(path).mtimeMs.toString(36)}-${body.length.toString(36)}"`;
   cache.set(route.file, { body, etag, type: route.type });
 }
-for (const route of ROUTES.values()) load(route);
+// detail.html gehört zu keiner festen Route mehr, wird aber von allen
+// abgeleiteten gebraucht; deshalb steht sie hier ausdrücklich.
+const DETAIL = { file: "detail.html", type: HTML };
+const FILES = () => [...ROUTES.values(), DETAIL];
+for (const route of FILES()) load(route);
 
 // Beim Ändern einer Datei neu einlesen, ohne Neustart.
 setInterval(() => {
-  for (const route of ROUTES.values()) {
+  try { deriveRoutes(); } catch (e) { console.error("catalogue.js not derivable:", e.message); }
+  for (const route of FILES()) {
     try {
       const s = statSync(join(ROOT, route.file));
       const etag = `W/"${s.mtimeMs.toString(36)}-${s.size.toString(36)}"`;
@@ -127,6 +141,7 @@ function normalize(url) {
 }
 
 createServer((req, res) => {
+  try {
   if (req.method !== "GET" && req.method !== "HEAD") {
     res.writeHead(405, { "Allow": "GET, HEAD" }).end();
     return;
@@ -162,13 +177,13 @@ createServer((req, res) => {
   }
   if (path === "/sitemap.xml") {
     if (!INDEXABLE) { res.writeHead(404, { "Content-Type": "text/plain" }).end("404\n"); return; }
-    const urls = SITEMAP.map((p) => `  <url><loc>https://${CANON}${p}</loc></url>`).join("\n");
+    const urls = SITEMAP.list.map((p) => `  <url><loc>https://${CANON}${p}</loc></url>`).join("\n");
     res.writeHead(200, { "Content-Type": "application/xml; charset=utf-8" })
        .end(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`);
     return;
   }
 
-  const route = ROUTES.get(path);
+  const route = ROUTES.get(path) || DERIVED.get(path);
   // Unbekannte Pfade liefern die Startseite mit 404, damit nichts vorgetäuscht wird.
   const entry = cache.get((route ?? ROUTES.get("/")).file);
   const status = route ? 200 : 404;
@@ -194,6 +209,10 @@ createServer((req, res) => {
   if (proto === "https") headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
   res.writeHead(status, headers);
   res.end(req.method === "HEAD" ? undefined : entry.body);
+  } catch (e) {
+    console.error("request failed:", req.url, e.message);
+    if (!res.headersSent) res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" }).end("internal error\n");
+  }
 }).listen(PORT, HOST, () => {
   console.log(`entrosana-app serving ${ROUTES.size} routes on http://${HOST}:${PORT}`);
 });

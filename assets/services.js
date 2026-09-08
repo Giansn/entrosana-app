@@ -1,7 +1,7 @@
 /* Erzeugt von tools/services-snapshot.sh — nicht von Hand ändern. */
 window.__services = {
  "host": "e14",
- "read": "2026-09-08 20:07",
+ "read": "2026-09-08 20:27",
  "services": [
   {"group":"Public","name":"entrosana.com","what":"WordPress","where":"via tunnel","state":"ok","status":"Up 3 weeks","origin":"entrosana"},
   {"group":"Public","name":"entrosana.app","what":"this app, entrosana-app.service","where":"via tunnel","state":"ok","status":"active","origin":"entrosana"},

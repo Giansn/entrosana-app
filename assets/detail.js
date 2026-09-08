@@ -69,6 +69,7 @@
   b1.appendChild(head);
   b1.appendChild(el("h1", "work__h" + fsClass("title"), e.title));
   if (e.who) b1.appendChild(el("p", "mod__who" + fsClass("who"), e.who));
+  if (e.by) b1.appendChild(el("p", "mod__by", "Contributed by " + e.by));
   b1.appendChild(el("p", "mod__lede" + fsClass("lede"), e.lede));
   if (e.draft) {
     b1.appendChild(el("p", "draftnote",

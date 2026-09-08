@@ -50,12 +50,12 @@
 
   var form = el("form"); form.noValidate = true; card.appendChild(form);
   var grid = el("div", "submit__grid");
-  var name = el("input"); name.type = "text"; name.maxLength = 120; name.autocomplete = "name";
+  var name = el("input"); name.type = "text"; name.maxLength = 120; name.autocomplete = "name"; name.required = true;
   var email = el("input"); email.type = "email"; email.maxLength = 254; email.autocomplete = "email"; email.required = true;
   var tk = token(); if (tk && tk.email) email.value = tk.email;
   var title = el("input"); title.type = "text"; title.maxLength = 160; title.required = true; title.value = (p ? p.title : "").slice(0, 160);
   var area = el("select"); AREAS.forEach(function (a) { var o = el("option", null, a); o.value = a; area.appendChild(o); });
-  grid.appendChild(field("Your name", name, null, false));
+  grid.appendChild(field("Your name", name, "Admitted modules are published under your name.", true));
   grid.appendChild(field("Your e-mail", email, "Only for the confirmation link and the answer.", true));
   grid.appendChild(field("Title", title, "What you want to build or teach, in one line.", true));
   grid.appendChild(field("Area", area, null, true));
@@ -106,7 +106,7 @@
       .catch(function () {
         go.disabled = false;
         note(out, "idle", "The Hub's server is not reachable right now." + (p ? " Your file is safe on this device." : ""));
-        link(out, "mailto:info@entrosana.com?subject=" + encodeURIComponent("Proposal: " + title.value.trim()), "Mail it instead");
+        link(out, "mailto:sygnif@entrosana.com?subject=" + encodeURIComponent("Proposal: " + title.value.trim()), "Mail it instead");
       });
   });
 })();
