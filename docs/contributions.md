@@ -350,6 +350,43 @@ Vorschläge mit Stand und Dateiverweisen, Hub-Dateien als .md, Weg zum Trail),
 **Journal** (die letzten sechs Records des Geräts). Alles Gerätebezogene bleibt
 auf dem Gerät; der Dienst sieht nur Profil und Vorschläge.
 
+## Profilbild, Journal, öffentliches Profil, Suche (2026-09-09, nachts)
+
+- **Profilbild** (Migration 012): der Browser verkleinert das gewählte Bild auf
+  256 × 256 px und sendet es als JPEG (`POST /api/me/avatar`, JSON mit base64,
+  höchstens 300 KB entpackt, Magic Bytes für JPEG, PNG, WebP). Es liegt als BLOB
+  im Konto, wird unter `/api/avatars/<id>` ausgeliefert (`Cache-Control: public,
+  max-age=300`, ETag) und erscheint in der Leiste, unter `/me` und auf der
+  öffentlichen Profilseite. `DELETE /api/me/avatar` entfernt es; die Löschung des
+  Kontos ebenso.
+- **Journal** (Migration 011, `api/journal.mjs`): geschriebene Einträge (bis 2000
+  Zeichen), je Eintrag öffentlich oder privat (Voreinstellung öffentlich, mit
+  Schalter «Visible on my public profile»). `GET/POST /api/me/journal`,
+  `PATCH/DELETE /api/me/journal/<id>`; Drossel 60 Einträge je Stunde. Kettenzeilen
+  `journal.add|edit|delete`. Unter `/me` heisst der frühere Block «Journal»
+  jetzt «Records on this device».
+- **Öffentliches Profil** `/p/<id>` (`profile.html`, `assets/profile.js`, Route
+  per Muster in `serve.mjs`; `GET /api/profiles/<id>`): Name, Stand, Bild,
+  Rolle, Organisation, eine Zeile, Website, Sprachen, seit wann, veröffentlichte
+  Module, öffentliche Journaleinträge. Ohne Adresse, ohne Marke lesbar; nur für
+  Konten mit Namen, sonst 404.
+- **Suche** (`assets/search.js`, Knopf in der Pille auf allen 14 Seiten, ⌘K oder
+  Ctrl+K): eine Palette als `<dialog>`. Treffer sofort aus dem Browser (Seiten,
+  Katalog aus `window.__catalogue`, bei Bedarf nachgeladen, Projekte des Geräts),
+  nach 160 ms ergänzt vom Dienst (`GET /api/search?q=`: Personen, öffentliche
+  Journaleinträge, veröffentlichte Module; `api/journal.mjs::searchPublic`, LIKE
+  über Name, Organisation, Zeile, Text, Titel; ab zwei Zeichen, höchstens 8 je
+  Gruppe). Tastatur: Pfeile, Enter, Esc. Der Dienst protokolliert nur den Pfad,
+  nie die Frage; der Browser speichert nichts (Vorbild Brave).
+- **Brett am Telefon** (`assets/project.js`, `project-shell.css`): HTML5-Drag
+  feuert auf Berührung nicht. Der Griff ⠿ (44 px) hebt die Karte sofort, ein
+  langer Druck (350 ms) auf die Karte ebenso; ein Schatten folgt dem Finger, die
+  Bahn unter dem Finger wird markiert, das Brett rollt am Rand mit. Wischen quer
+  über die Karte (auch über den Titel) schiebt sie eine Bahn weiter; der
+  folgende Klick wird unterdrückt, der Fokus genommen. Eine Bahnenleiste über dem
+  Brett rollt zur gewählten Bahn und markiert die sichtbare. Geprüft mit
+  emulierter Berührung (CDP `Input.dispatchTouchEvent`).
+
 ## Postfach
 
 Beiträge und Antworten laufen über `sygnif@entrosana.com`, registriert am

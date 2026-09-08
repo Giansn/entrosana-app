@@ -1,0 +1,27 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { open } from "../db.mjs";
+import { addEntry, updateEntry, deleteEntry, listJournal, publicProfile, searchPublic } from "../journal.mjs";
+test("journal: eigene einträge, öffentliches profil zeigt nur öffentliche, suche findet öffentliches", () => {
+  const { db } = open(":memory:"); const now = new Date().toISOString();
+  const a = db.prepare("INSERT INTO actors(kind,email,name,created,org,role) VALUES ('email','j@x.ch','Jana Test',?,'Schule am See','teacher')").run(now).lastInsertRowid;
+  const b = db.prepare("INSERT INTO actors(kind,email,created) VALUES ('email','noname@x.ch',?)").run(now).lastInsertRowid;
+  const actor = { id: a, kind: "email" };
+  assert.throws(() => addEntry(db, actor, "", true), /1 to 2000/);
+  const e1 = addEntry(db, actor, "First lesson with the value-system module went well.", true);
+  const e2 = addEntry(db, actor, "Private note: rework slide 4.", false);
+  assert.equal(listJournal(db, a).length, 2); assert.equal(listJournal(db, a, true).length, 1);
+  const p = publicProfile(db, a);
+  assert.equal(p.name, "Jana Test"); assert.equal(p.standing, "collector"); assert.equal(p.profile.org, "Schule am See");
+  assert.equal(p.journal.length, 1); assert.equal(p.journal[0].id, e1.id); assert.equal(Object.keys(p).includes("email"), false);
+  assert.equal(publicProfile(db, b), null);
+  updateEntry(db, actor, e2.id, { public: true }); assert.equal(publicProfile(db, a).journal.length, 2);
+  assert.throws(() => updateEntry(db, { id: b }, e1.id, { text: "hijack" }), /not found/);
+  const s = searchPublic(db, "value-system"); assert.equal(s.journal.length, 1); assert.equal(s.journal[0].href, "/p/" + a + "#j" + e1.id);
+  assert.equal(searchPublic(db, "Jana").people.length, 1); assert.equal(searchPublic(db, "J").people.length, 0);
+  assert.equal(searchPublic(db, "am See").people[0].line, "teacher · Schule am See");
+  deleteEntry(db, actor, e2.id); assert.equal(listJournal(db, a).length, 1);
+  assert.throws(() => deleteEntry(db, actor, e2.id), /not found/);
+  assert.equal(db.prepare("SELECT COUNT(*) n FROM audit WHERE kind LIKE 'journal.%'").get().n, 4);
+  db.close();
+});

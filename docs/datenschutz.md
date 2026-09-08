@@ -109,6 +109,20 @@ Everyone who registers is a collector. Contributor standing is granted by our
 team after an application (a text you write, kept with your account; decided
 applications are deleted after 24 months).
 
+**Your public profile.** Every account with a name has a public page under
+/p/<number>: name, standing, picture (if you add one), organisation or school,
+role, the line about you, website, languages, the date you joined, your
+published modules, and the journal entries you marked public. Nothing else, and
+never your address. You choose per journal entry whether it is public; you can
+change or delete entries, remove the picture, and empty the profile fields at
+any time under /me. The picture is stored as a small image (256 × 256) with your
+account and deleted with it.
+
+**Search.** The search on our pages runs in your browser for pages and the
+catalogue and asks our server only for people, public journal entries and
+published modules. We do not log what you type; the server records the request
+path, not the query.
+
 ### 4. Proposals and published modules
 
 A proposal contains your name, address, title, area, the text, links to files
@@ -252,6 +266,20 @@ Wer sich registriert, ist Sammler. Den Stand als Beitragende vergibt unser Team
 nach einer Bewerbung (ein Text von Ihnen, der beim Konto bleibt; entschiedene
 Bewerbungen werden nach 24 Monaten gelöscht).
 
+**Ihr öffentliches Profil.** Jedes Konto mit Namen hat eine öffentliche Seite
+unter /p/<Nummer>: Name, Stand, Bild (wenn Sie eines setzen), Organisation oder
+Schule, Rolle, die Zeile über Sie, Website, Sprachen, seit wann Sie dabei sind,
+Ihre veröffentlichten Module und die Journaleinträge, die Sie öffentlich
+gestellt haben. Nichts weiter, nie Ihre Adresse. Je Eintrag wählen Sie, ob er
+öffentlich ist; Einträge ändern oder löschen, das Bild entfernen und die
+Profilfelder leeren können Sie jederzeit unter /me. Das Bild liegt als kleines
+Bild (256 × 256) beim Konto und geht mit dessen Löschung.
+
+**Suche.** Die Suche auf unseren Seiten läuft für Seiten und Katalog in Ihrem
+Browser und fragt unseren Server nur nach Personen, öffentlichen
+Journaleinträgen und veröffentlichten Modulen. Wir protokollieren nicht, was Sie
+eingeben; der Server hält den Pfad der Anfrage fest, nicht die Frage.
+
 ### 4. Vorschläge und veröffentlichte Module
 
 Ein Vorschlag enthält Name, Adresse, Titel, Bereich, Text, Verweise auf Dateien,
@@ -345,7 +373,8 @@ oben nach.
 | Auslieferung | IP, Browserkennung, Anfrage | Betrieb, Sicherheit | Cloudflare (USA) | bei Cloudflare nach deren Regeln | Tunnel, `~/.cloudflared/config.yml` |
 | Protokoll Hub-API | IP, Pfad, Status, Dauer, Kontonummer | Betrieb, Missbrauch | — | 14 Tage | `tools/rotate-logs.sh` |
 | Protokoll Website | IP, Pfad, Status | Betrieb | — | 30 Tage (nach Punkt 2 oben) | Docker json-file |
-| Konto | Adresse, Registrierung, Marken (gehasht), Profil | Identität, Veröffentlichung, Entscheide | — | bis zur Löschung; unbestätigt 7 d; Marke 30 d; Verweis 1 h | `api/auth.mjs`, `api/maintenance.mjs` |
+| Konto | Adresse, Registrierung, Marken (gehasht), Profil, Bild | Identität, Veröffentlichung, Entscheide, öffentliches Profil | öffentlich: alles ausser Adresse und Marken | bis zur Löschung; unbestätigt 7 d; Marke 30 d; Verweis 1 h | `api/auth.mjs`, `api/maintenance.mjs` |
+| Journal | Text, Zeit, öffentlich/privat | Lernjournal, öffentliches Profil | öffentliche Einträge: alle | bis zur Löschung des Eintrags oder Kontos | `api/journal.mjs` |
 | Bewerbung | Text, Zeit, Entscheid, Begründung | Freigabe als Beitragende | Team; Postfach sygnif@ | 24 Monate nach Entscheid | `api/applications.mjs` |
 | Vorschlag | Name, Adresse, Titel, Bereich, Text, Dateiverweise, Trail | Prüfung, Veröffentlichung | Team; Postfach sygnif@; GitHub (Katalog) | unbestätigt 7 d; sonst bis Entscheid / solange veröffentlicht | `api/contributions.mjs` |
 | Anfrage | Name, Adresse, Organisation, Art, Text | Antwort | Postfach info@ | 180 Tage | `api/server.mjs` |

@@ -548,7 +548,8 @@ p{ margin:0 0 var(--pad-para) }
   .rail.is-open .rail__burger{ position:absolute; top:.55rem; right:.6rem }
   .work{ padding:0 1rem }
   .top{ padding:0 1rem }
-  .search{ display:none }
+  .search{ min-width:44px; min-height:44px; padding:0 .6rem; justify-content:center }
+  .search .search__t, .search kbd{ display:none }
 }
 
 /* Luft unter der schwebenden Pille, sonst beginnt der erste Block darunter zu eng. */
@@ -1762,4 +1763,54 @@ html{ scrollbar-gutter:stable }
 .me__n{ font-family:var(--font-mono); font-size:var(--step--1); color:var(--muted); white-space:nowrap }
 .me__next{ font-family:var(--font-mono); font-size:var(--step--1); color:var(--seal); flex:1 1 100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
 .me__file{ font-family:var(--font-mono); font-size:var(--step--1); color:var(--seal) }
+
+/* Anmelden und Abmelden als Knöpfe unter dem Kontoblock (Wunsch des Eigentümers, 2026-09-08). */
+.rail__auth{ display:flex; flex-wrap:wrap; gap:.4rem; padding:.35rem .55rem .1rem }
+.rail__authbtn{ font-size:.78rem; padding:.35rem .8rem }
+@media (max-width:759.98px){ .rail:not(.is-open) .rail__auth{ display:none } .rail__authbtn{ min-height:2.4rem } }
+
+/* Handlungszeilen (2026-09-08): Knöpfe standen als Inline-Elemente und legten sich
+   am Telefon übereinander (/contribute: 410–443 px und 434–467 px gemessen).
+   Jetzt eine Flex-Zeile mit Abstand; am Telefon dürfen Beschriftungen umbrechen. */
+.actions{ display:flex; flex-wrap:wrap; gap:.6rem; align-items:center }
+@media (max-width:759.98px){ .actions .btn{ white-space:normal; text-align:center; line-height:1.3 } }
+
+/* Profilbild, Journal, öffentliches Profil (2026-09-08). */
+.me__avatar{ overflow:hidden }
+.me__avatarimg, .rail__avatarimg{ width:100%; height:100%; object-fit:cover; border-radius:50%; display:block }
+.rail__avatar{ overflow:hidden; padding:0 }
+.journal__e{ display:grid; gap:.35rem }
+.journal__top{ display:flex; align-items:center; gap:.6rem }
+.journal__t{ margin:0; color:var(--ink); white-space:pre-wrap }
+.journal__acts{ margin-top:.2rem }
+.me__pic{ margin-top:.2rem }
+
+/* ---------- Suche (2026-09-08) ----------
+   Der Knopf in der Pille ersetzt die Attrappe; die Palette ist ein <dialog>
+   in .pick-Form, oben im Fenster, am Telefon ganzseitig. */
+.search{ font:inherit; cursor:pointer; appearance:none; text-align:left; display:inline-flex; align-items:center; gap:.5rem }
+.search:hover{ border-color:var(--seal); color:var(--seal) }
+.search__g{ opacity:.8 }
+.palette{ width:min(92vw, 640px); max-width:640px; margin:7vh auto 0; padding:0 }
+.palette .pick__box{ padding:.5rem .55rem .7rem }
+.palette__head{ display:flex; align-items:center; gap:.6rem; padding:.15rem .5rem; border-bottom:1px solid var(--line) }
+.palette__g{ color:var(--muted); font-size:1.1rem }
+.palette__in{ flex:1; font:inherit; font-size:1.05rem; background:none; border:0; color:var(--ink); padding:.7rem .2rem; outline:none; min-width:0 }
+.palette__in::-webkit-search-cancel-button{ appearance:none }
+.palette__list{ max-height:min(58vh, 28rem); overflow:auto; display:grid; gap:.15rem; padding:.35rem .15rem 0 }
+.palette__group{ display:grid; gap:.05rem; padding:.25rem 0 }
+.palette__group .eyebrow{ margin:.2rem .55rem .25rem; font-size:.68rem }
+.palette__row{ display:grid; grid-template-columns:minmax(0,1fr) auto; gap:.15rem .8rem; padding:.55rem .6rem; border-radius:10px; color:var(--ink); text-decoration:none }
+.palette__row:hover, .palette__row.is-hi{ background:color-mix(in srgb, var(--seal) 12%, transparent) }
+.palette__row:focus-visible{ outline:2px solid var(--seal); outline-offset:-2px }
+.palette__t{ font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.palette__k{ font-family:var(--font-mono); font-size:.68rem; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; align-self:center; white-space:nowrap }
+.palette__l{ grid-column:1 / -1; color:var(--muted); font-size:var(--step--1); overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.palette__foot{ margin:.5rem .6rem 0; font-family:var(--font-mono); font-size:.68rem; color:var(--muted) }
+.palette__none{ padding:.9rem .6rem; color:var(--muted) }
+@media (max-width:759.98px){
+  .palette{ width:100vw; max-width:100vw; margin:0; height:100dvh; max-height:100dvh; border-radius:0; border:0 }
+  .palette__list{ max-height:calc(100dvh - 8.5rem) }
+  .palette__row{ padding:.75rem .6rem }
+}
 

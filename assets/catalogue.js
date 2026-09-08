@@ -21,6 +21,7 @@ window.__catalogue = {
   "list": [
    {
     "slug":"your-value-system",
+    "by":"Gianluca Kühne",
     "track":"available",
     "state":"available",
     "title":"Value System",

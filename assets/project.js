@@ -412,7 +412,7 @@
     ensureLanes(p);
     var view = el("div", "view");
     view.appendChild(head(p));
-    if (p.view === "board") view.appendChild(boardView(p));
+    if (p.view === "board") { var board = boardView(p); view.appendChild(laneBar(p, board)); view.appendChild(board); }
     else view.appendChild(listView(p));
     view.appendChild(addBar(p));
     main.appendChild(view);
@@ -598,6 +598,31 @@
     box.appendChild(row);
     body.insertBefore(box, body.querySelector(".sec__add"));
     inp.focus();
+  }
+
+  /* Bahnenleiste für Telefone (2026-09-08): ein Tipp rollt das Brett zur Bahn,
+     die sichtbare Bahn ist markiert. Auf dem Schreibtisch versteckt (CSS). */
+  function laneBar(p, board) {
+    var bar = el("div", "lanebar");
+    var lanes = sections(p).filter(function (s) { return s.id !== "done" || p.showDone; });
+    lanes.forEach(function (sec) {
+      var b = el("button", "lanebar__b", sec.name + " "); b.type = "button"; b.dataset.section = sec.id;
+      b.appendChild(el("span", "lanebar__n", String(tops(p, sec.id).length)));
+      b.addEventListener("click", function () {
+        var col = board.querySelector('.col[data-section="' + sec.id + '"]');
+        if (col) col.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
+      });
+      bar.appendChild(b);
+    });
+    function markLane() {
+      var cols = board.querySelectorAll(".col"); if (!cols.length) return;
+      var bl = board.getBoundingClientRect().left, best = null, bestD = 1e9;
+      cols.forEach(function (c) { var d = Math.abs(c.getBoundingClientRect().left - bl); if (d < bestD) { bestD = d; best = c.dataset.section; } });
+      bar.querySelectorAll(".lanebar__b").forEach(function (b) { b.classList.toggle("is-on", b.dataset.section === best); });
+    }
+    board.addEventListener("scroll", markLane, { passive: true });
+    setTimeout(markLane, 0);
+    return bar;
   }
 
   /* board = same sections horizontal */
@@ -865,7 +890,106 @@
       toast("→ " + laneMeta(laneOf(task)).name);
     });
 
+    wireTouch(p, task, row, grip);
     return row;
+  }
+
+  /* ---- Berührung (2026-09-08) ----
+     HTML5-Drag feuert auf Telefonen nicht. Nach Android-Konvention (Material):
+     der Griff hebt die Karte sofort, ein langer Druck auf die Karte ebenso; ein
+     Schatten folgt dem Finger, die Bahn unter dem Finger nimmt die Karte an,
+     das Brett rollt am Rand mit. Wischen quer über die Karte schiebt sie eine
+     Bahn weiter. Kurzes Vibrieren beim Aufnehmen, wo der Browser es erlaubt. */
+  var touch = { id: null, lifted: false, ghost: null, timer: null, x: 0, y: 0, startX: 0, startY: 0, moved: false, gx: 0, gy: 0 };
+  function laneOrder(p) {
+    return sections(p).filter(function (s) { return s.id !== "done" || p.showDone; }).map(function (s) { return s.id; });
+  }
+  function shiftLane(p, task, dir) {
+    var order = laneOrder(p), i = order.indexOf(laneOf(task)), j = i + dir;
+    if (i < 0 || j < 0 || j >= order.length) { toast(dir > 0 ? "Already in the last lane" : "Already in the first lane"); return; }
+    if (p.sort !== "manual") p.sort = "manual";
+    moveToSection(p, task, order[j], null, false);
+    save(); paint(); toast("→ " + laneMeta(order[j]).name);
+  }
+  function wireTouch(p, task, row, grip) {
+    function lift(x, y, pointerId) {
+      touch.lifted = true;
+      row.classList.add("is-dragging");
+      var r = row.getBoundingClientRect();
+      var g = row.cloneNode(true); g.className = "task task--ghost";
+      g.style.width = r.width + "px"; g.style.left = r.left + "px"; g.style.top = r.top + "px";
+      document.body.appendChild(g); touch.ghost = g; touch.gx = r.left - x; touch.gy = r.top - y;
+      try { row.setPointerCapture(pointerId); } catch (e) {}
+      if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} }
+    }
+    function unlift() {
+      touch.lifted = false;
+      if (touch.ghost) { touch.ghost.remove(); touch.ghost = null; }
+      row.classList.remove("is-dragging"); clearMarks();
+    }
+    function target(x, y) {
+      if (touch.ghost) touch.ghost.style.display = "none";
+      var at = document.elementFromPoint(x, y);
+      if (touch.ghost) touch.ghost.style.display = "";
+      if (!at || !at.closest) return null;
+      var col = at.closest(".col"); if (!col) return null;
+      var over = at.closest(".task"); if (over === row) over = null;
+      var after = false;
+      if (over) { var rr = over.getBoundingClientRect(); after = (y - rr.top) > rr.height / 2; }
+      return { col: col, section: col.dataset.section, row: over, after: after };
+    }
+    function mark(tg) {
+      clearMarks(); row.classList.add("is-dragging");
+      if (!tg) return;
+      tg.col.classList.add("sec--over");
+      if (tg.row) tg.row.classList.add(tg.after ? "drop-after" : "drop-before");
+    }
+    function autoScroll(x) {
+      var board = row.closest(".board"); if (!board) return;
+      var b = board.getBoundingClientRect();
+      if (x < b.left + 44) board.scrollLeft -= 16; else if (x > b.right - 44) board.scrollLeft += 16;
+    }
+    function drop(x, y) {
+      var tg = target(x, y); unlift();
+      if (!tg) return;
+      if (p.sort !== "manual") p.sort = "manual";
+      var moving = p.tasks.filter(function (z) { return z.id === task.id; })[0]; if (!moving) return;
+      var before = tg.row ? p.tasks.filter(function (z) { return z.id === tg.row.dataset.id; })[0] : null;
+      moveToSection(p, moving, tg.section, before || null, tg.after);
+      save(); paint(); toast("→ " + laneMeta(tg.section).name);
+    }
+    function down(ev, immediate) {
+      if (ev.pointerType !== "touch") return;
+      // Nur echte Bedienelemente sind ausgenommen; der Titel (auch als Knopf) trägt die Wischgeste.
+      // Der Titel ist ein textarea (Bearbeitung an Ort); er trägt die Wischgeste trotzdem. Ausgenommen bleiben echte Bedienelemente.
+      if (!immediate && ev.target.closest && ev.target.closest("input,select,option,label,a,.task__actions,.check,.prio,.pill,.move-sel,.col__add,textarea:not(.task__content)")) return;
+      clearTimeout(touch.timer);
+      touch.id = ev.pointerId; touch.startX = touch.x = ev.clientX; touch.startY = touch.y = ev.clientY; touch.moved = false;
+      if (immediate) lift(ev.clientX, ev.clientY, ev.pointerId);
+      else touch.timer = setTimeout(function () { if (!touch.moved && touch.id === ev.pointerId) lift(touch.x, touch.y, ev.pointerId); }, 350);
+    }
+    function move(ev) {
+      if (ev.pointerId !== touch.id) return;
+      touch.x = ev.clientX; touch.y = ev.clientY;
+      var dx = touch.x - touch.startX, dy = touch.y - touch.startY;
+      if (!touch.lifted) { if (Math.abs(dx) > 10 || Math.abs(dy) > 10) { touch.moved = true; clearTimeout(touch.timer); } return; }
+      if (ev.cancelable) ev.preventDefault();
+      if (touch.ghost) { touch.ghost.style.left = (touch.x + touch.gx) + "px"; touch.ghost.style.top = (touch.y + touch.gy) + "px"; }
+      mark(target(touch.x, touch.y)); autoScroll(touch.x);
+    }
+    function up(ev) {
+      if (ev.pointerId !== touch.id) return;
+      clearTimeout(touch.timer);
+      if (touch.lifted) drop(touch.x, touch.y);
+      else { var dx = touch.x - touch.startX, dy = touch.y - touch.startY; if (Math.abs(dx) > 60 && Math.abs(dy) < 40) { touch.swiped = true; if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); shiftLane(p, task, dx > 0 ? 1 : -1); } }
+      touch.id = null;
+    }
+    function cancel(ev) { if (ev.pointerId !== touch.id) return; clearTimeout(touch.timer); if (touch.lifted) unlift(); touch.id = null; }
+    // Nach einem Wisch darf der Tipp am Ende nicht als Klick durchgehen (Titel öffnet sonst die Bearbeitung).
+    row.addEventListener("click", function (ev) { if (touch.swiped) { touch.swiped = false; ev.stopPropagation(); ev.preventDefault(); } }, true);
+    grip.addEventListener("pointerdown", function (ev) { down(ev, true); });
+    row.addEventListener("pointerdown", function (ev) { if (ev.target === grip || grip.contains(ev.target)) return; down(ev, false); });
+    [row, grip].forEach(function (n) { n.addEventListener("pointermove", move); n.addEventListener("pointerup", up); n.addEventListener("pointercancel", cancel); });
   }
 
   function nudge(p, task, dir) {

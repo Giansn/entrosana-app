@@ -72,6 +72,8 @@ const ROUTES = new Map([
   ["/assets/me.js",       { file: "assets/me.js",       type: JS }],
   ["/assets/request.js",  { file: "assets/request.js",  type: JS }],
   ["/assets/languages.js", { file: "assets/languages.js", type: JS }],
+  ["/assets/profile.js",  { file: "assets/profile.js",  type: JS }],
+  ["/assets/search.js",   { file: "assets/search.js",   type: JS }],
   ["/assets/submit.js",   { file: "assets/submit.js",   type: JS }],
   ["/assets/mark.svg",    { file: "assets/mark.svg",    type: "image/svg+xml" }],
   // Vorschaubild für geteilte Links. Wird nicht von der Seite geladen, sondern
@@ -124,7 +126,8 @@ function load(route) {
 // detail.html gehört zu keiner festen Route mehr, wird aber von allen
 // abgeleiteten gebraucht; deshalb steht sie hier ausdrücklich.
 const DETAIL = { file: "detail.html", type: HTML };
-const FILES = () => [...ROUTES.values(), DETAIL];
+const PROFILE = { file: "profile.html", type: HTML };   // /p/<id>: öffentliches Profil
+const FILES = () => [...ROUTES.values(), DETAIL, PROFILE];
 for (const route of FILES()) load(route);
 
 // Beim Ändern einer Datei neu einlesen, ohne Neustart.
@@ -188,7 +191,7 @@ createServer((req, res) => {
     return;
   }
 
-  const route = ROUTES.get(path) || DERIVED.get(path);
+  const route = ROUTES.get(path) || DERIVED.get(path) || (/^\/p\/\d{1,12}$/.test(path) ? PROFILE : undefined);
   // Unbekannte Pfade liefern die Startseite mit 404, damit nichts vorgetäuscht wird.
   const entry = cache.get((route ?? ROUTES.get("/")).file);
   const status = route ? 200 : 404;

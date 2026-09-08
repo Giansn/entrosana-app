@@ -16,10 +16,11 @@ import { open } from "./db.mjs";
 import { append as auditAppend, verify as auditVerify } from "./audit.mjs";
 import { can, rolesOf } from "./policy.mjs";
 import { validate as validateContribution, actionFor, verifyTrail, publishChecks } from "./contributions.mjs";
-import { appendEntry, removeEntry, entryFor } from "./publish.mjs";
+import { appendEntry, removeEntry, entryFor, readCatalogue } from "./publish.mjs";
 import { exportActor } from "./maintenance.mjs";
 import { standingOf, currentApplication, openApplication, listApplications, decideApplication } from "./applications.mjs";
 import { LANG_CODES, MAX_LANGS } from "./languages.mjs";
+import { listJournal, addEntry, updateEntry, deleteEntry, publicProfile, searchPublic } from "./journal.mjs";
 import { serviceToken, ensureServiceActor, resolveActor, issueToken, withRoles, newToken, sha } from "./auth.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -122,6 +123,7 @@ routes.set("GET /api/me", (ctx) => {
   const a = ctx.actor, app = a.kind === "email" ? currentApplication(db, a.id) : null;
   send(ctx.res, 200, { id: a.id, kind: a.kind, email: a.email, name: a.name, created: a.created, roles: [...a.roles], standing: standingOf(a.roles),
     profile: { org: a.org || "", role: a.role || "", about: a.about || "", website: a.website || "", langs: a.langs || [] },
+    avatar: a.avatar ? (a.avatar_updated || "1") : null,
     application: app ? { id: app.id, created: app.created, decided: app.decided, outcome: app.outcome, reason: app.reason } : null });
 });
 
@@ -333,6 +335,9 @@ patterns.push([/^\/api\/contributions\/(\d{1,12})$/, {
       return send(ctx.res, 200, { ok: true, second_reading: !sameReviewer, item: publicRow(getContribution(c.id), true) });
     }
     if (c.status === "published" && target === "admitted") {
+      // Ein Original des Katalogs (Spur nicht «contributed») wird nie über diesen Weg entfernt.
+      if (c.slug) { const cat = readCatalogue(); const entry = ((cat.modules || {}).list || []).find(x => x.slug === c.slug);
+        if (entry && entry.track !== "contributed") throw new HttpError(409, "original catalogue entry: it is edited in the catalogue, not taken back here"); }
       if (c.slug) { try { removeEntry("modules", c.slug); } catch (e) { auditAppend(db, { kind: "unpublish.failed", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: String(e.message).slice(0, 200) }); } }
       db.prepare("UPDATE contributions SET status = 'admitted', published = NULL, published_by = NULL, slug = NULL, reason = ? WHERE id = ?").run(reason, c.id);
       auditAppend(db, { kind: "unpublish", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: `taken back from the catalogue — ${reason}` });
@@ -469,6 +474,55 @@ patterns.push([/^\/api\/requests\/(\d{1,12})$/, {
   },
 }]);
 
+// Journal: eigene Einträge, öffentlich auf Wunsch. Öffentliches Profil und Suche ohne Marke.
+routes.set("GET /api/me/journal", (ctx) => { if (!ctx.actor) throw new HttpError(401, "no actor"); send(ctx.res, 200, { ok: true, items: listJournal(db, ctx.actor.id) }); });
+routes.set("POST /api/me/journal", async (ctx) => {
+  if (!ctx.actor || ctx.actor.kind !== "email") throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+  const body = await readJson(ctx.req);
+  if (limited("journal:" + ctx.actor.id, 60)) throw new HttpError(429, "too many entries this hour");
+  send(ctx.res, 201, { ok: true, item: lift(() => addEntry(db, ctx.actor, body.text, body.public !== false && body.public !== 0)) });
+});
+patterns.push([/^\/api\/me\/journal\/(\d{1,12})$/, {
+  PATCH: async (ctx, [id]) => { if (!ctx.actor) throw new HttpError(401, "no actor"); const body = await readJson(ctx.req); send(ctx.res, 200, { ok: true, item: lift(() => updateEntry(db, ctx.actor, id, body)) }); },
+  DELETE: (ctx, [id]) => { if (!ctx.actor) throw new HttpError(401, "no actor"); lift(() => deleteEntry(db, ctx.actor, id)); send(ctx.res, 200, { ok: true, deleted: Number(id) }); },
+}]);
+patterns.push([/^\/api\/profiles\/(\d{1,12})$/, {
+  GET: (ctx, [id]) => { const p = publicProfile(db, id); if (!p) throw new HttpError(404, "no public profile"); send(ctx.res, 200, { ok: true, profile: p }); },
+}]);
+routes.set("GET /api/search", (ctx) => { send(ctx.res, 200, { ok: true, ...searchPublic(db, ctx.query.get("q") || "") }); });
+
+// Profilbild: JSON mit base64, höchstens 300 KB entpackt, nur JPEG, PNG oder WebP (Magic Bytes).
+const IMAGE_MAGIC = [["image/jpeg", [0xFF, 0xD8, 0xFF]], ["image/png", [0x89, 0x50, 0x4E, 0x47]], ["image/webp", [0x52, 0x49, 0x46, 0x46]]];
+routes.set("POST /api/me/avatar", async (ctx) => {
+  if (!ctx.actor || ctx.actor.kind !== "email") throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+  const body = await readJson(ctx.req);
+  const b64 = String(body.data || "").replace(/^data:[^,]*,/, "");
+  let buf; try { buf = Buffer.from(b64, "base64"); } catch { throw new HttpError(400, "bad image data"); }
+  if (!buf.length || buf.length > 300 * 1024) throw new HttpError(400, "image must be 1 byte to 300 KB");
+  const kind = IMAGE_MAGIC.find(([, m]) => m.every((v, i) => buf[i] === v));
+  if (!kind) throw new HttpError(400, "image must be JPEG, PNG or WebP");
+  const now = new Date().toISOString();
+  db.prepare("UPDATE actors SET avatar = ?, avatar_type = ?, avatar_updated = ? WHERE id = ?").run(buf, kind[0], now, ctx.actor.id);
+  auditAppend(db, { kind: "profile.avatar", actor_id: ctx.actor.id, resource: "actor:" + ctx.actor.id, text: `picture set (${kind[0]}, ${buf.length} B)` });
+  send(ctx.res, 200, { ok: true, avatar: now });
+});
+routes.set("DELETE /api/me/avatar", (ctx) => {
+  if (!ctx.actor) throw new HttpError(401, "no actor");
+  db.prepare("UPDATE actors SET avatar = NULL, avatar_type = NULL, avatar_updated = NULL WHERE id = ?").run(ctx.actor.id);
+  auditAppend(db, { kind: "profile.avatar", actor_id: ctx.actor.id, resource: "actor:" + ctx.actor.id, text: "picture removed" });
+  send(ctx.res, 200, { ok: true, avatar: null });
+});
+patterns.push([/^\/api\/avatars\/(\d{1,12})$/, {
+  GET: (ctx, [id]) => {
+    const r = db.prepare("SELECT avatar, avatar_type, avatar_updated FROM actors WHERE id = ? AND email IS NOT NULL").get(Number(id));
+    if (!r || !r.avatar) throw new HttpError(404, "no picture");
+    const etag = `"${Buffer.from(r.avatar_updated || "").toString("base64url")}"`;
+    if (ctx.req.headers["if-none-match"] === etag) { ctx.res.writeHead(304, { ETag: etag }); return ctx.res.end(); }
+    ctx.res.writeHead(200, { "Content-Type": r.avatar_type, "Content-Length": r.avatar.length, "Cache-Control": "public, max-age=300", ETag: etag, "X-Content-Type-Options": "nosniff" });
+    ctx.res.end(Buffer.from(r.avatar));
+  },
+}]);
+
 // Alles über mich, als Datei. Nur mit Marke, nur Eigenes.
 routes.set("GET /api/me/export", (ctx) => {
   if (!ctx.actor) throw new HttpError(401, "no actor");
@@ -501,9 +555,10 @@ routes.set("DELETE /api/me", async (ctx) => {
     db.prepare("DELETE FROM verifications WHERE email = ?").run(ctx.actor.email);
     db.prepare("DELETE FROM roles WHERE actor_id = ?").run(ctx.actor.id);
     db.prepare("DELETE FROM applications WHERE actor_id = ?").run(ctx.actor.id);          // Bewerbungstexte gehen mit
+    db.prepare("DELETE FROM journal WHERE actor_id = ?").run(ctx.actor.id);                // Journal geht mit
     if (ctx.actor.email) db.prepare("DELETE FROM requests WHERE email = ?").run(ctx.actor.email);   // Anfragen unter derselben Adresse
     // Name bleibt nur, wenn ein Modul unter ihm stehen bleibt; die Adresse geht immer.
-    db.prepare("UPDATE actors SET email = NULL, name = ?, org_id = NULL, org = NULL, role = NULL, about = NULL, website = NULL, langs = NULL WHERE id = ?").run(kept ? ctx.actor.name : "(erased)", ctx.actor.id);
+    db.prepare("UPDATE actors SET email = NULL, name = ?, org_id = NULL, org = NULL, role = NULL, about = NULL, website = NULL, langs = NULL, avatar = NULL, avatar_type = NULL, avatar_updated = NULL WHERE id = ?").run(kept ? ctx.actor.name : "(erased)", ctx.actor.id);
     db.exec("COMMIT");
   } catch (e) { db.exec("ROLLBACK"); throw e; }
   auditAppend(db, { kind: "erase", actor_id: ctx.actor.id, resource: "actor:" + ctx.actor.id, text: `personal data erased; ${kept} module(s) kept under the name, ${unpublished} unpublished, ${deleted} contribution(s) deleted` });

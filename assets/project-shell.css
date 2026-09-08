@@ -420,3 +420,35 @@ header.top .view__tools{ display:flex; align-items:center; gap:.5rem; margin-lef
   header.top .view__tools select{ min-width:0 }
 }
 
+/* ---------- Berührung (2026-09-08) ----------
+   Der Griff ist das Ziel für den Finger: touch-action none, damit der Browser
+   nicht rollt, sobald man ihn hält. Die Karte lässt senkrechtes Rollen zu
+   (pan-y); quer wischen gehört ihr. Ziele nach Material mindestens 44 px. */
+.task .grip{ touch-action:none }
+.task{ touch-action:pan-y }
+.task--ghost{
+  position:fixed; z-index:60; pointer-events:none; opacity:.94; margin:0;
+  box-shadow:0 14px 34px rgba(0,0,0,.35); transform:rotate(1.5deg); background:var(--card-bg);
+}
+@media (hover:none){
+  .task .grip{ min-width:2.75rem; min-height:2.75rem; display:grid; place-items:center; font-size:1.35rem; opacity:1; color:var(--seal) }
+  .task__actions{ opacity:1 }
+  .task__actions button, .task .pill, .task .check{ min-width:2.5rem; min-height:2.5rem }
+  .task .prio{ width:1.6rem; height:1.6rem; font-size:.72rem }
+  .col__add{ min-height:2.75rem }
+}
+
+/* Bahnenleiste: nur am Telefon. */
+.lanebar{ display:none }
+@media (max-width:759.98px){
+  .lanebar{ display:flex; gap:.4rem; overflow-x:auto; margin:0 .6rem .5rem; padding:.1rem 0 .3rem; scrollbar-width:none }
+  .lanebar__b{
+    flex:none; display:inline-flex; align-items:center; gap:.4rem; min-height:2.5rem; padding:.3rem .8rem;
+    border:1px solid var(--line-ui); border-radius:999px; background:none; color:var(--ink-2);
+    font-family:var(--font-mono); font-size:.8rem; cursor:pointer;
+  }
+  .lanebar__b.is-on{ border-color:var(--seal); color:var(--seal); background:color-mix(in srgb, var(--seal) 12%, transparent) }
+  .lanebar__n{ color:var(--muted) }
+  .lanebar__b.is-on .lanebar__n{ color:var(--seal) }
+}
+

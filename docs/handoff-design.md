@@ -543,3 +543,23 @@ Anmeldung ist die vorhandene Mailbestätigung mit `purpose:"login"`; kein
 Passwort, kein neues Bauteil, keine neue Farbe. Regelwerk und Zustände:
 `docs/contributions.md`, «Konto: Sammler und Beitragende».
 
+### Nachtrag, 2026-09-09 nachts: Berührung, Profil, Suche
+
+Das Brett unter `/project` kannte nur HTML5-Drag, das auf Berührung nicht
+feuert. Jetzt (`assets/project.js`, `project-shell.css`): Griff ⠿ mit
+`touch-action:none`, 44 × 44 px, hebt sofort; langer Druck auf die Karte hebt
+nach 350 ms; Schatten `.task--ghost` (fixiert, gedreht 1,5°); Bahn unter dem
+Finger `.sec--over`; Autoscroll ab 44 px vom Rand; Wisch quer über die Karte
+ab 60 px bei unter 40 px senkrecht schiebt eine Bahn weiter; Bahnenleiste
+`.lanebar` über dem Brett, nur unter 760 px. Vorlage sind Materials Regeln für
+Listen: Wischen wirkt auf das Element, langer Druck nimmt auf, Ziele 48 dp.
+Gemessen im Emulator (390 px): Griff 44 × 44, Ablage in «In progress» mit
+Toast, Wisch verschiebt ohne Fokuswechsel.
+
+`/me` trägt das Profilbild (Kreis, `object-fit:cover`), den Wähler für Sprachen
+(A–Z-Leiste, Chips) und das Journal; `/p/<id>` ist die öffentliche Seite in
+derselben Karte. Die Suche ersetzt die Attrappe: `.search` ist ein Knopf, die
+Palette ein `<dialog>` in `.pick`-Form (640 px, 7 vh von oben; am Telefon
+ganzseitig), Gruppen als Eyebrows, Zeilen mit Titel, Kennung und Zeile.
+Kein neuer Farbwert, keine neue Schrift.
+

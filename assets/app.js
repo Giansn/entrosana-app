@@ -1789,10 +1789,29 @@
       if (t) {
         var label = t.name || t.email || "Signed in";
         name.textContent = label; sub.textContent = (WORDS[t.standing] || "signed in") + (t.name && t.email ? " · " + t.email : "");
-        av.textContent = label.trim().charAt(0).toUpperCase(); a.classList.add("is-in"); a.setAttribute("aria-label", "Your account: " + label);
+        av.textContent = "";
+        if (t.avatar && t.id) { var im = document.createElement("img"); im.src = "/api/avatars/" + t.id + "?v=" + encodeURIComponent(t.avatar); im.alt = ""; im.className = "rail__avatarimg"; av.appendChild(im); }
+        else av.textContent = label.trim().charAt(0).toUpperCase();
+        a.classList.add("is-in"); a.setAttribute("aria-label", "Your account: " + label);
       } else {
         name.textContent = "Not signed in"; sub.textContent = "local device only"; av.textContent = "?";
         a.classList.remove("is-in"); a.setAttribute("aria-label", "Sign in or register");
+      }
+      // Sichtbarer Knopf darunter: anmelden führt zu /me, abmelden löscht die Marke dieses Geräts.
+      var foot = a.parentNode; if (!foot) return;
+      var row = foot.querySelector(".rail__auth"); if (!row) { row = document.createElement("div"); row.className = "rail__auth"; foot.appendChild(row); }
+      row.textContent = "";
+      if (t) {
+        var out = document.createElement("button"); out.type = "button"; out.className = "btn btn--ghost rail__authbtn"; out.textContent = "Sign out";
+        out.addEventListener("click", function () {
+          var h = { "Authorization": "Bearer " + t.token };
+          var done = function () { try { localStorage.removeItem(KEY); } catch (e) {} paint(); if (location.pathname === "/me") location.reload(); };
+          fetch("/api/me/token", { method: "DELETE", headers: h }).then(done, done);
+        });
+        row.appendChild(out);
+      } else {
+        var inn = document.createElement("a"); inn.className = "btn rail__authbtn"; inn.href = "/me"; inn.textContent = "Sign in"; row.appendChild(inn);
+        var reg = document.createElement("a"); reg.className = "btn btn--ghost rail__authbtn"; reg.href = "/me"; reg.textContent = "Register"; row.appendChild(reg);
       }
     });
   }

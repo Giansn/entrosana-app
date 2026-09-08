@@ -138,7 +138,10 @@
     var t = token();
     var sec = block("Your account", me.name || "No name yet", me.email);
     var idc = el("div", "card me"); sec.appendChild(idc);
-    var head = el("div", "me__id"); head.appendChild(el("span", "me__avatar", (me.name || me.email || "?").trim().charAt(0).toUpperCase()));
+    var head = el("div", "me__id"); var av = el("span", "me__avatar");
+    if (me.avatar) { var img = el("img", "me__avatarimg"); img.src = "/api/avatars/" + me.id + "?v=" + encodeURIComponent(me.avatar); img.alt = ""; av.appendChild(img); }
+    else av.textContent = (me.name || me.email || "?").trim().charAt(0).toUpperCase();
+    head.appendChild(av);
     var meta = el("div", "me__meta");
     meta.appendChild(el("span", "chip", WORDS[me.standing] || me.standing));
     meta.appendChild(el("p", "me__line", EXPLAIN[me.standing] || ""));
@@ -178,6 +181,31 @@
         .then(function (r) { nb.disabled = false; if (r.s === 200) { var tk = token(); if (tk) { tk.name = v; saveToken(tk); } refresh(); } else note(nout, "warn", "Not saved: " + (r.j.error || r.s) + "."); })
         .catch(function () { nb.disabled = false; note(nout, "warn", "The Hub's server is not reachable right now."); });
     });
+
+    // Profilbild: Datei wählen, im Browser auf 256 px verkleinern, als JPEG senden.
+    var pic = el("div", "actions me__pic"); var fileIn = el("input"); fileIn.type = "file"; fileIn.accept = "image/*"; fileIn.hidden = true; fileIn.setAttribute("aria-label", "Choose a picture");
+    var pb = el("button", "btn btn--ghost", me.avatar ? "Change picture" : "Add a picture"); pb.type = "button"; pb.addEventListener("click", function () { fileIn.click(); });
+    var pout = live(); pic.appendChild(pb);
+    if (me.avatar) { var rb = el("button", "btn btn--quiet", "Remove picture"); rb.type = "button"; rb.addEventListener("click", function () { api("/api/me/avatar", { method: "DELETE" }).then(function (r) { if (r.s === 200) { var tk = token(); if (tk) { tk.avatar = null; saveToken(tk); } refresh(); } }); }); pic.appendChild(rb); }
+    pic.appendChild(fileIn); idc.appendChild(pic); idc.appendChild(pout);
+    fileIn.addEventListener("change", function () {
+      var f = fileIn.files && fileIn.files[0]; if (!f) return;
+      if (!/^image\//.test(f.type)) { note(pout, "warn", "That is not an image."); return; }
+      var url = URL.createObjectURL(f), im = new Image();
+      im.onload = function () {
+        var S = 256, c = document.createElement("canvas"); c.width = S; c.height = S; var g = c.getContext("2d");
+        var s = Math.min(im.width, im.height), sx = (im.width - s) / 2, sy = (im.height - s) / 2;
+        g.drawImage(im, sx, sy, s, s, 0, 0, S, S); URL.revokeObjectURL(url);
+        var data = c.toDataURL("image/jpeg", 0.85);
+        note(pout, "idle", "Uploading…");
+        api("/api/me/avatar", { method: "POST", body: JSON.stringify({ data: data, type: "image/jpeg" }) })
+          .then(function (r) { if (r.s === 200) { var tk = token(); if (tk) { tk.avatar = r.j.avatar; saveToken(tk); } refresh(); } else note(pout, "warn", "Not saved: " + (r.j.error || r.s) + "."); })
+          .catch(function () { note(pout, "warn", "The Hub's server is not reachable right now."); });
+      };
+      im.onerror = function () { URL.revokeObjectURL(url); note(pout, "warn", "The browser could not read that image."); };
+      im.src = url;
+    });
+    var pl = el("p", "fine"); pl.appendChild(document.createTextNode("Your public profile: ")); var pa = el("a", null, location.origin + "/p/" + me.id); pa.href = "/p/" + me.id; pl.appendChild(pa); pl.appendChild(document.createTextNode(" — name, picture, standing, profile and public journal entries are visible to anyone.")); idc.appendChild(pl);
 
     var sec2 = block("Contributing", null, null), box = el("div", "card me");
     if (me.standing === "collector") {
@@ -226,7 +254,35 @@
     }).catch(function () { dl.appendChild(el("li", "me__row fine", "The Hub's server is not reachable; the list of proposals waits.")); });
     projs.filter(function (p) { return p.kind === "file" && hub; }).forEach(function (p) { var li = el("li", "me__row"); li.appendChild(el("span", "me__t", p.title + " (file on this device)")); var b = el("button", "btn btn--quiet", "Download .md"); b.type = "button"; b.addEventListener("click", function () { hub.download(String(p.id).replace("/", "-") + ".md", hub.markdown(p.p)); }); li.appendChild(b); dl.appendChild(li); });
     var da2 = el("div", "actions"); var rl = el("a", "btn btn--ghost", "Record trail and export"); rl.href = "/records"; da2.appendChild(rl); dbx.appendChild(da2); secD.appendChild(dbx);
-    var secJ = block("Journal", null, null), jbox = el("div", "card me");
+    // Journal: geschriebene Einträge auf dem Server, öffentlich auf Wunsch (Vorbild LearningView, Lernjournal).
+    var secW = block("Journal", null, null), wbox = el("div", "card me");
+    wbox.appendChild(el("p", "fine", "What you learned, tried, changed. Public entries appear on your profile page; private ones stay with your account."));
+    var jf = el("form"); jf.noValidate = true; var jta = el("textarea"); jta.rows = 3; jta.maxLength = 2000; jta.placeholder = "Today I…";
+    var fJ = field("New entry", jta, null); jf.appendChild(fJ);
+    var pubWrap = el("label", "toggle"); var pubCb = el("input"); pubCb.type = "checkbox"; pubCb.checked = true; var ptr = el("span", "toggle__track"); ptr.appendChild(el("span", "toggle__dot")); pubWrap.appendChild(pubCb); pubWrap.appendChild(ptr); pubWrap.appendChild(el("span", "toggle__label", "Visible on my public profile")); jf.appendChild(pubWrap);
+    var ja = el("div", "actions"); var jb = el("button", "btn", "Add entry"); jb.type = "submit"; ja.appendChild(jb); jf.appendChild(ja); var jout = live(); jf.appendChild(jout); wbox.appendChild(jf);
+    var jlist = el("ul", "me__list journal"); wbox.appendChild(jlist);
+    function paintJournal() {
+      api("/api/me/journal").then(function (r) {
+        jlist.textContent = ""; var items = r.s === 200 ? r.j.items : [];
+        if (!items.length) { jlist.appendChild(el("li", "me__row fine", "No entries yet.")); return; }
+        items.forEach(function (e) {
+          var li = el("li", "me__row journal__e"); li.id = "j" + e.id;
+          var top = el("div", "journal__top"); top.appendChild(el("span", "me__n", when2(e.created) + (e.updated ? " · edited" : ""))); top.appendChild(el("span", "chip" + (e.public ? "" : " chip--muted"), e.public ? "public" : "private")); li.appendChild(top);
+          var txt = el("p", "journal__t", e.text); li.appendChild(txt);
+          var acts = el("div", "actions journal__acts");
+          var tg = el("button", "btn btn--quiet", e.public ? "Make private" : "Make public"); tg.type = "button"; tg.addEventListener("click", function () { api("/api/me/journal/" + e.id, { method: "PATCH", body: JSON.stringify({ public: !e.public }) }).then(paintJournal); });
+          var ed = el("button", "btn btn--quiet", "Edit"); ed.type = "button"; ed.addEventListener("click", function () { var ta = el("textarea"); ta.value = e.text; ta.rows = 3; ta.maxLength = 2000; li.replaceChild(ta, txt); var sv = el("button", "btn btn--ghost", "Save"); sv.type = "button"; sv.addEventListener("click", function () { api("/api/me/journal/" + e.id, { method: "PATCH", body: JSON.stringify({ text: ta.value }) }).then(paintJournal); }); acts.replaceChild(sv, ed); ta.focus(); });
+          var dl = el("button", "btn btn--quiet", "Delete"); dl.type = "button"; dl.addEventListener("click", function () { if (!confirm("Delete this entry?")) return; api("/api/me/journal/" + e.id, { method: "DELETE" }).then(paintJournal); });
+          acts.appendChild(tg); acts.appendChild(ed); acts.appendChild(dl); li.appendChild(acts); jlist.appendChild(li);
+        });
+      }).catch(function () { jlist.textContent = ""; jlist.appendChild(el("li", "me__row fine", "The Hub's server is not reachable; entries wait.")); });
+    }
+    jf.addEventListener("submit", function (ev) { ev.preventDefault(); var v = jta.value.trim(); if (!v) { bad(fJ, "Write a line first."); return; } jb.disabled = true; note(jout, "idle", "Saving…");
+      api("/api/me/journal", { method: "POST", body: JSON.stringify({ text: v, public: pubCb.checked }) }).then(function (r) { jb.disabled = false; if (r.s === 201) { jta.value = ""; jout.textContent = ""; paintJournal(); } else note(jout, "warn", "Not saved: " + (r.j.error || r.s) + "."); }).catch(function () { jb.disabled = false; note(jout, "warn", "The Hub's server is not reachable right now."); }); });
+    paintJournal(); secW.appendChild(wbox);
+
+    var secJ = block("Records on this device", null, null), jbox = el("div", "card me");
     jbox.appendChild(el("p", "fine", recs.length ? recs.length + " record(s) on this device; the last " + Math.min(6, recs.length) + ":" : "Nothing recorded on this device yet. A record appears the moment you finish a step."));
     if (recs.length) { var jl = el("ul", "me__list"); recs.slice(-6).reverse().forEach(function (r) { var li = el("li", "me__row"); li.appendChild(el("span", "me__n", when2(r.t))); li.appendChild(el("span", "me__t", r.text)); if (r.project) li.appendChild(el("span", "me__next", r.project)); jl.appendChild(li); }); jbox.appendChild(jl); }
     secJ.appendChild(jbox);
@@ -253,7 +309,7 @@
 
   function refresh() {
     api("/api/me").then(function (r) {
-      if (r.s === 200) { var tk = token(); if (tk) { tk.name = r.j.name; tk.email = r.j.email; tk.standing = r.j.standing; saveToken(tk); } paintRail(); profile(r.j); }
+      if (r.s === 200) { var tk = token(); if (tk) { tk.id = r.j.id; tk.name = r.j.name; tk.email = r.j.email; tk.standing = r.j.standing; tk.avatar = r.j.avatar || null; saveToken(tk); } paintRail(); profile(r.j); }
       else { dropToken(); paintRail(); signedOut(r.s === 401 ? { kind: "idle", text: "Your sign-in on this device has expired. Ask for a new link." } : null); }
     }).catch(function () { host.textContent = ""; block("Your account", "Not reachable", "The Hub's server is not reachable right now. What is on this device stays on this device."); });
   }
@@ -262,7 +318,7 @@
     var sec = block("Signing in", "One moment…", null);
     api("/api/verify?token=" + encodeURIComponent(q.get("verify"))).then(function (r) {
       history.replaceState(null, "", "/me");
-      if (r.s === 200) { saveToken({ token: r.j.token, expires: r.j.expires, email: r.j.actor.email, name: r.j.actor.name, standing: r.j.actor.standing }); paintRail(); refresh(); }
+      if (r.s === 200) { saveToken({ token: r.j.token, expires: r.j.expires, id: r.j.actor.id, email: r.j.actor.email, name: r.j.actor.name, standing: r.j.actor.standing }); paintRail(); refresh(); }
       else signedOut({ kind: "warn", text: "This link does not work: it was already used, or it is older than an hour. Ask for a new one." });
     }).catch(function () { sec.querySelector("h1").textContent = "Not reachable"; });
   } else if (token()) refresh();
