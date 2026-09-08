@@ -19,6 +19,7 @@ import { validate as validateContribution, actionFor, verifyTrail, publishChecks
 import { appendEntry, removeEntry, entryFor } from "./publish.mjs";
 import { exportActor } from "./maintenance.mjs";
 import { standingOf, currentApplication, openApplication, listApplications, decideApplication } from "./applications.mjs";
+import { LANG_CODES, MAX_LANGS } from "./languages.mjs";
 import { serviceToken, ensureServiceActor, resolveActor, issueToken, withRoles, newToken, sha } from "./auth.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -353,7 +354,6 @@ function lift(fn) { try { return fn(); } catch (e) { if (e && e.status) throw ne
 // Profil: Name (Pflicht vor dem Beitragen), Organisation, Rolle, eine Zeile,
 // Website, Sprachen. Nur was mitkommt, wird gesetzt; leer löscht das Feld.
 const ROLES = ["teacher", "student", "parent", "social-worker", "developer", "researcher", "other"];
-const LANGS = ["de", "fr", "it", "en"];
 routes.set("PATCH /api/me", async (ctx) => {
   if (!ctx.actor) throw new HttpError(401, "no actor");
   if (ctx.actor.kind !== "email") throw new HttpError(403, "not for service actors");
@@ -365,7 +365,7 @@ routes.set("PATCH /api/me", async (ctx) => {
   if (body.role !== undefined) { const role = str(body.role, 40); if (role && !ROLES.includes(role)) throw new HttpError(400, "role unknown"); sets.push("role = ?"); vals.push(role || null); changed.push("role"); }
   if (body.about !== undefined) { sets.push("about = ?"); vals.push(str(body.about, 280) || null); changed.push("about"); }
   if (body.website !== undefined) { const w = str(body.website, 200); if (w && !/^https:\/\/[^\s]+$/.test(w)) throw new HttpError(400, "website must be an https link"); sets.push("website = ?"); vals.push(w || null); changed.push("website"); }
-  if (body.langs !== undefined) { const l = Array.isArray(body.langs) ? body.langs.map(x => String(x)).filter(x => LANGS.includes(x)) : []; sets.push("langs = ?"); vals.push(l.length ? [...new Set(l)].join(",") : null); changed.push("langs"); }
+  if (body.langs !== undefined) { const l = [...new Set((Array.isArray(body.langs) ? body.langs : []).map(x => String(x).toLowerCase()).filter(x => LANG_CODES.has(x)))].slice(0, MAX_LANGS); sets.push("langs = ?"); vals.push(l.length ? l.join(",") : null); changed.push("langs"); }
   if (!sets.length) throw new HttpError(400, "nothing to change");
   db.prepare(`UPDATE actors SET ${sets.join(", ")} WHERE id = ?`).run(...vals, ctx.actor.id);
   auditAppend(db, { kind: "profile.update", actor_id: ctx.actor.id, resource: "actor:" + ctx.actor.id, text: "profile fields set: " + changed.join(", ") });

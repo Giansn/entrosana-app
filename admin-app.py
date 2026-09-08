@@ -659,7 +659,27 @@ label{display:block;margin:.9rem 0}
 .fehler{margin:.8rem 0;padding:.7rem .9rem;border:1px solid #DC7A6E;border-radius:10px;
   background:rgba(220,122,110,.10);color:#F0B3AA;font-size:.92rem}
 .fehler[hidden]{display:none}
-.bar{position:sticky;bottom:0;background:#1B1E24;border-top:1px solid #323843;padding:1rem 0;margin-top:1.5rem}"""
+.bar{position:sticky;bottom:0;background:#1B1E24;border-top:1px solid #323843;padding:1rem 0;margin-top:1.5rem}
+/* Telefon (2026-09-08): Tabellen werden Blöcke, Kopfzeilen verschwinden, Knöpfe
+   und Felder bekommen Fingerhöhe. */
+@media (max-width:760px){
+  body{padding:1rem .9rem}
+  h1{font-size:1.35rem;line-height:1.25} h2{font-size:1.1rem;margin:1.6rem 0 .6rem}
+  table,tbody,tr,td{display:block;width:100%}
+  thead,th,tr:has(th):not(:has(td)){display:none}
+  tr{border-bottom:1px solid #323843;padding:.7rem 0}
+  tr:last-child{border-bottom:0}
+  td{border:0;padding:.2rem 0}
+  td:empty{display:none}
+  td.mono:first-child{color:#2BD4E8}
+  .btn{padding:.75em 1.3em;margin:.25rem .25rem .25rem 0;min-height:44px}
+  .bar{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+  .f{grid-template-columns:1fr}
+  pre{white-space:pre-wrap;word-break:break-word;font-size:.95rem}
+  .mono{overflow-wrap:anywhere}
+  select,textarea,input[type=text]{font-size:1rem}
+}
+"""
 
 
 def page(title, body):

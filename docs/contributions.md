@@ -341,7 +341,7 @@ Team-Endpunkte: `GET /api/actors` (Konten mit Profil und Stand), `GET /api/reque
 Unter `/me`, Abschnitt «Edit profile» (offen, solange kein Name steht): Name,
 Organisation oder Schule, Rolle (teacher, student, parent, social-worker,
 developer, researcher, other), eine Zeile (280 Zeichen), Website (https),
-Sprachen (de, fr, it, en). `PATCH /api/me` setzt nur, was mitkommt; leer löscht.
+Sprachen (alle nach ISO 639-1, 183 Codes, dazu gsw für Schweizerdeutsch, höchstens 12; Wähler mit Buchstabenleiste A–Z, Tippen filtert, Enter fügt hinzu; Liste in `api/languages.mjs`, für den Browser erzeugt als `assets/languages.js`). `PATCH /api/me` setzt nur, was mitkommt; leer löscht.
 Migration 009 (fünf Spalten in `actors`), Export und Löschung umfassen sie.
 Darunter, dem Dreischritt von LearningView folgend (planen, begleiten,
 reflektieren): **Tasks** (Projekte dieses Geräts mit erledigt/gesamt und

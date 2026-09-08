@@ -71,6 +71,7 @@ const ROUTES = new Map([
   ["/assets/status.js",   { file: "assets/status.js",   type: JS }],
   ["/assets/me.js",       { file: "assets/me.js",       type: JS }],
   ["/assets/request.js",  { file: "assets/request.js",  type: JS }],
+  ["/assets/languages.js", { file: "assets/languages.js", type: JS }],
   ["/assets/submit.js",   { file: "assets/submit.js",   type: JS }],
   ["/assets/mark.svg",    { file: "assets/mark.svg",    type: "image/svg+xml" }],
   // Vorschaubild für geteilte Links. Wird nicht von der Seite geladen, sondern

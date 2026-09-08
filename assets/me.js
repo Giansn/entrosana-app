@@ -10,7 +10,52 @@
   var q = new URLSearchParams(location.search), TOKEN_KEY = "entrosana-app:token", uid = 0;
   var WORDS = { collector: "Collector", contributor: "Contributor", reviewer: "Team", owner: "Owner" };
   var ROLES = [["", "—"], ["teacher", "Teacher"], ["student", "Student"], ["parent", "Parent"], ["social-worker", "Social worker"], ["developer", "Developer"], ["researcher", "Researcher"], ["other", "Other"]];
-  var LANGS = [["de", "Deutsch"], ["fr", "Français"], ["it", "Italiano"], ["en", "English"]];
+  // Sprachen der Welt (ISO 639-1 plus gsw) aus assets/languages.js: [Code, englischer Name, Eigenname].
+  var LANGS = window.__languages || [["de", "German", "Deutsch"], ["en", "English", "English"], ["fr", "French", "Français"], ["it", "Italian", "Italiano"], ["es", "Spanish", "Español"]];
+  function langByCode(c) { for (var i = 0; i < LANGS.length; i++) if (LANGS[i][0] === c) return LANGS[i]; return null; }
+  function langName(c) { var l = langByCode(c); return l ? (l[2] || l[1]) : c; }
+  // Sprachwähler: Buchstabenleiste A–Z, Tippen filtert, Pfeile und Enter wählen, Chips zeigen die Auswahl.
+  function langPicker(selected, max) {
+    var sel = selected.slice(), hi = -1;
+    var wrap = el("div", "langpick"), chips = el("div", "langpick__chips");
+    var input = el("input"); input.type = "text"; input.autocomplete = "off"; input.placeholder = "Type a letter or a name…";
+    input.setAttribute("role", "combobox"); input.setAttribute("aria-expanded", "false"); input.setAttribute("aria-autocomplete", "list");
+    var abc = el("div", "langpick__abc"); abc.setAttribute("aria-label", "Alphabet");
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(function (L) { var b = el("button", "langpick__letter", L); b.type = "button"; b.setAttribute("aria-label", "Languages starting with " + L); b.addEventListener("click", function () { input.value = L; filter(); input.focus(); }); abc.appendChild(b); });
+    var list = el("div", "langpick__list"); list.setAttribute("role", "listbox"); list.hidden = true;
+    function starts(l, q) { return l[1].toLowerCase().indexOf(q) === 0 || (l[2] || "").toLowerCase().indexOf(q) === 0 || l[0] === q; }
+    function contains(l, q) { return l[1].toLowerCase().indexOf(q) >= 0 || (l[2] || "").toLowerCase().indexOf(q) >= 0; }
+    function render() {
+      chips.textContent = "";
+      sel.forEach(function (code) { var c = el("span", "chip langpick__chip", langName(code)); var x = el("button", "langpick__x", "×"); x.type = "button"; x.setAttribute("aria-label", "Remove " + langName(code)); x.addEventListener("click", function () { sel = sel.filter(function (k) { return k !== code; }); render(); input.focus(); }); c.appendChild(x); chips.appendChild(c); });
+      if (!sel.length) chips.appendChild(el("span", "langpick__empty", "No language chosen yet."));
+      input.disabled = sel.length >= max; input.placeholder = input.disabled ? "Up to " + max + " languages." : "Type a letter or a name…";
+    }
+    function filter() {
+      var q = input.value.trim().toLowerCase(); list.textContent = ""; hi = -1;
+      if (!q) { list.hidden = true; input.setAttribute("aria-expanded", "false"); return; }
+      var free = LANGS.filter(function (l) { return sel.indexOf(l[0]) < 0; });
+      // Ein Buchstabe (Leiste oder Taste): nur englische Namen mit diesem Anfang, damit unter S nicht «Albanian · Shqip» steht.
+      var m = q.length === 1 ? free.filter(function (l) { return l[1].toLowerCase().indexOf(q) === 0; }) : free.filter(function (l) { return starts(l, q); });
+      if (!m.length) m = free.filter(function (l) { return contains(l, q); });
+      m.slice(0, q.length === 1 ? 60 : 12).forEach(function (l) { var b = el("button", "langpick__opt", l[1] + (l[2] && l[2] !== l[1] ? " · " + l[2] : "")); b.type = "button"; b.setAttribute("role", "option"); b.setAttribute("data-code", l[0]); b.addEventListener("click", function () { add(l[0]); }); list.appendChild(b); });
+      if (!m.length) list.appendChild(el("span", "langpick__none", "No language matches «" + input.value + "»."));
+      list.hidden = false; input.setAttribute("aria-expanded", "true");
+    }
+    function add(code) { if (sel.indexOf(code) < 0 && sel.length < max) sel.push(code); input.value = ""; render(); filter(); if (!input.disabled) input.focus(); }
+    function mark(opts) { for (var i = 0; i < opts.length; i++) opts[i].classList.toggle("is-hi", i === hi); if (opts[hi]) opts[hi].scrollIntoView({ block: "nearest" }); }
+    input.addEventListener("input", filter);
+    input.addEventListener("keydown", function (e) {
+      var opts = list.querySelectorAll(".langpick__opt");
+      if (e.key === "ArrowDown") { e.preventDefault(); hi = Math.min(hi + 1, opts.length - 1); mark(opts); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); hi = Math.max(hi - 1, 0); mark(opts); }
+      else if (e.key === "Enter") { e.preventDefault(); if (opts.length) add(opts[hi < 0 ? 0 : hi].getAttribute("data-code")); }
+      else if (e.key === "Escape") { input.value = ""; filter(); }
+      else if (e.key === "Backspace" && !input.value && sel.length) { sel.pop(); render(); }
+    });
+    wrap.appendChild(chips); wrap.appendChild(input); wrap.appendChild(abc); wrap.appendChild(list); render();
+    return { el: wrap, input: input, value: function () { return sel.slice(); } };
+  }
   var hub = window.__hub || null;
   function roleWord(r) { for (var i = 0; i < ROLES.length; i++) if (ROLES[i][0] === r) return ROLES[i][1]; return r || ""; }
   function when2(iso) { return iso ? String(iso).replace("T", " ").slice(0, 16) : ""; }
@@ -101,7 +146,7 @@
     var who = [roleWord(pr.role), pr.org].filter(Boolean).join(" · "); if (who) meta.appendChild(el("p", "me__line", who));
     if (pr.about) meta.appendChild(el("p", "me__line", pr.about));
     if (pr.website) { var wl = el("p", "me__line"); var wa = el("a", null, pr.website.replace(/^https:\/\//, "")); wa.href = pr.website; wa.rel = "noopener"; wl.appendChild(wa); meta.appendChild(wl); }
-    if (pr.langs && pr.langs.length) meta.appendChild(el("p", "me__line fine", "Languages: " + pr.langs.map(function (l) { for (var i = 0; i < LANGS.length; i++) if (LANGS[i][0] === l) return LANGS[i][1]; return l; }).join(", ")));
+    if (pr.langs && pr.langs.length) meta.appendChild(el("p", "me__line fine", "Languages: " + pr.langs.map(langName).join(", ")));
     meta.appendChild(el("p", "me__line fine", "Registered " + when(me.created) + " · signed in on this device until " + when(t && t.expires) + "."));
     head.appendChild(meta); idc.appendChild(head);
 
@@ -116,8 +161,9 @@
     var fN = field("Your name", nameIn, me.name ? "Contributions are published under this name." : "Needed before you apply or contribute; publications carry it.");
     var fO = field("School or organisation", orgIn, null, true), fR = field("Role", roleIn, null, true);
     var fA = field("One line about you", aboutIn, "Up to 280 characters; shown with your published modules.", true), fW = field("Website", webIn, "https only.", true);
-    var fL = el("div", "field"); fL.appendChild(el("label", null, "Languages")); var lw = el("div", "me__langs"); var langBoxes = {};
-    LANGS.forEach(function (l) { var lab = el("label", "me__lang"); var cb = el("input"); cb.type = "checkbox"; cb.value = l[0]; cb.checked = (pr.langs || []).indexOf(l[0]) >= 0; langBoxes[l[0]] = cb; lab.appendChild(cb); lab.appendChild(document.createTextNode(" " + l[1])); lw.appendChild(lab); }); fL.appendChild(lw);
+    var picker = langPicker(pr.langs || [], 12);
+    var fL = field("Languages", picker.input, "Press a letter in the alphabet or type a name; Enter adds it. Up to 12, from " + LANGS.length + " languages.", true);
+    fL.insertBefore(picker.el, fL.querySelector(".help")); picker.el.insertBefore(picker.input, picker.el.querySelector(".langpick__abc"));
     var fs1 = el("fieldset"); [fN, fO, fR, fA, fW, fL].forEach(function (f) { fs1.appendChild(f); }); nf.appendChild(fs1);
     var na = el("div", "actions"), nb = el("button", "btn", "Save profile"); nb.type = "submit"; na.appendChild(nb); nf.appendChild(na);
     var nout = live(); nf.appendChild(nout);
@@ -126,7 +172,7 @@
       ev.preventDefault(); var v = nameIn.value.trim();
       if (v.length < 2) { bad(fN, "At least two characters."); return; }
       var w = webIn.value.trim(); if (w && !/^https:\/\/\S+$/.test(w)) { bad(fW, "An https:// link."); return; }
-      var langs = Object.keys(langBoxes).filter(function (k) { return langBoxes[k].checked; });
+      var langs = picker.value();
       nb.disabled = true; note(nout, "idle", "Saving…");
       api("/api/me", { method: "PATCH", body: JSON.stringify({ name: v, org: orgIn.value.trim(), role: roleIn.value, about: aboutIn.value.trim(), website: w, langs: langs }) })
         .then(function (r) { nb.disabled = false; if (r.s === 200) { var tk = token(); if (tk) { tk.name = v; saveToken(tk); } refresh(); } else note(nout, "warn", "Not saved: " + (r.j.error || r.s) + "."); })
