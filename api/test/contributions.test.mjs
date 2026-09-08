@@ -50,11 +50,12 @@ test("zustandsmaschine", () => {
 
 test("veröffentlichung: prüfungen benennen jeden mangel", () => {
   const ok = { decided_by: 1, trail_ok: 1, area: "social", title: "A module", summary: "x".repeat(40), files_json: "[]" };
-  assert.deepEqual(publishChecks(ok, { name: "Anna" }), []);
+  assert.deepEqual(publishChecks(ok, { name: "Anna", roles: new Set(["contributor"]) }), []);
+  assert.deepEqual(publishChecks(ok, { name: "Anna" }), ["submitter not approved as contributor"]);
   const bad = publishChecks({ ...ok, trail_ok: 0, summary: "short", files_json: JSON.stringify([{ url: "http://x" }]) }, { name: "" });
-  assert.equal(bad.length, 4);
-  assert.ok(bad.some(x => /no name/.test(x)) && bad.some(x => /trail/.test(x)) && bad.some(x => /40/.test(x)) && bad.some(x => /https/.test(x)));
-  assert.deepEqual(publishChecks({ ...ok, decided_by: null }, { name: "Anna" }), ["no admission on record"]);
+  assert.equal(bad.length, 5);
+  assert.ok(bad.some(x => /not approved/.test(x)) && bad.some(x => /no name/.test(x)) && bad.some(x => /trail/.test(x)) && bad.some(x => /40/.test(x)) && bad.some(x => /https/.test(x)));
+  assert.deepEqual(publishChecks({ ...ok, decided_by: null }, { name: "Anna", roles: new Set(["owner"]) }), ["no admission on record"]);
 });
 
 test("attribution: keep nur ausdrücklich, sonst remove", () => {

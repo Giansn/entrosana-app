@@ -6,6 +6,7 @@
 //   Akteure der Art email ohne Beitrag, Rolle und Marke, älter als 7 Tage: weg.
 //   Bestätigungsverweise: verbraucht oder abgelaufen seit 7 Tagen: weg.
 //   Zugangsmarken: abgelaufen seit 7 Tagen: weg.
+//   Anfragen (requests): älter als 180 Tage: weg.
 // Die Kette bleibt; sie trägt keine Adressen.
 import { append } from "./audit.mjs";
 
@@ -14,7 +15,7 @@ export const DAYS = 7;
 export function purge(db, now = new Date()) {
   const cutoff = new Date(now.getTime() - DAYS * 86400e3).toISOString();
   const nowIso = now.toISOString();
-  const out = { contributions: 0, actors: 0, verifications: 0, tokens: 0 };
+  const out = { contributions: 0, actors: 0, verifications: 0, tokens: 0, requests: 0 };
   db.exec("BEGIN IMMEDIATE");
   try {
     const stale = db.prepare("SELECT id FROM contributions WHERE status = 'received' AND created < ?").all(cutoff);
@@ -22,6 +23,7 @@ export function purge(db, now = new Date()) {
     out.contributions = stale.length;
     out.verifications = db.prepare("DELETE FROM verifications WHERE (used IS NOT NULL AND used < ?) OR (used IS NULL AND expires < ?)").run(cutoff, cutoff).changes;
     out.tokens = db.prepare("DELETE FROM actor_tokens WHERE expires < ?").run(cutoff).changes;
+    out.requests = db.prepare("DELETE FROM requests WHERE created < ?").run(new Date(now.getTime() - 180 * 86400e3).toISOString()).changes;   // Anfragen: 180 Tage
     const orphans = db.prepare(`SELECT id FROM actors a WHERE a.kind = 'email' AND a.created < ?
       AND NOT EXISTS (SELECT 1 FROM contributions c WHERE c.actor_id = a.id)
       AND NOT EXISTS (SELECT 1 FROM roles r WHERE r.actor_id = a.id)
@@ -32,7 +34,7 @@ export function purge(db, now = new Date()) {
   } catch (e) { db.exec("ROLLBACK"); throw e; }
   if (Object.values(out).some(n => n > 0)) {
     append(db, { kind: "purge", actor_id: null, resource: null,
-      text: `retention ${DAYS}d: ${out.contributions} unconfirmed contribution(s), ${out.actors} orphan actor(s), ${out.verifications} verification(s), ${out.tokens} token(s) removed` });
+      text: `retention ${DAYS}d: ${out.contributions} unconfirmed contribution(s), ${out.actors} orphan actor(s), ${out.verifications} verification(s), ${out.tokens} token(s), ${out.requests} request(s) removed` });
   }
   return out;
 }

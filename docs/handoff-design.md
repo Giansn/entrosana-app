@@ -530,3 +530,16 @@ Leiste benennen; Abschnittspolster 56 px → 40 px (§7); Tippfehler «avaiable�
 «verfied», «Whre»; `/contribute` führt weiter mit «Write to info@» statt mit
 dem Formular.
 
+### Nachtrag, später am 2026-09-08: das Konto
+
+Der Kontoblock der Leiste («Not signed in · local device only») war Anzeige ohne
+Weg. Jetzt ist er ein Verweis auf `/me` (`me.html`, `assets/me.js`, Route in
+`serve.mjs`), und `app.js` schreibt Name und Stand aus der Marke hinein
+(`localStorage entrosana-app:token`, seit heute mit `name` und `standing`);
+angemeldet trägt der Kreis den Anfangsbuchstaben in Siegelfarbe. `/me` folgt dem
+Formular: eine Spalte auf 560 px, drei Blöcke (Konto, Contributing, Your data),
+Stand als `.chip`, Pflicht und Fehler wie unter `/contribute/submit`. Die
+Anmeldung ist die vorhandene Mailbestätigung mit `purpose:"login"`; kein
+Passwort, kein neues Bauteil, keine neue Farbe. Regelwerk und Zustände:
+`docs/contributions.md`, «Konto: Sammler und Beitragende».
+

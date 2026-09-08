@@ -128,7 +128,7 @@
     api("/api/verify?token=" + encodeURIComponent(q.get("verify"))).then(function (r) {
       sec.querySelector("h1").textContent = r.s === 200 ? "Address confirmed." : "This link does not work.";
       if (r.s === 200) {
-        try { localStorage.setItem(TOKEN_KEY, JSON.stringify({ token: r.j.token, expires: r.j.expires, email: r.j.actor.email })); } catch (e) {}
+        try { localStorage.setItem(TOKEN_KEY, JSON.stringify({ token: r.j.token, expires: r.j.expires, email: r.j.actor.email, name: r.j.actor.name, standing: r.j.actor.standing })); } catch (e) {}
         sec.appendChild(el("p", "note note--ok", (r.j.confirmed ? r.j.confirmed + " contribution(s) confirmed. " : "") + "This device can now read your contributions for 30 days."));
         history.replaceState(null, "", "/contribute/status");
         listOwn(block("Your contributions", null, null));
@@ -146,5 +146,6 @@
   } else {
     listOwn(block("Your contributions", "Status", "What you sent to the Hub from this address, and where each one stands."));
     var go = el("a", "btn", "Submit a new proposal"); go.href = "/contribute/submit"; go.style.marginTop = "1rem"; host.lastChild.appendChild(go);
+    var acct = el("a", "btn btn--ghost", "Your account"); acct.href = "/me"; acct.style.marginTop = "1rem"; acct.style.marginLeft = ".6rem"; host.lastChild.appendChild(acct);
   }
 })();

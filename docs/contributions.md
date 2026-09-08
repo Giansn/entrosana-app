@@ -95,6 +95,34 @@ Jede dieser Rollen ist eine Zeile in `roles` und ein Eintrag in der Regel,
 kein neues Schema. Die Spalte `org_id` und die Akteursart `account` warten
 dafür schon.
 
+### Konto: Sammler und Beitragende (2026-09-08, abends)
+
+Entscheid des Eigentümers: «contributor and contributions have to be approved.
+collectors can just register for now.» Umsetzung:
+
+- **Sammler** ist, wer eine Adresse bestätigt hat (`GET /api/verify`, Marke 30
+  Tage). Anmeldung über `/me`: Adresse nennen, `POST /api/verify/request` mit
+  `purpose:"login"`, der Verweis führt auf `/me?verify=…` statt auf die
+  Statusseite. Sammler halten Projekte und Records auf dem Gerät, senden
+  Vorschläge und verfolgen sie. Keine Freigabe nötig.
+- **Beitragende** ist eine Rolle (`contributor`, Migration 007), die das Team
+  vergibt. Weg: Bewerbung unter `/me` (`POST /api/me/apply`, Text 20 bis 2000
+  Zeichen, Name vorher gesetzt, eine offene je Konto; das Postfach
+  sygnif@entrosana.com erfährt davon), Entscheid in der Konsole unter
+  `/applications` (`PATCH /api/applications/<id>` mit `outcome` und Begründung,
+  Rolle reviewer oder owner). Freigabe legt die Rolle an und schreibt der Person
+  eine Mail; Ablehnung ebenso, mit Begründung, Bewerbung später wieder möglich.
+- **Das Tor kennt den Stand:** `publishChecks()` verlangt seit 007 «submitter
+  approved as contributor» (reviewer und owner gelten als freigegeben). Ein
+  angenommener Beitrag eines Sammlers bleibt bei `admitted`, bis die Person
+  freigegeben ist; die Konsole zeigt es in der Torliste.
+- Weiteres unter `/me`: Name setzen (`PATCH /api/me`), Abmelden auf diesem Gerät
+  (`DELETE /api/me/token`, löscht nur die vorgelegte Marke), Daten laden und der
+  Weg zur Löschung. Der Kontoblock der Leiste zeigt Name und Stand aus der Marke.
+- Kettenzeilen: `application.open`, `application.approved|declined`,
+  `application.mail`, `profile.name`, `signout`. Geprüft in
+  `api/test/applications.test.mjs`.
+
 ## Entscheide des Eigentümers vom 2026-09-08
 
 1. **Der Hub bekommt einen schreibenden Server.** `api/` auf `127.0.0.1:4324`
@@ -274,6 +302,21 @@ auch dafür.
 
 Weil die Veröffentlichung den Namen trägt, ist der Name seit dieser Phase bei
 der Einreichung Pflicht (`validate`, «name missing»).
+
+## Anfragen (2026-09-08, abends)
+
+Wer etwas braucht statt etwas bringt, fragt an: `/request` (`request.html`,
+`assets/request.js`), ohne Konto und ohne Marke. Felder: Name, Adresse,
+Organisation (optional), Art (module, track, tool, service, other; `?kind=`
+belegt die Auswahl vor, so verweist «Request a module» auf `/modules`), Text.
+`POST /api/requests` prüft (Name ≥ 2, Adresse, Text ≥ 10), drosselt wie die
+Beiträge (5 je Stunde je Adresse und je IP), legt die Zeile in `requests`
+(Migration 008) ab, schreibt `request.received` in die Kette, mailt den Text an
+info@entrosana.com (`INFO_INBOX`) und der anfragenden Person eine kurze
+Bestätigung ohne fremden Text. Der Eingang bleibt 180 Tage (`purge`), damit
+nichts verloren geht, wenn eine Mail nicht ankommt. Die Telefonnummer
+077 529 73 01 steht auf `/contribute`, im Formular und in der Bestätigung als
+dritter Weg für Beiträge und Anfragen (Wunsch des Eigentümers, 2026-09-08).
 
 ## Postfach
 

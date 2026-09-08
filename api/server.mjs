@@ -14,10 +14,11 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { open } from "./db.mjs";
 import { append as auditAppend, verify as auditVerify } from "./audit.mjs";
-import { can } from "./policy.mjs";
+import { can, rolesOf } from "./policy.mjs";
 import { validate as validateContribution, actionFor, verifyTrail, publishChecks } from "./contributions.mjs";
 import { appendEntry, removeEntry, entryFor } from "./publish.mjs";
 import { exportActor } from "./maintenance.mjs";
+import { standingOf, currentApplication, openApplication, listApplications, decideApplication } from "./applications.mjs";
 import { serviceToken, ensureServiceActor, resolveActor, issueToken, withRoles, newToken, sha } from "./auth.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -26,6 +27,10 @@ const HOST = process.env.HOST || "127.0.0.1";
 const DB_PATH = process.env.DB_PATH || join(HERE, "db", "hub.sqlite");
 const LOG = process.env.LOG || join(process.env.HOME || HERE, ".sygnif", "logs", "entrosana-api.log");
 const PUBLIC = process.env.PUBLIC_ORIGIN || "https://entrosana.app";
+const INBOX = process.env.INBOX || "sygnif@entrosana.com";   // Postfach der Beitragenden, sortiert von sygnif
+const INFO = process.env.INFO_INBOX || "info@entrosana.com";   // Anfragen: Module, Tracks, Werkzeuge, Dienste
+const PHONE = "077 529 73 01";
+const REQUEST_KINDS = ["module", "track", "tool", "service", "other"];
 const MAIL = process.env.MAIL_SEND || join(HERE, "..", "tools", "mail-send.py");
 const BODY_CAP = 256 * 1024;  // Kette eines Geräts als Hashes passt hinein
 const RATE = { limit: 5, windowMs: 3600e3 };   // docs/contributions.md, Entscheid 5
@@ -113,8 +118,9 @@ routes.set("GET /api/healthz", (ctx) => {
 
 routes.set("GET /api/me", (ctx) => {
   if (!ctx.actor) return send(ctx.res, 401, { error: "no actor" });
-  const a = ctx.actor;
-  send(ctx.res, 200, { id: a.id, kind: a.kind, email: a.email, name: a.name, roles: [...a.roles] });
+  const a = ctx.actor, app = a.kind === "email" ? currentApplication(db, a.id) : null;
+  send(ctx.res, 200, { id: a.id, kind: a.kind, email: a.email, name: a.name, created: a.created, roles: [...a.roles], standing: standingOf(a.roles),
+    application: app ? { id: app.id, created: app.created, decided: app.decided, outcome: app.outcome, reason: app.reason } : null });
 });
 
 // Bestätigung anlegen und den Verweis verschicken. Die Adresse kommt nicht in
@@ -127,11 +133,13 @@ async function startVerification(email, name, purpose) {
   const token = newToken(), now = new Date();
   db.prepare("INSERT INTO verifications(email, token_hash, created, expires) VALUES (?,?,?,?)")
     .run(email, sha(token), now.toISOString(), new Date(now.getTime() + 3600e3).toISOString());
-  const link = `${PUBLIC}/contribute/status?verify=${token}`;
-  const what = purpose === "contribution" ? "a contribution to the entrosana Hub under this address" : "this address on entrosana.app";
-  const r = await mail(email, purpose === "contribution" ? "entrosana Hub: confirm your contribution" : "entrosana Hub: confirm your address",
-    `Hello${name ? " " + name : ""},\n\nsomeone (probably you) entered ${what}.\n` +
-    `Open this link within one hour to confirm it:\n\n${link}\n\nIf that was not you, ignore this mail; nothing happens.\n\nentrosana`);
+  const login = purpose === "login";
+  const link = `${PUBLIC}${login ? "/me" : "/contribute/status"}?verify=${token}`;
+  const what = purpose === "contribution" ? "entered a contribution to the entrosana Hub under this address"
+             : login ? "asked to sign in to the entrosana Hub with this address" : "entered this address on entrosana.app";
+  const r = await mail(email, purpose === "contribution" ? "entrosana Hub: confirm your contribution" : login ? "entrosana Hub: your sign-in link" : "entrosana Hub: confirm your address",
+    `Hello${name ? " " + name : ""},\n\nsomeone (probably you) ${what}.\n` +
+    `Open this link within one hour${login ? " on the device you want to use" : ""} to ${login ? "sign in" : "confirm it"}:\n\n${link}\n\nIf that was not you, ignore this mail; nothing happens.\n\nentrosana`);
   auditAppend(db, { kind: "verify.request", actor_id: null, resource: "email:" + sha(email).slice(0, 12),
     text: r.ok ? `verification mail sent (${purpose})` : "verification mail failed: " + (r.err || r.code) });
   return r;
@@ -143,9 +151,10 @@ routes.set("POST /api/verify/request", async (ctx) => {
   const body = await readJson(ctx.req);
   const email = String(body.email || "").trim().toLowerCase();
   const name = String(body.name || "").trim().slice(0, 120);
+  const purpose = body.purpose === "login" ? "login" : "address";
   if (!EMAIL.test(email) || email.length > 254) throw new HttpError(400, "bad email");
   if (limited("ip:" + ctx.ip) || limited("email:" + email)) throw new HttpError(429, "too many requests");
-  const r = await startVerification(email, name, "address");
+  const r = await startVerification(email, name, purpose);
   if (!r.ok) throw new HttpError(502, "mail failed");
   send(ctx.res, 202, { ok: true, sent: true });
 });
@@ -177,8 +186,9 @@ routes.set("GET /api/verify", (ctx) => {
     auditAppend(db, { kind: "contribution.confirmed", actor_id: actor.id, resource: "contribution:" + c.id, text: "confirmed by email link" });
   }
   const t = issueToken(db, actor.id);
+  const roles = rolesOf(db, actor.id);
   const a = withRoles(db, actor);
-  send(ctx.res, 200, { ok: true, token: t.token, expires: t.expires, confirmed: pending.length, actor: { id: a.id, email: a.email, roles: [...a.roles] } });
+  send(ctx.res, 200, { ok: true, token: t.token, expires: t.expires, confirmed: pending.length, actor: { id: actor.id, email: actor.email, name: actor.name, created: actor.created, roles: [...roles], standing: standingOf(roles) } });
 });
 
 // Nur prüfende Rolle und Eigentümer: die Kette nachrechnen.
@@ -276,7 +286,7 @@ patterns.push([/^\/api\/contributions\/(\d{1,12})$/, {
     const c = getContribution(id);
     if (!c) throw new HttpError(404, "not found");
     const body = await readJson(ctx.req);
-    const submitter = db.prepare("SELECT * FROM actors WHERE id = ?").get(c.actor_id);
+    const submitter = db.prepare("SELECT * FROM actors WHERE id = ?").get(c.actor_id); if (submitter) submitter.roles = rolesOf(db, submitter.id);
 
     // Ohne Zielzustand: die einreichende Person ändert ihre Wahl zur Namensnennung.
     if (body.status === undefined && body.attribution !== undefined) {
@@ -325,6 +335,87 @@ patterns.push([/^\/api\/contributions\/(\d{1,12})$/, {
     send(ctx.res, 200, { ok: true, item: publicRow(getContribution(c.id), true) });
   },
 }]);
+
+function lift(fn) { try { return fn(); } catch (e) { if (e && e.status) throw new HttpError(e.status, e.message); throw e; } }
+
+// Name setzen: Beiträge und Freigaben laufen unter diesem Namen.
+routes.set("PATCH /api/me", async (ctx) => {
+  if (!ctx.actor) throw new HttpError(401, "no actor");
+  if (ctx.actor.kind !== "email") throw new HttpError(403, "not for service actors");
+  const body = await readJson(ctx.req);
+  const name = String(body.name || "").trim().slice(0, 120);
+  if (name.length < 2) throw new HttpError(400, "name too short");
+  db.prepare("UPDATE actors SET name = ? WHERE id = ?").run(name, ctx.actor.id);
+  auditAppend(db, { kind: "profile.name", actor_id: ctx.actor.id, resource: "actor:" + ctx.actor.id, text: "name set" });
+  send(ctx.res, 200, { ok: true, name });
+});
+
+// Abmelden: nur die vorgelegte Marke wird gelöscht, andere Geräte bleiben angemeldet.
+routes.set("DELETE /api/me/token", (ctx) => {
+  if (!ctx.actor) throw new HttpError(401, "no actor");
+  const m = /^Bearer\s+(\S+)$/i.exec(ctx.req.headers.authorization || "");
+  if (!m) throw new HttpError(400, "bearer token required");
+  const n = db.prepare("DELETE FROM actor_tokens WHERE token_hash = ? AND actor_id = ?").run(sha(m[1]), ctx.actor.id).changes;
+  auditAppend(db, { kind: "signout", actor_id: ctx.actor.id, resource: "actor:" + ctx.actor.id, text: n ? "token revoked" : "token not found" });
+  send(ctx.res, 200, { ok: true, revoked: n });
+});
+
+// Bewerbung als Beitragende: eine offene je Konto; das Postfach erfährt davon.
+routes.set("POST /api/me/apply", async (ctx) => {
+  if (!ctx.actor) throw new HttpError(401, "no actor");
+  if (!can(ctx.actor, "apply")) throw new HttpError(403, "not allowed");
+  const body = await readJson(ctx.req);
+  const a = lift(() => openApplication(db, ctx.actor, body.text));
+  if (!limited("mail:global", MAIL_CAP)) mail(INBOX, `entrosana Hub: contributor application #${a.id} from ${ctx.actor.name}`,
+    `${ctx.actor.name} <${ctx.actor.email}> applies as contributor:\n\n${a.text}\n\nDecide in the console (tailnet): http://100.115.236.97:8396/applications\n\nentrosana`)
+    .then(r => auditAppend(db, { kind: "application.mail", actor_id: null, resource: "application:" + a.id, text: r.ok ? "inbox notified" : "inbox mail failed: " + (r.err || r.code) }));
+  send(ctx.res, 202, { ok: true, application: { id: a.id, created: a.created } });
+});
+
+// Das Team liest und entscheidet Bewerbungen.
+routes.set("GET /api/applications", (ctx) => {
+  if (!can(ctx.actor, "decide-application")) throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+  send(ctx.res, 200, { ok: true, items: listApplications(db, ctx.query.get("all") === "1") });
+});
+patterns.push([/^\/api\/applications\/(\d{1,12})$/, {
+  PATCH: async (ctx, [id]) => {
+    if (!can(ctx.actor, "decide-application")) throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+    const body = await readJson(ctx.req);
+    const { application, applicant } = lift(() => decideApplication(db, id, ctx.actor, String(body.outcome || ""), body.reason));
+    if (applicant && applicant.email && !limited("mail:global", MAIL_CAP)) {
+      const ok = application.outcome === "approved";
+      mail(applicant.email, ok ? "entrosana Hub: you can contribute" : "entrosana Hub: about your contributor application",
+        `Hello${applicant.name ? " " + applicant.name : ""},\n\nyour application to contribute was ${application.outcome}.\n\nReason given by the team:\n${application.reason}\n\n` +
+        (ok ? `Proposals you send can be published under your name once admitted: ${PUBLIC}/contribute/submit` : `You keep everything a collector has, and you may apply again later: ${PUBLIC}/me`) + `\n\nentrosana`)
+        .then(r => auditAppend(db, { kind: "application.mail", actor_id: null, resource: "application:" + application.id, text: r.ok ? "decision mail sent" : "decision mail failed: " + (r.err || r.code) }));
+    }
+    send(ctx.res, 200, { ok: true, application });
+  },
+}]);
+
+// Anfrage: kein Konto, keine Marke. Eingang bleibt 180 Tage, die Mail geht an
+// info@; die anfragende Person bekommt eine kurze Bestätigung ohne fremden Text.
+routes.set("POST /api/requests", async (ctx) => {
+  const body = await readJson(ctx.req);
+  if (String(body.website || "").trim()) return send(ctx.res, 202, { ok: true, id: 0 });   // Honigfalle
+  const name = String(body.name || "").trim().slice(0, 120), email = String(body.email || "").trim().toLowerCase();
+  const org = String(body.org || "").trim().slice(0, 200), kind = REQUEST_KINDS.includes(body.kind) ? body.kind : "other";
+  const text = String(body.text || "").trim().slice(0, 4000);
+  if (name.length < 2) throw new HttpError(400, "name missing");
+  if (!EMAIL.test(email) || email.length > 254) throw new HttpError(400, "bad email");
+  if (text.length < 10) throw new HttpError(400, "text too short");
+  if (limited("ip:" + ctx.ip) || limited("email:" + email)) throw new HttpError(429, "too many requests");
+  const now = new Date().toISOString();
+  const id = db.prepare("INSERT INTO requests(name, email, org, kind, text, created) VALUES (?,?,?,?,?,?)").run(name, email, org || null, kind, text, now).lastInsertRowid;
+  auditAppend(db, { kind: "request.received", actor_id: ctx.actor ? ctx.actor.id : null, resource: "request:" + id, text: `${kind} request received` });
+  if (!limited("mail:global", MAIL_CAP)) {
+    mail(INFO, `entrosana: ${kind} request #${id} from ${name}`, `${name} <${email}>${org ? " · " + org : ""} asks (${kind}):\n\n${text}\n\nReply to ${email}.\n\nentrosana`)
+      .then(r => { if (r.ok) db.prepare("UPDATE requests SET mailed = ? WHERE id = ?").run(new Date().toISOString(), id);
+        auditAppend(db, { kind: "request.mail", actor_id: null, resource: "request:" + id, text: r.ok ? "info inbox notified" : "info mail failed: " + (r.err || r.code) }); });
+    mail(email, "entrosana: we received your request", `Hello,\n\nyour request #${id} reached entrosana. info@entrosana.com answers within a few days; you can also call ${PHONE}.\n\nIf you sent nothing to entrosana.app, ignore this mail.\n\nentrosana`);
+  }
+  send(ctx.res, 202, { ok: true, id });
+});
 
 // Alles über mich, als Datei. Nur mit Marke, nur Eigenes.
 routes.set("GET /api/me/export", (ctx) => {

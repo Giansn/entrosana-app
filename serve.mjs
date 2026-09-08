@@ -48,6 +48,8 @@ const ROUTES = new Map([
   // Allowlist bleibt: ein Slug, der nicht im Katalog steht, ist weiterhin 404.
   // Stand eines Beitrags und Einreichen (Phase 4). Nicht in der Sitemap.
   ["/contribute/status",               { file: "status.html", type: HTML }],
+  ["/me",                              { file: "me.html", type: HTML }],
+  ["/request",                         { file: "request.html", type: HTML }],
   ["/contribute/submit",               { file: "submit.html", type: HTML }],
   ["/assets/catalogue.js",   { file: "assets/catalogue.js",   type: JS }],
   ["/assets/catalogue-sizes.js", { file: "assets/catalogue-sizes.js", type: JS }],
@@ -67,6 +69,8 @@ const ROUTES = new Map([
   ["/assets/services.js", { file: "assets/services.js", type: JS }],
   ["/assets/theme.js",    { file: "assets/theme.js",    type: JS }],
   ["/assets/status.js",   { file: "assets/status.js",   type: JS }],
+  ["/assets/me.js",       { file: "assets/me.js",       type: JS }],
+  ["/assets/request.js",  { file: "assets/request.js",  type: JS }],
   ["/assets/submit.js",   { file: "assets/submit.js",   type: JS }],
   ["/assets/mark.svg",    { file: "assets/mark.svg",    type: "image/svg+xml" }],
   // Vorschaubild für geteilte Links. Wird nicht von der Seite geladen, sondern

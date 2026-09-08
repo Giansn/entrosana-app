@@ -14,7 +14,7 @@ test("anonym: nur submit", () => {
 
 test("unbekannter Akteur ohne Rollen: nur submit, nichts Fremdes", () => {
   const stranger = { id: 99, roles: new Set() };
-  for (const a of ACTIONS) assert.equal(can(stranger, a, contribution(1, "received")), a === "submit", a);
+  for (const a of ACTIONS) assert.equal(can(stranger, a, contribution(1, "received")), a === "submit" || a === "apply", a);   // bewerben darf jede bestätigte Adresse
   assert.equal(can(stranger, "read", null), false);
   assert.equal(can(stranger, "grant", null), false);
 });
@@ -32,7 +32,7 @@ test("einreichend: eigene lesen, eigene offene zurückziehen, sonst nichts", () 
 test("prüfend: lesen, entscheiden, veröffentlichen; nicht zurückziehen, nicht vergeben", () => {
   const rev = { id: 2, roles: new Set(["reviewer"]) };
   const c = contribution(7, "confirmed");
-  assert.deepEqual(ACTIONS.filter(a => can(rev, a, c)), ["submit", "read", "decide", "publish"]);
+  assert.deepEqual(ACTIONS.filter(a => can(rev, a, c)), ["submit", "read", "decide", "publish", "apply", "decide-application"]);
 });
 
 test("eigentümer: alles, auch fremde zurückziehen", () => {
@@ -46,8 +46,8 @@ test("unbekannte handlung: immer nein", () => {
 
 test("migrationen laufen auf :memory: und sind idempotent", () => {
   const { db, migrations } = open(":memory:");
-  assert.equal(migrations.total, 6);
-  assert.equal(migrations.applied, 6);
+  assert.equal(migrations.total, 8);
+  assert.equal(migrations.applied, 8);
   assert.equal(db.prepare("SELECT value FROM meta WHERE key='schema'").get().value, "6");
   db.close();
 });

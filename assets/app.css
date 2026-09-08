@@ -1703,3 +1703,27 @@ html{ scrollbar-gutter:stable }
 .submit .actions{ margin-top:1.4rem; display:flex; flex-wrap:wrap; gap:.6rem; align-items:center }
 .submit__out:empty{ display:none }
 .submit__out .note{ align-items:flex-start; flex-wrap:wrap }
+
+/* ---------- Konto (2026-09-08) ----------
+   Der Kontoblock der Leiste ist ein Verweis auf /me; angemeldet trägt der Kreis
+   den Anfangsbuchstaben in Siegelfarbe. /me selbst: eine Spalte auf 560 px wie
+   das Formular, Stand als .chip, keine neuen Farben. */
+.rail__acct{ color:inherit; text-decoration:none; border-radius:10px; min-width:0 }
+.rail__acct > span:last-child{ min-width:0; display:block }
+.rail__acct:hover{ background:color-mix(in srgb, var(--ink) 6%, transparent) }
+.rail__acctname, .rail__acctsub{ display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.rail__acct.is-in .rail__avatar{ color:var(--seal); border-color:var(--seal); background:color-mix(in srgb, var(--seal) 12%, transparent) }
+.me{ max-width:560px; margin-top:1.2rem; display:grid; gap:1rem }
+.me__id{ display:flex; gap:1rem; align-items:flex-start }
+.me__avatar{
+  width:3rem; height:3rem; border-radius:999px; flex:none; display:grid; place-items:center;
+  border:1px solid var(--seal); color:var(--seal); background:color-mix(in srgb, var(--seal) 12%, transparent);
+  font-family:var(--font-mono); font-size:1.2rem;
+}
+.me__meta{ display:grid; gap:.4rem; min-width:0; justify-items:start }
+.me__line{ margin:0; color:var(--ink-2) }
+.me .field{ margin:0; max-width:none }
+.me .actions{ display:flex; flex-wrap:wrap; gap:.6rem; align-items:center }
+.me .submit__out{ margin-top:.6rem }
+.me textarea{ min-height:6em }
+

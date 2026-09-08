@@ -78,12 +78,13 @@
   var card = el("div", "card submit"); sec.appendChild(card); host.appendChild(sec);
 
   var form = el("form"); form.noValidate = true; card.appendChild(form);
-  form.appendChild(el("p", "submit__rule", "Everything is required except the links. Replies come from sygnif@entrosana.com."));
+  var rule = el("p", "submit__rule", "Everything is required except the links. Replies come from sygnif@entrosana.com, or call ");
+  var tel = el("a", null, "077 529 73 01"); tel.href = "tel:+41775297301"; rule.appendChild(tel); rule.appendChild(document.createTextNode(".")); form.appendChild(rule);
 
   var g1 = group("Who you are");
   var name = el("input"); name.type = "text"; name.maxLength = 120; name.autocomplete = "name"; name.required = true;
   var email = el("input"); email.type = "email"; email.maxLength = 254; email.autocomplete = "email"; email.inputMode = "email"; email.required = true;
-  var tk = token(); if (tk && tk.email) email.value = tk.email;
+  var tk = token(); if (tk && tk.email) email.value = tk.email; if (tk && tk.name) name.value = tk.name;
   var fName = field("Your name", name, "Admitted modules are published under this name.");
   var fEmail = field("Your e-mail", email, "Only for the confirmation link and our answer.");
   g1.appendChild(fName); g1.appendChild(fEmail); form.appendChild(g1);
@@ -94,7 +95,7 @@
   var summary = el("textarea"); summary.maxLength = 4000; summary.required = true; summary.rows = 8; summary.value = TEMPLATE;
   var fTitle = field("Title", title, "What you want to build or teach, in one line.");
   var fArea = field("Area", area, null);
-  var fSummary = field("Proposal", summary, "This is what the reviewer reads. Fill in the prompts or write freely.");
+  var fSummary = field("Proposal", summary, null);
   g2.appendChild(fTitle); g2.appendChild(fArea); g2.appendChild(fSummary); form.appendChild(g2);
 
   var g3 = group("Files and your data");

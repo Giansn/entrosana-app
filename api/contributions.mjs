@@ -87,6 +87,8 @@ export function actionFor(current, target) {
 export function publishChecks(c, actor) {
   const f = [];
   if (!actor || !actor.name || String(actor.name).trim().length < 2) f.push("submitter has no name to publish under");
+  const roles = actor && actor.roles ? (actor.roles instanceof Set ? actor.roles : new Set(actor.roles)) : new Set();
+  if (!(roles.has("contributor") || roles.has("reviewer") || roles.has("owner"))) f.push("submitter not approved as contributor");
   if (!c.decided_by) f.push("no admission on record");
   if (c.trail_ok === 0) f.push("record trail did not verify");
   if (!AREAS.includes(c.area)) f.push("area invalid");

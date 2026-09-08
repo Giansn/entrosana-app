@@ -1772,3 +1772,32 @@
     paint: function (host, p) { drawProject(host, p); paintRail(); }
   };
 })();
+
+/* Konto in der Leiste (2026-09-08): liest die Marke der Anmeldung (localStorage
+ * entrosana-app:token, gesetzt von /me und /contribute/status) und zeigt Name und
+ * Stand statt «Not signed in». Kein Netz: die Marke trägt Name und Stand seit dem
+ * letzten Besuch von /me; ist sie abgelaufen, steht wieder «Not signed in». */
+(function () {
+  "use strict";
+  var KEY = "entrosana-app:token", WORDS = { collector: "collector", contributor: "contributor", reviewer: "team", owner: "owner" };
+  function read() { try { var t = JSON.parse(localStorage.getItem(KEY) || "null"); return t && t.expires > new Date().toISOString() ? t : null; } catch (e) { return null; } }
+  function paint() {
+    var t = read();
+    Array.prototype.forEach.call(document.querySelectorAll(".rail__acct"), function (a) {
+      var name = a.querySelector(".rail__acctname"), sub = a.querySelector(".rail__acctsub"), av = a.querySelector(".rail__avatar");
+      if (!name || !sub || !av) return;
+      if (t) {
+        var label = t.name || t.email || "Signed in";
+        name.textContent = label; sub.textContent = (WORDS[t.standing] || "signed in") + (t.name && t.email ? " · " + t.email : "");
+        av.textContent = label.trim().charAt(0).toUpperCase(); a.classList.add("is-in"); a.setAttribute("aria-label", "Your account: " + label);
+      } else {
+        name.textContent = "Not signed in"; sub.textContent = "local device only"; av.textContent = "?";
+        a.classList.remove("is-in"); a.setAttribute("aria-label", "Sign in or register");
+      }
+    });
+  }
+  paint();
+  window.addEventListener("storage", function (e) { if (e.key === KEY) paint(); });
+  window.__account = { paint: paint, read: read };
+})();
+

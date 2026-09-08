@@ -673,8 +673,12 @@ def _beitraege_kurz():
     if code != 200:
         return f"<p class='err'>api/: {html.escape(str(j.get('error', code)))}</p>"
     offen = [c for c in j.get("items", []) if c["status"] in ("received", "confirmed", "reviewing")]
+    acode, aj = api_call("GET", "/api/applications")
+    bew = len(aj.get("items", [])) if acode == 200 else "?"
     return (f"<table><tr><td><b>Schlange</b><br><span class='mono'>{len(offen)} offen · {len(j.get('items', []))} gesamt</span></td>"
-            "<td><a href='/contributions'>öffnen</a></td><td></td><td></td></tr></table>")
+            "<td><a href='/contributions'>öffnen</a></td><td></td><td></td></tr>"
+            f"<tr><td><b>Bewerbungen</b><br><span class='mono'>{bew} offen</span></td>"
+            "<td><a href='/applications'>öffnen</a></td><td></td><td></td></tr></table>")
 
 
 def dash():
@@ -1093,6 +1097,8 @@ def contrib_detail(cid):
         fails = c.get("checks") or []
         if fails:
             form += "<h2>Vor der Veröffentlichung</h2><p class='err'>Das Tor ist zu: " + "; ".join(html.escape(x) for x in fails) + "</p>"
+            if any("not approved as contributor" in x for x in fails):
+                form += "<p class='note'>Die Person ist Sammler. Freigabe als Beitragende unter <a href='/applications'>Bewerbungen</a>, sofern sie sich beworben hat.</p>"
         else:
             form += "<h2>Vor der Veröffentlichung</h2><p class='ok'>Alle Prüfungen bestanden: Name, Annahme, Trail, Bereich, Titel, Vorschlag, Dateiverweise.</p>"
         if c.get("decided_by") == 1:
@@ -1125,6 +1131,58 @@ def contrib_detail(cid):
         f"<h2>Aufzeichnungen der einreichenden Person</h2><table>{recs}</table>"
         f"<h2>Datei als Text</h2><pre style='white-space:pre-wrap'>{html.escape(c.get('trail') or '—')}</pre>"
         + form + f"<p class='mono' style='margin-top:1.5rem'>Kette des Dienstes: {kette}</p>")
+
+def applications_list():
+    """Bewerbungen als Beitragende: offene mit Entscheidformular, entschiedene darunter."""
+    code, j = api_call("GET", "/api/applications?all=1")
+    kopf = ("<h1>entro<span style='color:#2BD4E8'>sana</span>.app admin · Bewerbungen</h1>"
+            "<p class='mono'><a href='/'>← Übersicht</a> · <a href='/contributions'>Beiträge</a></p>"
+            "<p class='note'>Sammler registrieren sich frei. Beitragende wird, wen das Team hier freigibt: die Rolle "
+            "<span class='mono'>contributor</span> entsteht, die Person erhält eine Mail, und das Tor lässt ihre "
+            "angenommenen Beiträge zur Veröffentlichung.</p>")
+    if code != 200:
+        return page("Bewerbungen", kopf + f"<p class='err'>api/: {html.escape(str(j.get('error', code)))}</p>")
+    items = j.get("items", [])
+    offen = [a for a in items if not a.get("decided")]
+    alt = [a for a in items if a.get("decided")]
+    rows = ""
+    for a in offen:
+        aid = a["id"]
+        rows += (f"<tr><td class='mono'>#{aid}</td><td><b>{html.escape(a.get('actor_name') or '—')}</b><br>"
+                 f"<span class='mono'>{html.escape(a.get('actor_email') or '')}</span></td>"
+                 f"<td class='mono'>{_wann(a.get('created'))}</td>"
+                 f"<td><pre style='white-space:pre-wrap;margin:0'>{html.escape(a.get('text', ''))}</pre></td></tr>"
+                 f"<tr><td></td><td colspan='3'><div class='f'><textarea id='r{aid}' rows='2' placeholder='Begründung, mindestens drei Zeichen; sie geht per Mail an die Person'></textarea></div>"
+                 f"<div class='bar'><button class='btn' data-app='{aid}' data-out='approved'>freigeben</button> "
+                 f"<button class='btn' data-app='{aid}' data-out='declined'>ablehnen</button> <span id='m{aid}' class='mono'></span></div></td></tr>")
+    tab_offen = (f"<h2>Offen ({len(offen)})</h2><table><tr><th></th><th>Person</th><th>eingegangen</th><th>Bewerbung</th></tr>{rows}</table>"
+                 if offen else "<h2>Offen</h2><p class='mono'>keine</p>")
+    rows2 = "".join(f"<tr><td class='mono'>#{a['id']}</td><td>{html.escape(a.get('actor_name') or '—')}<br><span class='mono'>{html.escape(a.get('actor_email') or '')}</span></td>"
+                    f"<td class='{'ok' if a.get('outcome') == 'approved' else 'err'}'>{'freigegeben' if a.get('outcome') == 'approved' else 'abgelehnt'}</td>"
+                    f"<td class='mono'>{_wann(a.get('decided'))} · Akteur {a.get('decided_by')}</td><td>{html.escape(a.get('reason') or '')}</td></tr>" for a in alt)
+    tab_alt = (f"<h2>Entschieden ({len(alt)})</h2><table><tr><th></th><th>Person</th><th>Ausgang</th><th>wann</th><th>Begründung</th></tr>{rows2}</table>" if alt else "")
+    script = ("<script>"
+              "document.querySelectorAll('button[data-app]').forEach(function(b){b.addEventListener('click',function(){"
+              "var id=b.getAttribute('data-app'),out=b.getAttribute('data-out'),r=document.getElementById('r'+id).value.trim(),m=document.getElementById('m'+id);"
+              "if(r.length<3){m.textContent='Begründung fehlt.';m.className='err';return;}"
+              "m.textContent='…';m.className='mono';"
+              "fetch('/api/applications/'+id+'/decide',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({outcome:out,reason:r})})"
+              ".then(function(x){return x.json()}).then(function(j){if(j.ok){location.reload();}else{m.textContent=j.error||'Fehler';m.className='err';}})"
+              ".catch(function(){m.textContent='Dienst nicht erreichbar';m.className='err';});});});"
+              "</script>")
+    return page("Bewerbungen", kopf + tab_offen + tab_alt + script)
+
+
+def application_decide(aid, data):
+    outcome = data.get("outcome", "")
+    reason = str(data.get("reason", "")).strip()
+    if len(reason) < 3:
+        raise ValueError("Begründung fehlt")
+    code, j = api_call("PATCH", f"/api/applications/{aid}", {"outcome": outcome, "reason": reason})
+    if code != 200:
+        raise ValueError(str(j.get("error", code)))
+    return j
+
 
 def contrib_decide(cid, data):
     status = str(data.get("status", ""))
@@ -1213,6 +1271,9 @@ class H(BaseHTTPRequestHandler):
         if u.path == "/design":
             self._send(200, design_editor())
             return
+        if u.path == "/applications":
+            self._send(200, applications_list())
+            return
         if u.path == "/contributions":
             self._send(200, contrib_list(parse_qs(u.query).get("status", [""])[0]))
             return
@@ -1246,6 +1307,9 @@ class H(BaseHTTPRequestHandler):
             elif u.path == "/api/design":
                 b = design_write(design_check(data))
                 self._json({"ok": True, "backup": b})
+            elif re.match(r"^/api/applications/\d{1,12}/decide$", u.path):
+                aid = int(u.path.split("/")[3])
+                self._json({"ok": True, "application": application_decide(aid, data).get("application")})
             elif re.match(r"^/api/contributions/\d{1,12}/decide$", u.path):
                 cid = int(u.path.split("/")[3])
                 self._json({"ok": True, "item": contrib_decide(cid, data).get("item")})

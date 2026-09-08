@@ -23,12 +23,14 @@ test("purge: alt und unbestätigt geht, alles andere bleibt", () => {
   db.prepare("INSERT INTO verifications(email, token_hash, created, expires, used) VALUES (?,?,?,?,NULL)").run("z@x.ch", "h2", NEW, iso(NOW.getTime() + 3600e3)); // bleibt
   db.prepare("INSERT INTO actor_tokens(actor_id, token_hash, created, expires) VALUES (?,?,?,?)").run(a3, "t1", OLD, OLD);   // weg
   db.prepare("INSERT INTO actor_tokens(actor_id, token_hash, created, expires) VALUES (?,?,?,?)").run(a3, "t2", NEW, iso(NOW.getTime() + 86400e3)); // bleibt
+  db.prepare("INSERT INTO requests(name,email,kind,text,created) VALUES (?,?,?,?,?)").run("Old", "o@x.ch", "module", "old request", "2026-01-01T00:00:00.000Z");   // weg (> 180 d)
+  db.prepare("INSERT INTO requests(name,email,kind,text,created) VALUES (?,?,?,?,?)").run("New", "n@x.ch", "module", "new request", NEW);                       // bleibt
   const out = purge(db, NOW);
-  assert.deepEqual(out, { contributions: 1, actors: 1, verifications: 1, tokens: 1 });
+  assert.deepEqual(out, { contributions: 1, actors: 1, verifications: 1, tokens: 1, requests: 1 });
   assert.equal(db.prepare("SELECT COUNT(*) n FROM actors").get().n, 3);
   assert.equal(db.prepare("SELECT COUNT(*) n FROM contributions").get().n, 2);
   assert.equal(db.prepare("SELECT COUNT(*) n FROM audit WHERE kind='purge'").get().n, 1);
-  assert.deepEqual(purge(db, NOW), { contributions: 0, actors: 0, verifications: 0, tokens: 0 });   // zweiter Lauf: nichts, keine Kettenzeile
+  assert.deepEqual(purge(db, NOW), { contributions: 0, actors: 0, verifications: 0, tokens: 0, requests: 0 });   // zweiter Lauf: nichts, keine Kettenzeile
   assert.equal(db.prepare("SELECT COUNT(*) n FROM audit WHERE kind='purge'").get().n, 1);
   db.close();
 });
