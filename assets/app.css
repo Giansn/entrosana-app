@@ -290,6 +290,7 @@ p{ margin:0 0 var(--pad-para) }
 .tile__foot{
   display:flex; align-items:center; gap:.6rem; font-family:var(--font-mono);
   font-size:.74rem; color:var(--muted); padding-top:.7rem; position:relative;
+  margin-top:auto; /* 2026-09-09: Fusszeile «Open» in allen Karten einer Reihe auf gleicher Höhe */
 }
 .tile__foot::before{
   content:""; position:absolute; top:0; left:0; right:0; height:1px;
