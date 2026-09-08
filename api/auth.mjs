@@ -39,7 +39,7 @@ export function ensureServiceActor(db, audit) {
 }
 
 export function withRoles(db, row) {
-  return row ? { id: row.id, kind: row.kind, email: row.email, name: row.name, org_id: row.org_id, roles: rolesOf(db, row.id) } : null;
+  return row ? { id: row.id, kind: row.kind, email: row.email, name: row.name, org_id: row.org_id, created: row.created, roles: rolesOf(db, row.id) } : null;
 }
 
 export function issueToken(db, actorId, days = 30) {

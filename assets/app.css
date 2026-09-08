@@ -1726,4 +1726,5 @@ html{ scrollbar-gutter:stable }
 .me .actions{ display:flex; flex-wrap:wrap; gap:.6rem; align-items:center }
 .me .submit__out{ margin-top:.6rem }
 .me textarea{ min-height:6em }
-
+/* Der dritte Weg unter den Knöpfen braucht etwas Luft. */
+.actions + .fine{ margin-top:.7rem }

@@ -328,6 +328,27 @@ Formular auf entrosana.com und `contact-send.py` sind davon nicht berührt. Der
 Katalogeintrag «Propose a track» nennt noch `info@entrosana.com` als Ziel; das
 ist ein Text des Eigentümers im Katalog.
 
+### Was wohin gemeldet wird (2026-09-08, abends)
+
+| Ereignis | Mail an | Inhalt |
+|---|---|---|
+| Beitrag bestätigt (Verweis geöffnet) | sygnif@entrosana.com (`INBOX`) | Nummer, Titel, Bereich, Person, Verweis in die Konsole `/contributions/<id>` (Tailnet) |
+| Bewerbung als Beitragende | sygnif@entrosana.com | Name, Adresse, Text, Verweis in die Konsole `/applications` |
+| Anfrage (`/request`) | info@entrosana.com (`INFO_INBOX`) | Name, Adresse, Organisation, Art, Text; die Person bekommt eine kurze Bestätigung |
+| Entscheid zu Beitrag oder Bewerbung | die betroffene Person | Ausgang und Begründung des Teams |
+
+Der Weg einer Freigabe, Stand heute: Konto anlegen (Mail-Verweis, ohne Freigabe)
+→ unter `/me` als Beitragende bewerben → Mail an sygnif@ → Konsole
+`/applications`, freigeben oder ablehnen mit Begründung → Mail an die Person.
+Vorschläge: `/contribute/submit` → Bestätigungsverweis an die Person → Mail an
+sygnif@ → Konsole `/contributions/<id>`: in Prüfung, annehmen oder ablehnen mit
+Begründung → Mail an die Person → Tor (Name, Freigabe als Beitragende, Trail,
+Bereich, Titel, Vorschlag, Dateiverweise) → veröffentlichen → Mail an die Person.
+Wer entscheidet: Rolle reviewer oder owner; vergeben mit
+`node api/admin.mjs grant <email> reviewer`. Kettenzeilen `review.mail`,
+`application.mail`, `request.mail`, `decision.mail` halten fest, ob eine Mail
+hinausging.
+
 ## Betrieb (Phase 7, gebaut am 2026-09-08)
 
 Drei Timer unter `~/.config/systemd/user/` (Vorlagen in `deploy/`), alle mit

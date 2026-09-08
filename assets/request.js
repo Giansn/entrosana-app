@@ -41,7 +41,7 @@
   var text = el("textarea"); text.rows = 6; text.maxLength = 4000; text.required = true; text.placeholder = "Who is it for, what should it do, and by when?";
   var fName = field("Your name", name, null), fEmail = field("Your e-mail", email, "For the answer and a short confirmation."), fOrg = field("School or organisation", org, null, true);
   var fKind = field("What you ask for", kind, null), fText = field("Your request", text, null);
-  [fName, fEmail, fOrg, fKind, fText].forEach(function (f) { form.appendChild(f); });
+  var fs = el("fieldset"); [fName, fEmail, fOrg, fKind, fText].forEach(function (f) { fs.appendChild(f); }); form.appendChild(fs);   // Gruppe: gleicher Abstand wie im Vorschlagsformular
   var hp = el("input", "hp"); hp.name = "website"; hp.tabIndex = -1; hp.autocomplete = "off"; hp.setAttribute("aria-hidden", "true"); form.appendChild(hp);
   var actions = el("div", "actions"); var go = el("button", "btn", "Send the request"); go.type = "submit"; actions.appendChild(go);
   var mailto = el("a", "btn btn--ghost", "Write a mail instead"); mailto.href = "mailto:info@entrosana.com"; actions.appendChild(mailto); form.appendChild(actions);

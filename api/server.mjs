@@ -180,10 +180,16 @@ routes.set("GET /api/verify", (ctx) => {
   } catch (e) { db.exec("ROLLBACK"); throw e; }
   auditAppend(db, { kind: "verify.ok", actor_id: actor.id, resource: "actor:" + actor.id, text: "email confirmed" });
   // Offene Beiträge dieser Adresse gelten jetzt als eingereicht.
-  const pending = db.prepare("SELECT id FROM contributions WHERE actor_id = ? AND status = 'received'").all(actor.id);
+  const pending = db.prepare("SELECT id, title, area FROM contributions WHERE actor_id = ? AND status = 'received'").all(actor.id);
   for (const c of pending) {
     db.prepare("UPDATE contributions SET status = 'confirmed', confirmed = ? WHERE id = ?").run(nowIso, c.id);
     auditAppend(db, { kind: "contribution.confirmed", actor_id: actor.id, resource: "contribution:" + c.id, text: "confirmed by email link" });
+    // Das Team erfährt es im Postfach: ein bestätigter Beitrag wartet auf Prüfung.
+    if (!limited("mail:global", MAIL_CAP)) mail(INBOX, `entrosana Hub: contribution #${c.id} «${c.title}» waits for review`,
+      `${actor.name || "(no name yet)"} <${actor.email}> confirmed contribution #${c.id} «${c.title}» (${c.area}).\n\n` +
+      `Read and decide in the console (tailnet): http://100.115.236.97:8396/contributions/${c.id}\n` +
+      `Status page of the submitter: ${PUBLIC}/contribute/status?id=${c.id}\n\nentrosana`)
+      .then(r => auditAppend(db, { kind: "review.mail", actor_id: null, resource: "contribution:" + c.id, text: r.ok ? "inbox notified of confirmed contribution" : "inbox mail failed: " + (r.err || r.code) }));
   }
   const t = issueToken(db, actor.id);
   const roles = rolesOf(db, actor.id);
