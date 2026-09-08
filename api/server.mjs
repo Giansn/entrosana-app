@@ -227,7 +227,7 @@ function publicRow(c, full) {
   if (full) {
     Object.assign(r, { summary: c.summary, files: JSON.parse(c.files_json || "[]"), trail: c.trail_md,
                        records: JSON.parse(c.trail_json || "[]"), actor_id: c.actor_id, decided_by: c.decided_by });
-    if (c.status === "admitted") r.checks = publishChecks(c, db.prepare("SELECT * FROM actors WHERE id = ?").get(c.actor_id));
+    if (c.status === "admitted") { const sub = db.prepare("SELECT * FROM actors WHERE id = ?").get(c.actor_id); if (sub) sub.roles = rolesOf(db, sub.id); r.checks = publishChecks(c, sub); }   // mit Rollen, sonst meldet das Tor fälschlich «not approved»
   }
   return r;
 }
@@ -489,7 +489,10 @@ patterns.push([/^\/api\/me\/journal\/(\d{1,12})$/, {
 patterns.push([/^\/api\/profiles\/(\d{1,12})$/, {
   GET: (ctx, [id]) => { const p = publicProfile(db, id); if (!p) throw new HttpError(404, "no public profile"); send(ctx.res, 200, { ok: true, profile: p }); },
 }]);
-routes.set("GET /api/search", (ctx) => { send(ctx.res, 200, { ok: true, ...searchPublic(db, ctx.query.get("q") || "") }); });
+routes.set("GET /api/search", (ctx) => {
+  if (limited("search:" + ctx.ip, 1200)) throw new HttpError(429, "too many searches from here; try again later");   // 1200 je Stunde je IP: eine Klasse hinter einem NAT sucht viel
+  send(ctx.res, 200, { ok: true, ...searchPublic(db, ctx.query.get("q") || "") });
+});
 
 // Profilbild: JSON mit base64, höchstens 300 KB entpackt, nur JPEG, PNG oder WebP (Magic Bytes).
 const IMAGE_MAGIC = [["image/jpeg", [0xFF, 0xD8, 0xFF]], ["image/png", [0x89, 0x50, 0x4E, 0x47]], ["image/webp", [0x52, 0x49, 0x46, 0x46]]];
@@ -498,7 +501,7 @@ routes.set("POST /api/me/avatar", async (ctx) => {
   const body = await readJson(ctx.req);
   const b64 = String(body.data || "").replace(/^data:[^,]*,/, "");
   let buf; try { buf = Buffer.from(b64, "base64"); } catch { throw new HttpError(400, "bad image data"); }
-  if (!buf.length || buf.length > 300 * 1024) throw new HttpError(400, "image must be 1 byte to 300 KB");
+  if (!buf.length || buf.length > 180 * 1024) throw new HttpError(400, "image must be 1 byte to 180 KB");   // base64 muss unter BODY_CAP (256 KB) bleiben
   const kind = IMAGE_MAGIC.find(([, m]) => m.every((v, i) => buf[i] === v));
   if (!kind) throw new HttpError(400, "image must be JPEG, PNG or WebP");
   const now = new Date().toISOString();
