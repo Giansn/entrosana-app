@@ -8,8 +8,8 @@ Dokument, nicht umgekehrt.
 ## Zustände
 
 ```
-received → confirmed → reviewing → admitted
-                                 → rejected
+received → confirmed → reviewing → admitted → published
+                                 → rejected           ↑ zurücknehmen → admitted
                      ↘ withdrawn (nur aus received, confirmed, reviewing)
 ```
 
@@ -18,14 +18,44 @@ received → confirmed → reviewing → admitted
 - **confirmed**: der Bestätigungsverweis aus der Mail wurde geöffnet. Erst
   jetzt gilt der Beitrag als eingereicht.
 - **reviewing**: eine prüfende Person hat ihn übernommen.
-- **admitted**: angenommen. Der Beitrag erscheint als Katalogeintrag mit
-  `draft: true`, Urheberangabe `by` und Gleis `contributed`.
+- **admitted**: angenommen. Ein Urteil, keine Veröffentlichung.
+- **published**: durch das Tor gegangen und als Katalogeintrag mit
+  `draft: true`, Urheberangabe `by` und Gleis `contributed` öffentlich.
 - **rejected**: abgelehnt.
 - **withdrawn**: von der einreichenden Person zurückgezogen.
 
 Jeder Übergang ist eine Zeile in der Kette (`audit`), mit Akteur, Rolle und
 Zeit. Eine Entscheidung ohne Begründung wird abgewiesen, und zwar vom Endpunkt
 selbst: `PATCH /api/contributions/:id` lehnt eine leere Begründung ab.
+
+## Das Tor (seit 2026-09-08)
+
+Nicht alles Angenommene wird veröffentlicht. Der Übergang `admitted → published`
+ist eine eigene Handlung mit eigener Begründung, und `publishChecks()`
+(`api/contributions.mjs`) hält ihn zu, solange ein Mangel besteht: kein Name
+zum Veröffentlichen, keine Annahme in der Kette, Trail stimmt nicht, Bereich
+ungültig, Titel fehlt, Vorschlag unter 40 Zeichen, Dateiverweis nicht `https`.
+Die Konsole zeigt die Liste vor dem Knopf; der Dienst antwortet `409` mit
+denselben Gründen. `published → admitted` nimmt den Eintrag wieder aus dem
+Katalog.
+
+Die Entscheidung liegt beim Eigentümer und einem ausgewählten Team: das Team
+trägt die Rolle `reviewer`, vergeben allein vom Eigentümer. Zweite Lesung:
+`decided_by` und `published_by` stehen im Datensatz; sind es dieselbe Person,
+steht das in der Kettenzeile und die Konsole sagt es. Mit `FOUR_EYES=strict` in
+der Unit des Dienstes wird daraus eine Abweisung, sobald das Team mehr als eine
+Person zählt.
+
+## Namensnennung und Löschung
+
+Bei der Einreichung wählt die Person, ob ein veröffentlichtes Modul beim Löschen
+ihrer Daten unter ihrem Namen stehen bleibt (`attribution`: `keep`) oder mit
+hinausgeht (`remove`, Vorgabe). Die Wahl lässt sich auf der Statusseite ändern
+(`PATCH` mit `attribution`, nur Eigenes) und beim Löschen je Modul noch einmal
+treffen. `DELETE /api/me` (nur Akteure der Art `email`, ohne Rollen) löscht
+Adresse, Marken, Bestätigungen und alle nicht veröffentlichten Beiträge; ein
+veröffentlichtes Modul bleibt nur mit dieser Wahl, dann bleibt auch der Name.
+Die Kettenzeilen bleiben, ohne Personendaten.
 
 ## Veröffentlichte Regeln
 
@@ -54,7 +84,9 @@ Alles, was nicht aufgeführt ist, ist verweigert.
 | Beitrag lesen | nein | ja | ja | ja |
 | zurückziehen | nein | ja, nur offen | nein | ja |
 | entscheiden, mit Begründung | nein | nein | ja | ja |
-| in den Katalog veröffentlichen | nein | nein | ja | ja |
+| durch das Tor veröffentlichen, zurücknehmen | nein | nein | ja | ja |
+| Namensnennung wählen | nein | ja, eigene | nein | ja |
+| eigene Daten löschen | nein | ja | nein | nein |
 | Rolle vergeben | nein | nein | nein | ja |
 
 Später, ohne Änderung an der Annahme: `editor` (nur Katalogtexte), `school`
@@ -203,7 +235,7 @@ Begründung.
 
 ## Veröffentlichung (Phase 6, gebaut am 2026-09-08)
 
-Angenommen heisst veröffentlicht, als Entwurf. Beim Übergang nach `admitted`
+Veröffentlicht wird, was durch das Tor geht: beim Übergang nach `published`
 schreibt `api/publish.mjs` einen Eintrag in `assets/catalogue.js`: Abschnitt
 `modules`, Gleis `contributed` (wird beim ersten Mal angelegt), `state: draft`,
 `draft: true`, `by` mit dem Namen der einreichenden Person, Titel, Bereich,

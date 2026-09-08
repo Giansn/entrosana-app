@@ -8,6 +8,7 @@ import { open } from "./db.mjs";
 import { append, verify } from "./audit.mjs";
 import { issueToken } from "./auth.mjs";
 import { appendEntry, removeEntry, entryFor } from "./publish.mjs";
+import { publishChecks } from "./contributions.mjs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -53,19 +54,20 @@ try {
   } else if (cmd === "publish" || cmd === "unpublish") {
     const c = db.prepare("SELECT * FROM contributions WHERE id = ?").get(Number(a));
     if (!c) throw new Error("kein Beitrag #" + a);
+    const actor = db.prepare("SELECT * FROM actors WHERE id = ?").get(c.actor_id);
     if (cmd === "publish") {
-      if (c.status !== "admitted") throw new Error("nur angenommene Beiträge werden veröffentlicht (Stand: " + c.status + ")");
-      if (c.slug) throw new Error("schon veröffentlicht als modules/" + c.slug);
-      const actor = db.prepare("SELECT * FROM actors WHERE id = ?").get(c.actor_id);
+      if (c.status !== "admitted") throw new Error("nur angenommene Beiträge gehen durch das Tor (Stand: " + c.status + ")");
+      const fails = publishChecks(c, actor);
+      if (fails.length) throw new Error("Tor zu: " + fails.join("; "));
       const r = appendEntry("modules", entryFor(c, actor));
-      db.prepare("UPDATE contributions SET slug = ? WHERE id = ?").run(r.slug, c.id);
-      append(db, { kind: "publish", actor_id: null, resource: "contribution:" + c.id, text: `catalogue entry modules/${r.slug} written (draft) via cli` });
+      db.prepare("UPDATE contributions SET status = 'published', published = ?, published_by = NULL, slug = ? WHERE id = ?").run(now(), r.slug, c.id);
+      append(db, { kind: "publish", actor_id: null, resource: "contribution:" + c.id, text: `published as modules/${r.slug} via cli (owner on the machine)` });
       console.log("publish: modules/" + r.slug + " (Sicherung " + r.backup + ")");
     } else {
-      if (!c.slug) throw new Error("nicht veröffentlicht");
-      const r = removeEntry("modules", c.slug);
-      db.prepare("UPDATE contributions SET slug = NULL WHERE id = ?").run(c.id);
-      append(db, { kind: "unpublish", actor_id: null, resource: "contribution:" + c.id, text: `catalogue entry modules/${c.slug} removed via cli` });
+      if (c.status !== "published") throw new Error("nicht veröffentlicht (Stand: " + c.status + ")");
+      const r = c.slug ? removeEntry("modules", c.slug) : { removed: false };
+      db.prepare("UPDATE contributions SET status = 'admitted', published = NULL, published_by = NULL, slug = NULL WHERE id = ?").run(c.id);
+      append(db, { kind: "unpublish", actor_id: null, resource: "contribution:" + c.id, text: `taken back from the catalogue via cli (modules/${c.slug})` });
       console.log("unpublish: modules/" + c.slug + (r.removed ? "" : " (war nicht in der Datei)"));
     }
   } else if (cmd === "list") {

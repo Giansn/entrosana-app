@@ -2,7 +2,7 @@
 // die Honigfalle erkannt, die Zustandsmaschine hält nur die erlaubten Wege.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { validate, actionFor } from "../contributions.mjs";
+import { validate, actionFor, publishChecks } from "../contributions.mjs";
 
 const good = { email: "a@b.ch", name: "Anna B.", title: "A module", area: "social", summary: "What it does.", trail: "", files: [{ label: "Slides", url: "https://example.org/s.pdf" }] };
 
@@ -42,4 +42,23 @@ test("zustandsmaschine", () => {
   for (const s of ["received", "confirmed", "reviewing"]) assert.equal(actionFor(s, "withdrawn"), "withdraw");
   assert.equal(actionFor("admitted", "withdrawn"), null);
   assert.equal(actionFor("rejected", "reviewing"), null);
+  assert.equal(actionFor("admitted", "published"), "publish");     // das Tor
+  assert.equal(actionFor("published", "admitted"), "publish");     // zurücknehmen
+  assert.equal(actionFor("reviewing", "published"), null);         // nicht ohne Annahme
+  assert.equal(actionFor("published", "rejected"), null);
+});
+
+test("veröffentlichung: prüfungen benennen jeden mangel", () => {
+  const ok = { decided_by: 1, trail_ok: 1, area: "social", title: "A module", summary: "x".repeat(40), files_json: "[]" };
+  assert.deepEqual(publishChecks(ok, { name: "Anna" }), []);
+  const bad = publishChecks({ ...ok, trail_ok: 0, summary: "short", files_json: JSON.stringify([{ url: "http://x" }]) }, { name: "" });
+  assert.equal(bad.length, 4);
+  assert.ok(bad.some(x => /no name/.test(x)) && bad.some(x => /trail/.test(x)) && bad.some(x => /40/.test(x)) && bad.some(x => /https/.test(x)));
+  assert.deepEqual(publishChecks({ ...ok, decided_by: null }, { name: "Anna" }), ["no admission on record"]);
+});
+
+test("attribution: keep nur ausdrücklich, sonst remove", () => {
+  assert.equal(validate(good).value.attribution, "remove");
+  assert.equal(validate({ ...good, attribution: "keep" }).value.attribution, "keep");
+  assert.equal(validate({ ...good, attribution: "anything" }).value.attribution, "remove");
 });

@@ -68,6 +68,12 @@
   fgrid.appendChild(field("File (optional)", flabel, null, false));
   fgrid.appendChild(field("Link to it", furl, "Only https links; files stay where you host them.", false));
   form.appendChild(fgrid);
+  var keepWrap = el("label", "toggle"); var keep = el("input"); keep.type = "checkbox"; keep.id = "keep-attr";
+  var track = el("span", "toggle__track"); track.appendChild(el("span", "toggle__dot")); keepWrap.appendChild(keep); keepWrap.appendChild(track);
+  keepWrap.appendChild(el("span", "toggle__label", "If I ever erase my data, keep an admitted module published under my name."));
+  var keepHelp = el("p", "help", "Default is off: erasing your data takes the module out of the catalogue. You can change this later on the status page.");
+  keepHelp.style && (keepHelp.className = "help");
+  form.appendChild(keepWrap); form.appendChild(keepHelp);
   var hp = el("input", "hp"); hp.name = "website"; hp.tabIndex = -1; hp.autocomplete = "off"; hp.setAttribute("aria-hidden", "true"); form.appendChild(hp);
   var actions = el("div", "actions");
   var go = el("button", "btn", "Send to the Hub"); go.type = "submit"; actions.appendChild(go);
@@ -83,7 +89,7 @@
     var records = st.records.map(function (r, i) { return { i: i, t: r.t, kind: r.kind, text: r.text, project: r.project, h: r.h }; })
                             .filter(function (r) { return r.project === seed; });
     var body = { email: email.value.trim(), name: name.value.trim(), title: title.value.trim(), area: area.value,
-                 summary: summary.value.trim(), website: hp.value, files: files,
+                 summary: summary.value.trim(), website: hp.value, files: files, attribution: keep.checked ? "keep" : "remove",
                  trail: p && hub ? hub.markdown(p).slice(0, 12000) : "", records: records, chain: records.length ? chain : [] };
     var headers = { "Content-Type": "application/json" }; if (tk) headers["Authorization"] = "Bearer " + tk.token;
     go.disabled = true; note(out, "idle", "Sending…");

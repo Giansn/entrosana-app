@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 import { open } from "./db.mjs";
 import { append as auditAppend, verify as auditVerify } from "./audit.mjs";
 import { can } from "./policy.mjs";
-import { validate as validateContribution, actionFor, verifyTrail } from "./contributions.mjs";
+import { validate as validateContribution, actionFor, verifyTrail, publishChecks } from "./contributions.mjs";
 import { appendEntry, removeEntry, entryFor } from "./publish.mjs";
 import { serviceToken, ensureServiceActor, resolveActor, issueToken, withRoles, newToken, sha } from "./auth.mjs";
 
@@ -29,6 +29,7 @@ const MAIL = process.env.MAIL_SEND || join(HERE, "..", "tools", "mail-send.py");
 const BODY_CAP = 256 * 1024;  // Kette eines Geräts als Hashes passt hinein
 const RATE = { limit: 5, windowMs: 3600e3 };   // docs/contributions.md, Entscheid 5
 const MAIL_CAP = 60;                            // Briefe je Stunde insgesamt, gegen Verstärkung
+const FOUR_EYES = process.env.FOUR_EYES === "strict";   // strict: veröffentlichen darf nicht, wer angenommen hat
 
 mkdirSync(dirname(LOG), { recursive: true });
 const { db, migrations } = open(DB_PATH);
@@ -85,6 +86,18 @@ function mail(to, subject, text) {
     p.on("close", code => resolve({ ok: code === 0, code, err: err.trim().slice(0, 200) }));
     p.stdin.end(JSON.stringify({ to, subject, text }));
   });
+}
+
+// Die einreichende Person erfährt jede Entscheidung mit ihrer Begründung.
+function notify(submitter, c, what, reason, url) {
+  if (!submitter || !submitter.email || limited("mail:global", MAIL_CAP)) return;
+  const words = { admitted: "admitted — it waits for publication", rejected: "rejected", published: "published" };
+  mail(submitter.email, `entrosana Hub: your contribution «${c.title}» was ${what}`,
+    `Hello${submitter.name ? " " + submitter.name : ""},\n\nyour contribution #${c.id} «${c.title}» was ${words[what] || what}.\n\n` +
+    `Reason given by the reviewer:\n${reason}` + (url ? `\n\nIt is listed as a draft under your name at ${url}` : "") +
+    `\n\nIts status page: ${PUBLIC}/contribute/status?id=${c.id}\n\nentrosana`).then(r => {
+      auditAppend(db, { kind: "decision.mail", actor_id: null, resource: "contribution:" + c.id, text: r.ok ? `${what}: decision mail sent` : "decision mail failed: " + (r.err || r.code) });
+    });
 }
 
 // ---- Routen ---------------------------------------------------------------
@@ -189,9 +202,12 @@ const asResource = c => ({ kind: "contribution", actor_id: c.actor_id, status: c
 function publicRow(c, full) {
   const r = { id: c.id, kind: c.kind, status: c.status, title: c.title, area: c.area, org_id: c.org_id,
               created: c.created, confirmed: c.confirmed, decided: c.decided, reason: c.reason };
-  r.trail_ok = c.trail_ok; r.slug = c.slug || null;
-  if (full) Object.assign(r, { summary: c.summary, files: JSON.parse(c.files_json || "[]"), trail: c.trail_md,
-                               records: JSON.parse(c.trail_json || "[]"), actor_id: c.actor_id, decided_by: c.decided_by });
+  r.trail_ok = c.trail_ok; r.slug = c.slug || null; r.attribution = c.attribution; r.published = c.published; r.published_by = c.published_by;
+  if (full) {
+    Object.assign(r, { summary: c.summary, files: JSON.parse(c.files_json || "[]"), trail: c.trail_md,
+                       records: JSON.parse(c.trail_json || "[]"), actor_id: c.actor_id, decided_by: c.decided_by });
+    if (c.status === "admitted") r.checks = publishChecks(c, db.prepare("SELECT * FROM actors WHERE id = ?").get(c.actor_id));
+  }
   return r;
 }
 const getContribution = id => db.prepare("SELECT * FROM contributions WHERE id = ?").get(Number(id));
@@ -205,7 +221,7 @@ routes.set("POST /api/contributions", async (ctx) => {
     return send(ctx.res, 202, { ok: true, received: true });
   }
   if (!v.ok) throw new HttpError(400, v.error);
-  const { email, name, title, area, summary, trail, files, org_id, records, chain } = v.value;
+  const { email, name, title, area, summary, trail, files, org_id, records, chain, attribution } = v.value;
   let trailOk = null, trailJson = "[]";
   if (records.length || chain.length) {
     const tv = verifyTrail(chain, records);
@@ -217,9 +233,9 @@ routes.set("POST /api/contributions", async (ctx) => {
   // Wer schon eine gültige Marke für dieselbe Adresse trägt, hat sie bestätigt.
   const known = !!(ctx.actor && ctx.actor.id === actor.id);
   const now = new Date().toISOString();
-  const id = Number(db.prepare(`INSERT INTO contributions(kind, status, actor_id, org_id, title, area, summary, files_json, trail_md, trail_json, trail_ok, created, confirmed)
-    VALUES ('module', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-    .run(known ? "confirmed" : "received", actor.id, org_id, title, area, summary, JSON.stringify(files), trail, trailJson, trailOk, now, known ? now : null).lastInsertRowid);
+  const id = Number(db.prepare(`INSERT INTO contributions(kind, status, actor_id, org_id, title, area, summary, files_json, trail_md, trail_json, trail_ok, created, confirmed, attribution)
+    VALUES ('module', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(known ? "confirmed" : "received", actor.id, org_id, title, area, summary, JSON.stringify(files), trail, trailJson, trailOk, now, known ? now : null, attribution).lastInsertRowid);
   auditAppend(db, { kind: known ? "contribution.confirmed" : "contribution.received", actor_id: actor.id, resource: "contribution:" + id, text: `${area}: ${title}` });
   let mailed = null;
   if (!known) mailed = (await startVerification(email, name, "contribution")).ok;
@@ -249,51 +265,87 @@ patterns.push([/^\/api\/contributions\/(\d{1,12})$/, {
     const c = getContribution(id);
     if (!c) throw new HttpError(404, "not found");
     const body = await readJson(ctx.req);
+    const submitter = db.prepare("SELECT * FROM actors WHERE id = ?").get(c.actor_id);
+
+    // Ohne Zielzustand: die einreichende Person ändert ihre Wahl zur Namensnennung.
+    if (body.status === undefined && body.attribution !== undefined) {
+      if (!ctx.actor || ctx.actor.id !== c.actor_id) throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+      const a = body.attribution === "keep" ? "keep" : "remove";
+      db.prepare("UPDATE contributions SET attribution = ? WHERE id = ?").run(a, c.id);
+      auditAppend(db, { kind: "attribution", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: "attribution set to " + a });
+      return send(ctx.res, 200, { ok: true, item: publicRow(getContribution(c.id), true) });
+    }
+
     const target = String(body.status || "");
     const action = actionFor(c.status, target);
     if (!action) throw new HttpError(409, `no transition ${c.status} → ${target || "?"}`);
     if (!can(ctx.actor, action, asResource(c))) throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
     const reason = String(body.reason || "").trim().slice(0, 2000);
-    if (action === "decide" && reason.length < 3) throw new HttpError(400, "reason required");
+    if ((action === "decide" || action === "publish") && reason.length < 3) throw new HttpError(400, "reason required");
     const now = new Date().toISOString();
+
+    if (target === "published") {
+      // Das Tor: erst die Prüfungen, dann die zweite Lesung, dann der Katalog.
+      const fails = publishChecks(c, submitter);
+      if (fails.length) throw new HttpError(409, "publication blocked: " + fails.join("; "));
+      const sameReviewer = c.decided_by === ctx.actor.id;
+      if (sameReviewer && FOUR_EYES) throw new HttpError(409, "second reading required: the same actor admitted this contribution");
+      const r = appendEntry("modules", entryFor(c, submitter));
+      db.prepare("UPDATE contributions SET status = 'published', published = ?, published_by = ?, slug = ?, reason = ? WHERE id = ?")
+        .run(now, ctx.actor.id, r.slug, reason, c.id);
+      auditAppend(db, { kind: "publish", actor_id: ctx.actor.id, resource: "contribution:" + c.id,
+        text: `published as modules/${r.slug}` + (sameReviewer ? " (no second reading: same actor admitted and published)" : "") + " — " + reason });
+      notify(submitter, c, "published", reason, `${PUBLIC}/modules/${r.slug}`);
+      return send(ctx.res, 200, { ok: true, second_reading: !sameReviewer, item: publicRow(getContribution(c.id), true) });
+    }
+    if (c.status === "published" && target === "admitted") {
+      if (c.slug) { try { removeEntry("modules", c.slug); } catch (e) { auditAppend(db, { kind: "unpublish.failed", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: String(e.message).slice(0, 200) }); } }
+      db.prepare("UPDATE contributions SET status = 'admitted', published = NULL, published_by = NULL, slug = NULL, reason = ? WHERE id = ?").run(reason, c.id);
+      auditAppend(db, { kind: "unpublish", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: `taken back from the catalogue — ${reason}` });
+      return send(ctx.res, 200, { ok: true, item: publicRow(getContribution(c.id), true) });
+    }
+
     const final = ["admitted", "rejected", "withdrawn"].includes(target);
     db.prepare(`UPDATE contributions SET status = ?, decided = COALESCE(?, decided), decided_by = COALESCE(?, decided_by),
                 reason = COALESCE(?, reason) WHERE id = ?`).run(target, final ? now : null, final ? ctx.actor.id : null, reason || null, c.id);
     auditAppend(db, { kind: "contribution." + target, actor_id: ctx.actor.id, resource: "contribution:" + c.id,
       text: reason || (action === "withdraw" ? "withdrawn by submitter" : target) });
-    // Angenommen heisst veröffentlicht: als Entwurf in den Katalog, unter dem Namen
-    // der einreichenden Person (docs/contributions.md). Zurückgezogen oder
-    // abgelehnt nach einer Veröffentlichung nimmt den Eintrag wieder heraus.
-    const submitter = db.prepare("SELECT * FROM actors WHERE id = ?").get(c.actor_id);
-    if (target === "admitted") {
-      try {
-        const r = appendEntry("modules", entryFor(getContribution(c.id), submitter));
-        db.prepare("UPDATE contributions SET slug = ? WHERE id = ?").run(r.slug, c.id);
-        auditAppend(db, { kind: "publish", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: `catalogue entry modules/${r.slug} written (draft)` });
-      } catch (e) {
-        auditAppend(db, { kind: "publish.failed", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: String(e.message).slice(0, 200) });
-      }
-    } else if (c.slug && (target === "rejected" || target === "withdrawn")) {
-      try {
-        const r = removeEntry("modules", c.slug);
-        if (r.removed) auditAppend(db, { kind: "unpublish", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: `catalogue entry modules/${c.slug} removed` });
-      } catch (e) {
-        auditAppend(db, { kind: "unpublish.failed", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: String(e.message).slice(0, 200) });
-      }
-    }
-    // Die einreichende Person erfährt jede Entscheidung mit ihrer Begründung.
-    if (submitter && submitter.email && (target === "admitted" || target === "rejected") && !limited("mail:global", MAIL_CAP)) {
-      const fresh = getContribution(c.id);
-      const where = target === "admitted" && fresh.slug ? `\nIt is now listed as a draft at ${PUBLIC}/modules/${fresh.slug} under your name.` : "";
-      mail(submitter.email, `entrosana Hub: your contribution «${c.title}» was ${target}`,
-        `Hello${submitter.name ? " " + submitter.name : ""},\n\nyour contribution #${c.id} «${c.title}» was ${target}.\n\nReason given by the reviewer:\n${reason}${where}\n\n` +
-        `Its status page: ${PUBLIC}/contribute/status?id=${c.id}\n\nentrosana`).then(r => {
-          auditAppend(db, { kind: "decision.mail", actor_id: null, resource: "contribution:" + c.id, text: r.ok ? "decision mail sent" : "decision mail failed: " + (r.err || r.code) });
-        });
-    }
+    if (target === "admitted" || target === "rejected") notify(submitter, c, target, reason, null);
     send(ctx.res, 200, { ok: true, item: publicRow(getContribution(c.id), true) });
   },
 }]);
+
+// Löschen der eigenen Daten. Veröffentlichte Module bleiben nur, wenn die Person
+// es so gewählt hat (attribution keep, oder im Aufruf ausdrücklich keep: [ids]);
+// sonst gehen sie aus dem Katalog. Alles andere wird entfernt, die Kettenzeilen
+// bleiben ohne Personendaten stehen.
+routes.set("DELETE /api/me", async (ctx) => {
+  if (!ctx.actor) throw new HttpError(401, "no actor");
+  if (ctx.actor.kind !== "email") throw new HttpError(409, "only e-mail actors can erase themselves");
+  if (ctx.actor.roles.has("owner") || ctx.actor.roles.has("reviewer")) throw new HttpError(409, "revoke the roles first");
+  const body = await readJson(ctx.req).catch(() => ({}));
+  const keepIds = new Set(Array.isArray(body.keep) ? body.keep.map(Number) : []);
+  const removeIds = new Set(Array.isArray(body.remove) ? body.remove.map(Number) : []);
+  const mine = db.prepare("SELECT * FROM contributions WHERE actor_id = ?").all(ctx.actor.id);
+  let kept = 0, unpublished = 0, deleted = 0;
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    for (const c of mine) {
+      const keep = c.status === "published" && (keepIds.has(c.id) || (c.attribution === "keep" && !removeIds.has(c.id)));
+      if (keep) { kept++; continue; }
+      if (c.status === "published" && c.slug) { try { removeEntry("modules", c.slug); unpublished++; } catch {} }
+      db.prepare("DELETE FROM contributions WHERE id = ?").run(c.id); deleted++;
+    }
+    db.prepare("DELETE FROM actor_tokens WHERE actor_id = ?").run(ctx.actor.id);
+    db.prepare("DELETE FROM verifications WHERE email = ?").run(ctx.actor.email);
+    db.prepare("DELETE FROM roles WHERE actor_id = ?").run(ctx.actor.id);
+    // Name bleibt nur, wenn ein Modul unter ihm stehen bleibt; die Adresse geht immer.
+    db.prepare("UPDATE actors SET email = NULL, name = ?, org_id = NULL WHERE id = ?").run(kept ? ctx.actor.name : "(erased)", ctx.actor.id);
+    db.exec("COMMIT");
+  } catch (e) { db.exec("ROLLBACK"); throw e; }
+  auditAppend(db, { kind: "erase", actor_id: ctx.actor.id, resource: "actor:" + ctx.actor.id, text: `personal data erased; ${kept} module(s) kept under the name, ${unpublished} unpublished, ${deleted} contribution(s) deleted` });
+  send(ctx.res, 200, { ok: true, kept, unpublished, deleted });
+});
 
 const METHODS = new Set(["GET", "HEAD", "POST", "PATCH", "DELETE"]);
 

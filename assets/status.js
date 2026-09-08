@@ -19,7 +19,7 @@
   function row(card, k, v) { var r = el("div", "status__row"); r.appendChild(el("span", "status__k", k)); r.appendChild(el("span", null, v == null || v === "" ? "—" : String(v))); card.appendChild(r); }
   function when(iso) { return iso ? iso.replace("T", " ").slice(0, 16) + " UTC" : ""; }
   var WORDS = { received: "received, waiting for your confirmation", confirmed: "confirmed, waiting for review", reviewing: "in review",
-                admitted: "admitted", rejected: "rejected", withdrawn: "withdrawn" };
+                admitted: "admitted, waiting for publication", published: "published as a draft", rejected: "rejected", withdrawn: "withdrawn" };
 
   function offline(sec) {
     var n = el("p", "note note--idle", "The Hub's server is not reachable right now. Your files are safe on this device; export one from its project page and mail it to sygnif@entrosana.com.");
@@ -32,6 +32,19 @@
     row(card, "received", when(c.created)); row(card, "confirmed", when(c.confirmed)); row(card, "decided", when(c.decided));
     if (c.reason) row(card, "reason", c.reason);
     if (c.trail_ok === 1) row(card, "trail", "verified on the server"); else if (c.trail_ok === 0) row(card, "trail", "did not verify");
+    if (c.slug) { var lk = el("a", null, "/modules/" + c.slug); lk.href = "/modules/" + c.slug; var rr = el("div", "status__row"); rr.appendChild(el("span", "status__k", "listed at")); rr.appendChild(lk); card.appendChild(rr); }
+    if (c.attribution && token()) {
+      var ar = el("div", "status__row"); ar.appendChild(el("span", "status__k", "if I erase my data"));
+      var lab = el("label", "toggle"); var cb = el("input"); cb.type = "checkbox"; cb.checked = c.attribution === "keep";
+      var tr = el("span", "toggle__track"); tr.appendChild(el("span", "toggle__dot")); lab.appendChild(cb); lab.appendChild(tr);
+      lab.appendChild(el("span", "toggle__label", cb.checked ? "the module stays under my name" : "the module goes with it"));
+      cb.addEventListener("change", function () {
+        api("/api/contributions/" + c.id, { method: "PATCH", headers: Object.assign({ "Content-Type": "application/json" }, headers()), body: JSON.stringify({ attribution: cb.checked ? "keep" : "remove" }) })
+          .then(function (r) { lab.lastChild.textContent = r.s === 200 ? (cb.checked ? "the module stays under my name" : "the module goes with it") : "not saved (" + r.s + ")"; })
+          .catch(function () { lab.lastChild.textContent = "not saved, server unreachable"; });
+      });
+      ar.appendChild(lab); card.appendChild(ar);
+    }
     sec.appendChild(card);
     if (["received", "confirmed", "reviewing"].indexOf(c.status) >= 0 && token()) {
       var b = el("button", "btn btn--danger", "Withdraw"); b.type = "button"; b.style.marginTop = "1rem";
@@ -56,7 +69,39 @@
         var rr = el("div", "status__row"); rr.appendChild(el("span", "status__k", when(c.created))); rr.appendChild(a); card.appendChild(rr);
       });
       sec.appendChild(card);
+      erase(sec, r.j.items);
     }).catch(function () { offline(sec); });
+  }
+
+  // Alles löschen, was der Hub über diese Adresse hat. Veröffentlichte Module
+  // bleiben nur mit ausdrücklicher Wahl stehen.
+  function erase(sec, items) {
+    var box = el("div", "plan"); box.style.marginTop = "1.4rem";
+    box.appendChild(el("span", "tag", "your data"));
+    var pub = items.filter(function (c) { return c.status === "published"; });
+    box.appendChild(el("p", null, "Erase everything the Hub holds about this address: your contributions, the confirmation records, this device's access. " +
+      (pub.length ? "For published modules you decide now whether each one stays in the catalogue under your name." : "")));
+    var choices = {};
+    pub.forEach(function (c) {
+      var lab = el("label", "toggle"); lab.style.display = "flex"; lab.style.marginTop = ".4rem";
+      var cb = el("input"); cb.type = "checkbox"; cb.checked = c.attribution === "keep"; choices[c.id] = cb;
+      var tr = el("span", "toggle__track"); tr.appendChild(el("span", "toggle__dot")); lab.appendChild(cb); lab.appendChild(tr);
+      lab.appendChild(el("span", "toggle__label", "keep «" + c.title + "» published under my name")); box.appendChild(lab);
+    });
+    var b = el("button", "btn btn--danger", "Erase my data"); b.type = "button"; b.style.marginTop = ".8rem";
+    b.addEventListener("click", function () {
+      if (!confirm("Erase your data now? This cannot be undone. The chain keeps its lines without your name or address.")) return;
+      var keep = [], remove = [];
+      Object.keys(choices).forEach(function (id) { (choices[id].checked ? keep : remove).push(Number(id)); });
+      api("/api/me", { method: "DELETE", headers: Object.assign({ "Content-Type": "application/json" }, headers()), body: JSON.stringify({ keep: keep, remove: remove }) })
+        .then(function (r) {
+          if (r.s === 200) { try { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem("entrosana-app:submissions"); } catch (e) {}
+            host.textContent = ""; var d = block("Erased", "Your data is gone.", null);
+            d.appendChild(el("p", "note note--ok", r.j.kept + " module(s) kept under your name, " + r.j.unpublished + " taken out of the catalogue, " + r.j.deleted + " contribution(s) deleted.")); }
+          else box.appendChild(el("p", "note note--warn", "Not erased (" + r.s + "): " + (r.j.error || ""))); })
+        .catch(function () { offline(sec); });
+    });
+    box.appendChild(b); sec.appendChild(box);
   }
 
   if (q.get("verify")) {

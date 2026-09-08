@@ -47,7 +47,8 @@ export function validate(body) {
   }
   const records = Array.isArray(body.records) ? body.records : [];
   const chain = Array.isArray(body.chain) ? body.chain : [];
-  return { ok: true, value: { email, name, title, area, summary, trail, files, org_id, records, chain } };
+  const attribution = body.attribution === "keep" ? "keep" : "remove";   // Vorgabe: beim Löschen geht das Modul mit
+  return { ok: true, value: { email, name, title, area, summary, trail, files, org_id, records, chain, attribution } };
 }
 
 // Der Trail des Geräts, serverseitig nachgerechnet. Der Client schickt die Hashes
@@ -71,9 +72,27 @@ export function verifyTrail(chain, records) {
 
 // Welche Handlung führt von current nach target? null, wenn der Übergang nicht existiert.
 // received → confirmed geschieht nur über die Bestätigung, nie über PATCH.
+// admitted → published ist das Tor: eine eigene Handlung hinter publishChecks().
 export function actionFor(current, target) {
   if (target === "withdrawn") return OPEN.includes(current) ? "withdraw" : null;
   if (current === "confirmed" && target === "reviewing") return "decide";
   if (current === "reviewing" && (target === "admitted" || target === "rejected")) return "decide";
+  if (current === "admitted" && target === "published") return "publish";
+  if (current === "published" && target === "admitted") return "publish";   // zurücknehmen
   return null;
+}
+
+// Was vor einer Veröffentlichung stimmen muss. Liefert die Liste der Mängel;
+// leer heisst: darf hinaus. Die Regel ist Code, nicht Erinnerung.
+export function publishChecks(c, actor) {
+  const f = [];
+  if (!actor || !actor.name || String(actor.name).trim().length < 2) f.push("submitter has no name to publish under");
+  if (!c.decided_by) f.push("no admission on record");
+  if (c.trail_ok === 0) f.push("record trail did not verify");
+  if (!AREAS.includes(c.area)) f.push("area invalid");
+  if (String(c.title || "").trim().length < 3) f.push("title missing");
+  if (String(c.summary || "").trim().length < 40) f.push("proposal shorter than 40 characters");
+  try { for (const x of JSON.parse(c.files_json || "[]")) if (!/^https:\/\//.test(String(x.url))) f.push("file link not https"); }
+  catch { f.push("files unreadable"); }
+  return f;
 }

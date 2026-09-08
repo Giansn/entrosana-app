@@ -1032,10 +1032,13 @@ def api_call(method, path, body=None):
         return 0, {"error": f"API nicht erreichbar: {e}"}
 
 STATUS_DE = {"received": "eingegangen, unbestätigt", "confirmed": "bestätigt, wartet auf Prüfung",
-             "reviewing": "in Prüfung", "admitted": "angenommen", "rejected": "abgelehnt", "withdrawn": "zurückgezogen"}
+             "reviewing": "in Prüfung", "admitted": "angenommen, nicht veröffentlicht", "published": "veröffentlicht (Entwurf im Katalog)",
+             "rejected": "abgelehnt", "withdrawn": "zurückgezogen"}
 NEXT = {"confirmed": [("reviewing", "in Prüfung nehmen")],
-        "reviewing": [("admitted", "annehmen"), ("rejected", "ablehnen")]}
-ALLE_STATI = ["received", "confirmed", "reviewing", "admitted", "rejected", "withdrawn"]
+        "reviewing": [("admitted", "annehmen"), ("rejected", "ablehnen")],
+        "admitted": [("published", "veröffentlichen")],
+        "published": [("admitted", "aus dem Katalog zurücknehmen")]}
+ALLE_STATI = ["received", "confirmed", "reviewing", "admitted", "published", "rejected", "withdrawn"]
 
 def _wann(iso):
     return html.escape((iso or "")[:16].replace("T", " ")) if iso else "—"
@@ -1075,6 +1078,9 @@ def contrib_detail(cid):
         ("eingegangen", _wann(c.get("created"))), ("bestätigt", _wann(c.get("confirmed"))),
         ("entschieden", _wann(c.get("decided")) + (f" · Akteur {c['decided_by']}" if c.get("decided_by") else "")),
         ("Begründung", html.escape(c.get("reason") or "—")),
+        ("veröffentlicht", _wann(c.get("published")) + (f" · Akteur {c['published_by']}" if c.get("published_by") else "")
+                          + (f" · <a href='https://entrosana.app/modules/{html.escape(c['slug'])}' target='_blank'>modules/{html.escape(c['slug'])}</a>" if c.get("slug") else "")),
+        ("Namensnennung", "bleibt beim Löschen der Daten stehen" if c.get("attribution") == "keep" else "geht beim Löschen der Daten mit"),
         ("Akteur", f"<span class='mono'>{c['actor_id']}</span>"),
         ("Trail", {1: "<span class='ok'>serverseitig geprüft</span>", 0: "<span class='err'>stimmt nicht</span>"}.get(c.get("trail_ok"), "nichts mitgeschickt"))])
     dateien = "".join(f"<li><a href='{html.escape(f['url'])}' rel='noopener' target='_blank'>{html.escape(f['label'])}</a> <span class='mono'>{html.escape(f['url'])}</span></li>"
@@ -1083,9 +1089,19 @@ def contrib_detail(cid):
                    f"<td>{html.escape(r.get('text',''))}</td><td class='mono'>{html.escape((r.get('h') or '')[:10])}</td></tr>"
                    for r in c.get("records", [])) or "<tr><td colspan='5' class='mono'>keine Zeilen</td></tr>"
     form = ""
+    if c["status"] == "admitted":
+        fails = c.get("checks") or []
+        if fails:
+            form += "<h2>Vor der Veröffentlichung</h2><p class='err'>Das Tor ist zu: " + "; ".join(html.escape(x) for x in fails) + "</p>"
+        else:
+            form += "<h2>Vor der Veröffentlichung</h2><p class='ok'>Alle Prüfungen bestanden: Name, Annahme, Trail, Bereich, Titel, Vorschlag, Dateiverweise.</p>"
+        if c.get("decided_by") == 1:
+            form += "<p class='note'>Zweite Lesung: der Dienstakteur hat angenommen. Veröffentlicht dieselbe Rolle, steht das so in der Kette.</p>"
+    if c["status"] == "published" and c.get("published_by") == c.get("decided_by"):
+        form += "<p class='note'>Ohne zweite Lesung veröffentlicht: dieselbe Person hat angenommen und veröffentlicht. Die Kette hält es fest.</p>"
     if c["status"] in NEXT:
         opts = "".join(f"<option value='{s}'>{l}</option>" for s, l in NEXT[c["status"]])
-        form = ("<h2>Entscheiden</h2>"
+        form += ("<h2>Entscheiden</h2>"
                 "<p class='note'>Ohne Begründung geht nichts hinaus: die Verwaltung schickt es nicht ab, und der Dienst würde es abweisen.</p>"
                 f"<div class='f'><select id='next'>{opts}</select></div>"
                 "<div class='f'><textarea id='reason' rows='4' placeholder='Begründung, mindestens drei Zeichen'></textarea></div>"
@@ -1113,7 +1129,7 @@ def contrib_detail(cid):
 def contrib_decide(cid, data):
     status = str(data.get("status", ""))
     reason = str(data.get("reason", "")).strip()
-    if status not in ("reviewing", "admitted", "rejected"):
+    if status not in ("reviewing", "admitted", "rejected", "published"):
         raise ValueError("unbekannter Zielzustand")
     if len(reason) < 3:
         raise ValueError("Begründung fehlt")
