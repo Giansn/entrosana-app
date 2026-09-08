@@ -42,8 +42,8 @@ test("entfernen stellt die Datei wieder her, bis auf das Gleis", () => {
   assert.equal(removeEntry("modules", "reading-the-forest-floor", copy).removed, true);
   const now = readFileSync(copy, "utf8");
   // Das Gleis «contributed» bleibt absichtlich stehen; ohne diese eine Zeile ist alles wie vorher.
-  const withoutTrack = now.replace(/,\n\s*\{"id":"contributed", "name":"Contributed", "short":"contributed"\}/, "");
-  assert.equal(withoutTrack, original);
+  const strip = s => s.replace(/,\n\s*\{"id":"contributed", "name":"Contributed", "short":"contributed"\}/, "");
+  assert.equal(strip(now), strip(original));
   assert.equal(readCatalogue(copy).modules.list.length, readCatalogue(SRC).modules.list.length);
 });
 

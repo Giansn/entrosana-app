@@ -93,6 +93,12 @@
       shown++;
       box.appendChild(card(section, e));
     });
+    if (!box.children.length && box.getAttribute("data-empty")) {
+      var empty = document.createElement("p");
+      empty.className = "note note--idle";
+      empty.textContent = box.getAttribute("data-empty");
+      box.appendChild(empty);
+    }
     if (!shown) {
       var empty = document.createElement("div");
       empty.className = "card empty";
