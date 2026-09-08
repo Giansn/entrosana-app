@@ -40,7 +40,7 @@
   function prefill() {
     if (p) return p.steps.filter(function (s) { return !s.parent_id; }).map(function (s) {
       var line = "- " + stepText(s); var n = s.note || s.description; return n ? line + ": " + n : line; }).join("\n");
-    if (seedDef) return seedDef.steps.map(function (s) { return "- " + s.t + ": "; }).join("\n");
+    if (seedDef) return (seedDef.prompts || seedDef.steps).map(function (s) { return "- " + (typeof s === "string" ? s : s.t) + ": "; }).join("\n");   // Prompts fürs Formular, nicht die Prozessschritte
     return "";
   }
   var TEMPLATE = prefill().slice(0, 4000);
@@ -49,7 +49,7 @@
   function remember(id) { try { var l = JSON.parse(localStorage.getItem(SUBS_KEY) || "[]"); if (l.indexOf(id) < 0) l.push(id); localStorage.setItem(SUBS_KEY, JSON.stringify(l)); } catch (e) {} }
   function markDone() {
     if (!p || !hub) return;
-    var s = p.steps.filter(function (x) { return /^Submit to the Hub/i.test(stepText(x)); })[0];
+    var s = p.steps.filter(function (x) { return /^(Submit to the Hub|Send your proposal)/i.test(stepText(x)); })[0];
     if (!s || s.checked || s.done) return;
     s.checked = true; s.done = true; s.completed_at = s.at = new Date().toISOString(); if (s.section_id !== undefined) s.section_id = "done";
     hub.save(); hub.record("done", "Step done — Submit to the Hub", seed);

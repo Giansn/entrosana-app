@@ -207,34 +207,51 @@ window.__seeds = {
  "contribute/000": {
   "section": "contribute",
   "title": "Propose a track",
-  "who": "for something you want to build or teach",
+  "who": "the path from an idea to a module under your name",
   "steps": [
    {
-    "t": "Name the thing you want to build or teach",
-    "n": "Short enough to say out loud in one breath."
+    "t": "Send your proposal",
+    "n": "Form: entrosana.app/contribute/submit · Phone: 077 529 73 01 · Mail: sygnif@entrosana.com. A title, an area, a few sentences on what you bring and for whom.",
+    "i": "The form asks for name, e-mail, title, area, the proposal text and links to files you host. A call works as well; we write the proposal down with you."
    },
    {
-    "t": "Say who it is for",
-    "n": "A group specific enough that you could name three of them."
+    "t": "Confirm your address",
+    "n": "Open the link in the mail from sygnif@entrosana.com. The proposal counts once you did; unconfirmed proposals are deleted after 7 days."
    },
    {
-    "t": "Link what already exists",
-    "n": "Yours or someone else's. If nothing exists, write that down too."
+    "t": "Register and apply as contributor",
+    "n": "Sign in at entrosana.app/me with the same kind of link, set your name, apply as contributor. Collectors register freely; contributors are approved by the team before anything is published under their name.",
+    "i": "The application is a few sentences: where you work, what you would bring, why it belongs in the Hub. The team answers by mail."
    },
    {
-    "t": "State what you need from the Hub",
-    "n": "Review, time, compute, hosting, or a person who knows the subject."
+    "t": "Declare what is on offer",
+    "n": "Kind: module, track, tool or service · onsite, online or both · how long: one lesson, a half day, a series · how much content: slides, worksheets, hours of material · languages · who it is for.",
+    "i": "These six variables decide who can run it and where it fits. Put them in the proposal text, or in your first journal entry on entrosana.app/me."
    },
    {
-    "t": "Agree how it gets reviewed",
-    "n": "Who reads it, against what, and when they say yes or no."
+    "t": "Wait for the team's reading",
+    "n": "A person reads the proposal against the rules on /contribute and answers by mail with a reason: admitted, rejected or not yet. Follow it at entrosana.app/contribute/status."
    },
    {
-    "t": "Submit to the Hub",
-    "n": "Open entrosana.app/contribute/submit. It sends these steps with their records to the Hub and mails you a link to confirm."
+    "t": "Work it out together",
+    "n": "Name the expertise you bring: subject knowledge, teaching, technical, translation, review. Name what you need from the Hub: a teacher to run it, a reviewer, runway. Agree the shape: what gets built, by whom, by when.",
+    "i": "Write it into the proposal thread or your journal; the team answers from sygnif@entrosana.com. Runway means time, machines or a person who knows the subject."
+   },
+   {
+    "t": "Deliver and publish",
+    "n": "Files as https links you host: slides, worksheets, notes. The team publishes the admitted module as a draft under your name; a first class run makes it final."
    }
+  ],
+  "prompts": [
+   "Name the thing you want to build or teach",
+   "Say who it is for",
+   "What is on offer: kind · onsite or online · how long · how much content · languages",
+   "Link what already exists",
+   "Which expertise you bring, and what you need from the Hub",
+   "Agree how it gets reviewed"
   ]
  },
+
  "contribute/001": {
   "section": "contribute",
   "title": "Review someone else's work",

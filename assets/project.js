@@ -1097,5 +1097,25 @@
   });
 
   save();
+  /* Öffnen aus einer Checkliste (2026-09-09): /project?p=<seed>. Die Saat aus
+     seeds.js (oder die Hub-Datei aus app.js) wird ein Projekt dieses Bretts,
+     Schritte werden Aufgaben in «Pending», Notizen zur Beschreibung. Gibt es das
+     Projekt schon, wird es nur aktiv. Vorher landete «Open the checklist» auf
+     einem leeren Projekt, weil dieses Brett die Saaten nie gelesen hat. */
+  (function openFromQuery() {
+    var pid = new URLSearchParams(location.search).get("p"); if (!pid) return;
+    if (state.projects[pid]) { if (state.active !== pid) { state.active = pid; state.focus = null; save(); } return; }
+    var seed = (window.__seeds || {})[pid], hubP = null;
+    try { hubP = window.__hub && window.__hub.state().projects[pid]; } catch (e) {}
+    var steps = hubP && hubP.steps ? hubP.steps.filter(function (s) { return !s.parent_id; }).map(function (s) { return { t: s.content || s.t || "", n: s.note || s.description || "", done: !!(s.checked || s.done) }; })
+              : (seed && seed.steps ? seed.steps.map(function (s) { return { t: s.t || s.content || "", n: s.n || s.note || "", i: s.i || "", done: false }; }) : null);
+    if (!steps || !steps.length) return;
+    var now = new Date().toISOString();
+    var np = { id: pid, name: (hubP && hubP.title) || (seed && seed.title) || pid, seed: pid, created_at: now, updated_at: now, sort: "manual", view: "board", showDone: true,
+      tasks: steps.map(function (s, i) { return taskObj({ id: uid("t"), content: s.t, description: s.n, instructions: s.i || "", section_id: s.done ? "done" : "pending", checked: s.done, order: i, added_at: now }); }) };
+    state.projects[pid] = np; state.active = pid; state.focus = null; save();
+    try { if (window.__hub && !hubP) window.__hub.record("open", "Project opened from checklist " + pid, pid); } catch (e) {}
+  })();
+
   paint();
 })();

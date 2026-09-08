@@ -421,6 +421,7 @@
     }
     // Kette und Quittung
     var note = document.getElementById("chain-note"), box = document.getElementById("chain-receipt");
+    if (!note || !box) return;   // nur der Arbeitsplatz hat die Kettenzeile; andere Seiten rufen paintWorkspace ebenfalls
     if (!state.records.length) return;
     verifyChain().then(function (ok) {
       if (ok == null) {
