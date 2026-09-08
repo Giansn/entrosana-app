@@ -7,7 +7,7 @@
   var host = document.getElementById("request");
   if (!host) return;
   var q = new URLSearchParams(location.search), uid = 0, PHONE = "077 529 73 01", TEL = "tel:+41775297301";
-  var KINDS = [["module", "A module for my class or school"], ["track", "A track that does not exist yet"], ["tool", "A tool or connector"], ["service", "A service: run it with us, train us, advise us"], ["other", "Something else"]];
+  var KINDS = [["module", "A module for my class or school"], ["track", "A track that does not exist yet"], ["tool", "A tool or connector"], ["service", "A service: run it with us, train us, advise us"], ["contribute", "Contribute to a module (goes to sygnif@entrosana.com)"], ["report", "Report a module (goes to sygnif@entrosana.com)"], ["other", "Something else"]];
   function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
   function field(label, input, help, optional) {
     var id = "rq-" + (++uid), f = el("div", "field"), l = el("label", null, label);
@@ -56,7 +56,7 @@
     if (fails.length) { note("warn", fails.length === 1 ? "One field needs attention." : fails.length + " fields need attention."); fails[0].input.focus(); return; }
     go.disabled = true; note("idle", "Sending…");
     fetch("/api/requests", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name.value.trim(), email: email.value.trim(), org: org.value.trim(), kind: kind.value, text: text.value.trim(), website: hp.value }) })
+      body: JSON.stringify({ name: name.value.trim(), email: email.value.trim(), org: org.value.trim(), kind: kind.value, text: text.value.trim(), website: hp.value, module: (q.get("module") || "") }) })
       .then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); })
       .then(function (r) {
         if (r.s === 202) { note("ok", "Received as request #" + r.j.id + ". info@entrosana.com answers within a few days; a short confirmation is on its way to " + email.value.trim() + "."); go.textContent = "Sent"; }
@@ -65,4 +65,7 @@
       })
       .catch(function () { go.disabled = false; note("idle", "The Hub's server is not reachable right now. Write to info@entrosana.com or call " + PHONE + "."); });
   });
+  // Meldung zu einem Modul (2026-09-09): der Verweis steht im Text, die Art ist vorgewählt.
+  var mod = q.get("module");
+  if (mod && /^[a-z0-9-]{1,80}$/.test(mod) && !text.value) { text.value = "About the module " + location.origin + "/modules/" + mod + "\n\n"; }
 })();

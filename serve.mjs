@@ -6,6 +6,7 @@
 // bloss abgesichert. Neue Seite heisst: neuer Eintrag in ROUTES.
 import { createServer } from "node:http";
 import { readFileSync, statSync } from "node:fs";
+import { createHash } from "node:crypto";
 import vm from "node:vm";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -49,6 +50,8 @@ const ROUTES = new Map([
   // Stand eines Beitrags und Einreichen (Phase 4). Nicht in der Sitemap.
   ["/contribute/status",               { file: "status.html", type: HTML }],
   ["/me",                              { file: "me.html", type: HTML }],
+  ["/review",                          { file: "review.html", type: HTML }],   // Team: Schlange, Entscheide, Bewerbungen
+  ["/me/modules",                      { file: "module.html", type: HTML }],   // Beitragende: eigene Module bearbeiten
   ["/request",                         { file: "request.html", type: HTML }],
   ["/contribute/submit",               { file: "submit.html", type: HTML }],
   ["/assets/catalogue.js",   { file: "assets/catalogue.js",   type: JS }],
@@ -70,6 +73,8 @@ const ROUTES = new Map([
   ["/assets/theme.js",    { file: "assets/theme.js",    type: JS }],
   ["/assets/status.js",   { file: "assets/status.js",   type: JS }],
   ["/assets/me.js",       { file: "assets/me.js",       type: JS }],
+  ["/assets/review.js",       { file: "assets/review.js",       type: JS }],
+  ["/assets/module.js",       { file: "assets/module.js",       type: JS }],
   ["/assets/request.js",  { file: "assets/request.js",  type: JS }],
   ["/assets/languages.js", { file: "assets/languages.js", type: JS }],
   ["/assets/profile.js",  { file: "assets/profile.js",  type: JS }],
@@ -117,29 +122,54 @@ function deriveRoutes() {
 try { deriveRoutes(); } catch (e) { console.error("catalogue.js not derivable:", e.message); }
 
 const cache = new Map();
+// Versionen von Hand (?v=…) waren die Regel, weil die Kante Assets vier Stunden
+// vorhält. Seit 2026-09-09 setzt der Server sie selbst: jeder Verweis auf
+// /assets/<datei> in einer HTML-Seite bekommt den Inhalts-Hash der Datei als
+// ?v=. Ändert sich ein Asset (Katalog, Checklisten, CSS), ändert sich der
+// Verweis, und die Kante liefert die neue Fassung sofort. Das <html>-Element
+// trägt den Hash des Katalogs (data-cv), damit search.js ihn nachladen kann.
+const ASSET_REF = /(["'])\/assets\/([A-Za-z0-9._-]+)(\?v=[0-9A-Za-z_-]+)?\1/g;
+function assetTag(name) {
+  const e = cache.get("assets/" + name);
+  return e ? createHash("sha1").update(e.body).digest("base64url").slice(0, 10) : null;
+}
+function version(src) {
+  const cv = assetTag("catalogue.js") || "";
+  return src.replace(ASSET_REF, (m, q, name) => { const tag = assetTag(name); return tag ? `${q}/assets/${name}?v=${tag}${q}` : m; })
+            .replace(/<html(\s|>)/, (m, s) => `<html data-cv="${cv}"${s}`);
+}
 function load(route) {
   const path = join(ROOT, route.file);
-  const body = readFileSync(path);
-  const etag = `W/"${statSync(path).mtimeMs.toString(36)}-${body.length.toString(36)}"`;
-  cache.set(route.file, { body, etag, type: route.type });
+  const source = readFileSync(path);
+  const s = statSync(path);
+  const srcTag = `${s.mtimeMs.toString(36)}-${source.length.toString(36)}`;
+  const isHtml = route.type === HTML;
+  const body = isHtml ? Buffer.from(version(source.toString("utf8")), "utf8") : source;
+  const etag = isHtml ? `W/"${createHash("sha1").update(body).digest("base64url").slice(0, 16)}"` : `W/"${srcTag}"`;
+  cache.set(route.file, { body, etag, type: route.type, srcTag });
 }
 // detail.html gehört zu keiner festen Route mehr, wird aber von allen
 // abgeleiteten gebraucht; deshalb steht sie hier ausdrücklich.
 const DETAIL = { file: "detail.html", type: HTML };
 const PROFILE = { file: "profile.html", type: HTML };   // /p/<id>: öffentliches Profil
 const FILES = () => [...ROUTES.values(), DETAIL, PROFILE];
-for (const route of FILES()) load(route);
+// Erst die Assets, dann die Seiten: die Seiten brauchen die Hashes der Assets.
+for (const route of FILES()) if (route.type !== HTML) load(route);
+for (const route of FILES()) if (route.type === HTML) load(route);
 
-// Beim Ändern einer Datei neu einlesen, ohne Neustart.
+// Beim Ändern einer Datei neu einlesen, ohne Neustart. Ändert sich ein Asset,
+// werden alle Seiten neu versioniert.
 setInterval(() => {
   try { deriveRoutes(); } catch (e) { console.error("catalogue.js not derivable:", e.message); }
+  let assetsChanged = false;
   for (const route of FILES()) {
     try {
       const s = statSync(join(ROOT, route.file));
-      const etag = `W/"${s.mtimeMs.toString(36)}-${s.size.toString(36)}"`;
-      if (cache.get(route.file).etag !== etag) load(route);
+      const tag = `${s.mtimeMs.toString(36)}-${s.size.toString(36)}`;
+      if (cache.get(route.file).srcTag !== tag) { load(route); if (route.type !== HTML) assetsChanged = true; }
     } catch { /* Datei kurzzeitig weg: alte Fassung weiter ausliefern */ }
   }
+  if (assetsChanged) for (const route of FILES()) if (route.type === HTML) load(route);
 }, 5000);
 
 // Nur Query und abschliessenden Schrägstrich entfernen; kein Auflösen von "..".

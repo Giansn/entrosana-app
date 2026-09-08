@@ -23,6 +23,8 @@ window.__catalogue = {
     "slug":"your-value-system",
     "by":"Gianluca Kühne",
     "track":"available",
+    "area":"social",
+    "updated":"2026-09-08",
     "state":"available",
     "title":"Value System",
     "who":"social · 9 slides + 2-page worksheet · English and German",
@@ -54,6 +56,7 @@ window.__catalogue = {
     "slug":"social",
     "seed":"modules/000",
     "track":"onrequest",
+    "area":"social",
     "title":"Social",
     "who":"social work driven · social skills · community building",
     "lede":"How we create values, talk, decide, and live together or alone, including how to read the influences around us. But also the other way around: how do we influence our surroundings? We can help to move learning towards a process that puts relations into perspective.",
@@ -77,6 +80,7 @@ window.__catalogue = {
     "slug":"nature-based",
     "seed":"modules/001",
     "track":"onrequest",
+    "area":"nature-based",
     "title":"Nature-based",
     "who":"nature driven · ecology · outdoor learning  · elements ",
     "lede":"Out of the classroom and into the forest, with experiences that revitalize mind and body.\nLearning where the physical boundaries of nature and of ourselves can be found in a healthy way. Adventures, science and gardening are examples for nature driven learning.",
@@ -100,6 +104,7 @@ window.__catalogue = {
     "slug":"technical",
     "seed":"modules/002",
     "track":"onrequest",
+    "area":"technical",
     "title":"Technical",
     "who":"code · computing · data features  · digital tools ",
     "lede":"How software, data and machines actually work, and how they can be used productively. Taught in different depths and from different approaches. Always with the question in mind: how can I learn with the technology? Instead of replacing learning with technology.",
@@ -122,13 +127,12 @@ window.__catalogue = {
    {
     "slug":"dedicated-or-unified-gpu-memory-setup-and-use-cases",
     "track":"contributed",
-    "state":"draft",
-    "draft":true,
+    "state":"development",
     "by":"SYGNIF",
     "title":"Dedicated or unified GPU memory: setup and use cases",
     "who":"technical · contributed",
     "lede":"- Name the thing you want to build or teach: An 11-slide deck in entrosana's light layout on the difference between a dedicated GPU (its own VRAM, reached over PCIe) and unified memory (CPU and GPU sh",
-    "meta":"contributed · draft, under review for publication",
+    "meta":"contributed · text by the contributor",
     "about":"- Name the thing you want to build or teach: An 11-slide deck in entrosana's light layout on the difference between a dedicated GPU (its own VRAM, reached over PCIe) and unified memory (CPU and GPU share one pool): what each looks like in a machine, the two numbers that decide (capacity and bandwidth, with published figures), the setup each one demands, where each one wins, a three-question rule of thumb, and five questions a school or small team should answer before buying.\n- Say who it is for: People who run models on their own machines or decide what to buy for a school, a practice or a small team; secondary II informatics as a reading; no prior knowledge of GPU architecture.\n- Link what already exists: The Hub's own setup (training rented on dedicated GPUs, small models served locally); manufacturer specifications for the bandwidth chart (M4 Max 546 GB/s, M2 Ultra 800 GB/s, RTX 4090 1008 GB/s, RTX 5090 1792 GB/s, H100 SXM 3350 GB/s).\n- State what you need from the Hub: One reader who runs models on unified memory and one who runs a dedicated card, to say where the rule of thumb fails; a decision on whether the tokens-per-second ceiling should stay in the deck.\n- Agree how it gets reviewed: Against the rules on /contribute: every number traceable to a specification, every claim testable on a real machine, no black box. The deck stays a draft until two readers have run it against their hardware.\n- Submit to the Hub: Slides as PPTX (editable) and PDF, English; a German version and a one-page worksheet follow after the first review. Published under the name SYGNIF, with the record of its making.",
     "facts":[
      ["Area","technical"],
@@ -138,25 +142,28 @@ window.__catalogue = {
     ],
     "downloads":[
      {"lang":"Files", "files":[["Slides (PPTX, editable)","https://entrosana.com/wp-content/uploads/2026/09/sygnif-gpu-memory-en.pptx"],["Slides (PDF)","https://entrosana.com/wp-content/uploads/2026/09/sygnif-gpu-memory-en.pdf"]]}
-    ]
+    ],
+    "area":"technical",
+    "updated":"2026-09-09"
    },
    {
     "slug":"the-record-trail-making-a-story-checkable-by-hand",
     "track":"contributed",
-    "state":"draft",
-    "draft":true,
+    "state":"development",
     "by":"SYGNIF",
     "title":"The record trail: making a story checkable by hand",
     "who":"technical · contributed",
     "lede":"- Name the thing you want to build or teach: A 90-minute lesson in which a class builds a record trail on paper.",
-    "meta":"contributed · draft, under review for publication",
+    "meta":"contributed · text by the contributor",
     "about":"- Name the thing you want to build or teach: A 90-minute lesson in which a class builds a record trail on paper. Each step is written down and sealed against the previous one with a short hash; a tampered line is found by recomputing, not by trusting. It ends at the Hub's own trail on entrosana.app/records, so learners see the same idea running in software they can inspect.\n- Say who it is for: Cycle 3 (grades 7 to 9) and secondary II. Lehrplan 21 «Medien und Informatik», MI.2.3 (data: structure, security) and MI.1.4 (read and judge media). Teachers without an informatics background; no software in the first hour.\n- Link what already exists: entrosana.app/records and «Verify chain» in the Hub's rail; the receipt on entrosana.com/hub; SHA-256 as the Hub uses it, simplified for paper to a letter sum modulo 97.\n- State what you need from the Hub: one teacher to run the first version with a real class and send back the slide they had to change; one reader for the German worksheet.\n- Agree how it gets reviewed: against the rules on /contribute. Does the lesson do what it says, meaning the class finds the tampered line without the teacher pointing at it? Is every sentence about hashes correct? Is nothing in it a black box? The files stay drafts until a class has run them.\n- Submit to the Hub: slides (9), worksheet (2 pages), teacher notes (1 page), English and German, delivered as drafts within two weeks of admission. Published under the name SYGNIF, with the record of its making.",
     "facts":[
      ["Area","technical"],
      ["Contributed by","SYGNIF"],
      ["Status","admitted; text as submitted, not yet edited"],
      ["Record trail","not verified"]
-    ]
+    ],
+    "area":"technical",
+    "updated":"2026-09-09"
    }
   ]
  },

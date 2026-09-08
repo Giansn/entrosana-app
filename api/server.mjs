@@ -16,7 +16,7 @@ import { open } from "./db.mjs";
 import { append as auditAppend, verify as auditVerify } from "./audit.mjs";
 import { can, rolesOf } from "./policy.mjs";
 import { validate as validateContribution, actionFor, verifyTrail, publishChecks } from "./contributions.mjs";
-import { appendEntry, removeEntry, entryFor, readCatalogue } from "./publish.mjs";
+import { appendEntry, removeEntry, updateEntry as updateCatalogueEntry, entryFor, readCatalogue } from "./publish.mjs";
 import { exportActor } from "./maintenance.mjs";
 import { standingOf, currentApplication, openApplication, listApplications, decideApplication } from "./applications.mjs";
 import { LANG_CODES, MAX_LANGS } from "./languages.mjs";
@@ -32,7 +32,7 @@ const PUBLIC = process.env.PUBLIC_ORIGIN || "https://entrosana.app";
 const INBOX = process.env.INBOX || "sygnif@entrosana.com";   // Postfach der Beitragenden, sortiert von sygnif
 const INFO = process.env.INFO_INBOX || "info@entrosana.com";   // Anfragen: Module, Tracks, Werkzeuge, Dienste
 const PHONE = "077 529 73 01";
-const REQUEST_KINDS = ["module", "track", "tool", "service", "other"];
+const REQUEST_KINDS = ["module", "track", "tool", "service", "report", "contribute", "other"];   // report/contribute (2026-09-09): zu einem Modul, gehen an sygnif@   // report (2026-09-09): Meldung zu einem Modul, geht an sygnif@
 const MAIL = process.env.MAIL_SEND || join(HERE, "..", "tools", "mail-send.py");
 const BODY_CAP = 256 * 1024;  // Kette eines Geräts als Hashes passt hinein
 const RATE = { limit: 5, windowMs: 3600e3 };   // docs/contributions.md, Entscheid 5
@@ -227,7 +227,7 @@ function publicRow(c, full) {
   if (full) {
     Object.assign(r, { summary: c.summary, files: JSON.parse(c.files_json || "[]"), trail: c.trail_md,
                        records: JSON.parse(c.trail_json || "[]"), actor_id: c.actor_id, decided_by: c.decided_by });
-    if (c.status === "admitted") { const sub = db.prepare("SELECT * FROM actors WHERE id = ?").get(c.actor_id); if (sub) sub.roles = rolesOf(db, sub.id); r.checks = publishChecks(c, sub); }   // mit Rollen, sonst meldet das Tor fälschlich «not approved»
+    if (c.status === "admitted" || c.status === "reviewing") { const sub = db.prepare("SELECT * FROM actors WHERE id = ?").get(c.actor_id); if (sub) sub.roles = rolesOf(db, sub.id); r.checks = publishChecks(c, sub); }   // mit Rollen, sonst meldet das Tor fälschlich «not approved»
   }
   return r;
 }
@@ -324,11 +324,15 @@ patterns.push([/^\/api\/contributions\/(\d{1,12})$/, {
       // Das Tor: erst die Prüfungen, dann die zweite Lesung, dann der Katalog.
       const fails = publishChecks(c, submitter);
       if (fails.length) throw new HttpError(409, "publication blocked: " + fails.join("; "));
-      const sameReviewer = c.decided_by === ctx.actor.id;
+      const oneStep = c.status === "reviewing";   // 2026-09-09: Annahme und Veröffentlichung in einem Schritt
+      const sameReviewer = oneStep || c.decided_by === ctx.actor.id;
       if (sameReviewer && FOUR_EYES) throw new HttpError(409, "second reading required: the same actor admitted this contribution");
       const r = appendEntry("modules", entryFor(c, submitter));
-      db.prepare("UPDATE contributions SET status = 'published', published = ?, published_by = ?, slug = ?, reason = ? WHERE id = ?")
-        .run(now, ctx.actor.id, r.slug, reason, c.id);
+      db.prepare(`UPDATE contributions SET status = 'published', published = ?, published_by = ?, slug = ?, reason = ?,
+                  decided = COALESCE(decided, ?), decided_by = COALESCE(decided_by, ?) WHERE id = ?`)
+        .run(now, ctx.actor.id, r.slug, reason, now, ctx.actor.id, c.id);
+      db.prepare("INSERT OR IGNORE INTO module_contributors(slug, actor_id, added, added_by) VALUES (?,?,?,?)").run(r.slug, c.actor_id, now, ctx.actor.id);
+      if (oneStep) auditAppend(db, { kind: "contribution.admitted", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: "admitted and published in one step — " + reason });
       auditAppend(db, { kind: "publish", actor_id: ctx.actor.id, resource: "contribution:" + c.id,
         text: `published as modules/${r.slug}` + (sameReviewer ? " (no second reading: same actor admitted and published)" : "") + " — " + reason });
       notify(submitter, c, "published", reason, `${PUBLIC}/modules/${r.slug}`);
@@ -339,6 +343,7 @@ patterns.push([/^\/api\/contributions\/(\d{1,12})$/, {
       if (c.slug) { const cat = readCatalogue(); const entry = ((cat.modules || {}).list || []).find(x => x.slug === c.slug);
         if (entry && entry.track !== "contributed") throw new HttpError(409, "original catalogue entry: it is edited in the catalogue, not taken back here"); }
       if (c.slug) { try { removeEntry("modules", c.slug); } catch (e) { auditAppend(db, { kind: "unpublish.failed", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: String(e.message).slice(0, 200) }); } }
+      if (c.slug) { db.prepare("DELETE FROM module_contributors WHERE slug = ?").run(c.slug); db.prepare("DELETE FROM points WHERE slug = ?").run(c.slug); }
       db.prepare("UPDATE contributions SET status = 'admitted', published = NULL, published_by = NULL, slug = NULL, reason = ? WHERE id = ?").run(reason, c.id);
       auditAppend(db, { kind: "unpublish", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: `taken back from the catalogue — ${reason}` });
       return send(ctx.res, 200, { ok: true, item: publicRow(getContribution(c.id), true) });
@@ -351,6 +356,111 @@ patterns.push([/^\/api\/contributions\/(\d{1,12})$/, {
       text: reason || (action === "withdraw" ? "withdrawn by submitter" : target) });
     if (target === "admitted" || target === "rejected") notify(submitter, c, target, reason, null);
     send(ctx.res, 200, { ok: true, item: publicRow(getContribution(c.id), true) });
+  },
+}]);
+
+// ── Module (2026-09-09): Beitragende bearbeiten ihre veröffentlichten Module, ein
+// Modul kann mehrere Beitragende haben, jedes Konto kann einem Modul einen Punkt geben.
+const MODULE_STATES = ["idea", "development", "finished"];
+const SLUG_RE = /^[a-z0-9-]{1,80}$/;
+function moduleEntry(slug) { return (((readCatalogue().modules || {}).list) || []).find(x => x.slug === slug) || null; }
+function contributorsOf(slug) {
+  return db.prepare("SELECT a.id, a.name FROM module_contributors m JOIN actors a ON a.id = m.actor_id WHERE m.slug = ? ORDER BY m.added").all(slug);
+}
+function pointsCount(slug) { return db.prepare("SELECT COUNT(*) n FROM points WHERE slug = ?").get(slug).n; }
+function moduleView(slug, e) {
+  return { slug, title: e.title, who: e.who || "", lede: e.lede || "", about: e.about || "", note: e.note || "", state: e.state || "development",
+           by: e.by || "", contributors: contributorsOf(slug), points: pointsCount(slug), url: `${PUBLIC}/modules/${slug}` };
+}
+function moduleAccess(ctx, slug) {
+  if (!ctx.actor) throw new HttpError(401, "no actor");
+  if (!SLUG_RE.test(slug)) throw new HttpError(404, "module not found");
+  const mine = db.prepare("SELECT 1 FROM module_contributors WHERE slug = ? AND actor_id = ?").get(slug, ctx.actor.id);
+  if (!mine && !can(ctx.actor, "publish")) throw new HttpError(403, "not a contributor of this module");
+  const e = moduleEntry(slug);
+  if (!e) throw new HttpError(404, "module not found");
+  if (e.track !== "contributed") throw new HttpError(409, "original catalogue entry: the team edits it in the console");
+  return e;
+}
+function refreshBy(slug) {
+  const names = contributorsOf(slug).map(c => c.name).filter(Boolean);
+  updateCatalogueEntry("modules", slug, { by: names.join(", ") });
+}
+routes.set("GET /api/me/modules", (ctx) => {
+  if (!ctx.actor) throw new HttpError(401, "no actor");
+  const slugs = db.prepare("SELECT slug FROM module_contributors WHERE actor_id = ? ORDER BY added").all(ctx.actor.id).map(r => r.slug);
+  const items = slugs.map(s => { const e = moduleEntry(s); return e ? moduleView(s, e) : null; }).filter(Boolean);
+  send(ctx.res, 200, { items });
+});
+patterns.push([/^\/api\/me\/modules\/([a-z0-9-]{1,80})$/, {
+  GET: (ctx, [slug]) => { const e = moduleAccess(ctx, slug); send(ctx.res, 200, { item: moduleView(slug, e) }); },
+  PATCH: async (ctx, [slug]) => {
+    moduleAccess(ctx, slug);
+    const body = await readJson(ctx.req), fields = {};
+    const str = (v, max) => String(v == null ? "" : v).trim().slice(0, max);
+    if (body.title !== undefined) { const v = str(body.title, 120); if (v.length < 3) throw new HttpError(400, "title too short"); fields.title = v; }
+    if (body.who !== undefined) fields.who = str(body.who, 160);
+    if (body.lede !== undefined) fields.lede = str(body.lede, 300);
+    if (body.about !== undefined) fields.about = str(body.about, 4000);
+    if (body.note !== undefined) fields.note = str(body.note, 2000) || null;
+    if (body.state !== undefined) { if (!MODULE_STATES.includes(body.state)) throw new HttpError(400, "state unknown"); fields.state = body.state; }
+    if (!Object.keys(fields).length) throw new HttpError(400, "nothing to change");
+    fields.updated = new Date().toISOString().slice(0, 10);
+    lift(() => updateCatalogueEntry("modules", slug, fields));
+    auditAppend(db, { kind: "module.edit", actor_id: ctx.actor.id, resource: "module:" + slug, text: "fields: " + Object.keys(fields).join(", ") });
+    send(ctx.res, 200, { ok: true, item: moduleView(slug, moduleEntry(slug)) });
+  },
+}]);
+patterns.push([/^\/api\/me\/modules\/([a-z0-9-]{1,80})\/contributors$/, {
+  POST: async (ctx, [slug]) => {
+    moduleAccess(ctx, slug);
+    const body = await readJson(ctx.req);
+    const email = String(body.email || "").trim().toLowerCase();
+    const a = email ? db.prepare("SELECT id, name FROM actors WHERE email = ?").get(email) : null;
+    if (!a) throw new HttpError(404, "no account with this address");
+    const roles = rolesOf(db, a.id);
+    if (!roles.some(r => ["contributor", "reviewer", "owner"].includes(r))) throw new HttpError(409, "this account is not approved as contributor yet");
+    if (!a.name) throw new HttpError(409, "this account has no name yet");
+    db.prepare("INSERT OR IGNORE INTO module_contributors(slug, actor_id, added, added_by) VALUES (?,?,?,?)").run(slug, a.id, new Date().toISOString(), ctx.actor.id);
+    lift(() => refreshBy(slug));
+    auditAppend(db, { kind: "module.contributor", actor_id: ctx.actor.id, resource: "module:" + slug, text: `contributor added: actor ${a.id}` });
+    send(ctx.res, 200, { ok: true, item: moduleView(slug, moduleEntry(slug)) });
+  },
+}]);
+patterns.push([/^\/api\/me\/modules\/([a-z0-9-]{1,80})\/contributors\/(\d{1,12})$/, {
+  DELETE: (ctx, [slug, id]) => {
+    moduleAccess(ctx, slug);
+    if (db.prepare("SELECT COUNT(*) n FROM module_contributors WHERE slug = ?").get(slug).n <= 1) throw new HttpError(409, "a module keeps at least one contributor");
+    db.prepare("DELETE FROM module_contributors WHERE slug = ? AND actor_id = ?").run(slug, Number(id));
+    lift(() => refreshBy(slug));
+    auditAppend(db, { kind: "module.contributor", actor_id: ctx.actor.id, resource: "module:" + slug, text: `contributor removed: actor ${id}` });
+    send(ctx.res, 200, { ok: true, item: moduleView(slug, moduleEntry(slug)) });
+  },
+}]);
+// Beitragende und Punkte je Modul, für die Karten der Modulseite (öffentlich, ohne Konto).
+routes.set("GET /api/modules/meta", (ctx) => {
+  const items = {};
+  for (const r of db.prepare("SELECT m.slug, a.id, a.name FROM module_contributors m JOIN actors a ON a.id = m.actor_id ORDER BY m.slug, m.added").all()) {
+    (items[r.slug] = items[r.slug] || { contributors: [], points: 0 }).contributors.push({ id: r.id, name: r.name || "" });
+  }
+  for (const r of db.prepare("SELECT slug, COUNT(*) n FROM points GROUP BY slug").all()) (items[r.slug] = items[r.slug] || { contributors: [], points: 0 }).points = r.n;
+  send(ctx.res, 200, { items });
+});
+// Punkte: Zählung für alle (auch ohne Konto), Umschalten nur mit Konto.
+routes.set("GET /api/points", (ctx) => {
+  const counts = Object.fromEntries(db.prepare("SELECT slug, COUNT(*) n FROM points GROUP BY slug").all().map(r => [r.slug, r.n]));
+  const mine = ctx.actor ? db.prepare("SELECT slug FROM points WHERE actor_id = ?").all(ctx.actor.id).map(r => r.slug) : [];
+  send(ctx.res, 200, { counts, mine });
+});
+patterns.push([/^\/api\/modules\/([a-z0-9-]{1,80})\/point$/, {
+  POST: (ctx, [slug]) => {
+    if (!ctx.actor || ctx.actor.kind !== "email") throw new HttpError(401, "sign in to give a point");
+    if (!moduleEntry(slug)) throw new HttpError(404, "module not found");
+    if (limited("points:" + ctx.actor.id, 120)) throw new HttpError(429, "too many changes; try again later");
+    const had = db.prepare("SELECT 1 FROM points WHERE slug = ? AND actor_id = ?").get(slug, ctx.actor.id);
+    if (had) db.prepare("DELETE FROM points WHERE slug = ? AND actor_id = ?").run(slug, ctx.actor.id);
+    else db.prepare("INSERT INTO points(slug, actor_id, created) VALUES (?,?,?)").run(slug, ctx.actor.id, new Date().toISOString());
+    send(ctx.res, 200, { ok: true, mine: !had, points: pointsCount(slug) });
   },
 }]);
 
@@ -428,6 +538,7 @@ routes.set("POST /api/requests", async (ctx) => {
   if (String(body.website || "").trim()) return send(ctx.res, 202, { ok: true, id: 0 });   // Honigfalle
   const name = String(body.name || "").trim().slice(0, 120), email = String(body.email || "").trim().toLowerCase();
   const org = String(body.org || "").trim().slice(0, 200), kind = REQUEST_KINDS.includes(body.kind) ? body.kind : "other";
+  const moduleSlug = /^[a-z0-9-]{1,80}$/.test(String(body.module || "")) ? String(body.module) : "";
   const text = String(body.text || "").trim().slice(0, 4000);
   if (name.length < 2) throw new HttpError(400, "name missing");
   if (!EMAIL.test(email) || email.length > 254) throw new HttpError(400, "bad email");
@@ -437,7 +548,7 @@ routes.set("POST /api/requests", async (ctx) => {
   const id = db.prepare("INSERT INTO requests(name, email, org, kind, text, created) VALUES (?,?,?,?,?,?)").run(name, email, org || null, kind, text, now).lastInsertRowid;
   auditAppend(db, { kind: "request.received", actor_id: ctx.actor ? ctx.actor.id : null, resource: "request:" + id, text: `${kind} request received` });
   if (!limited("mail:global", MAIL_CAP)) {
-    mail(INFO, `entrosana: ${kind} request #${id} from ${name}`, `${name} <${email}>${org ? " · " + org : ""} asks (${kind}):\n\n${text}\n\nReply to ${email}.\n\nentrosana`)
+    mail((kind === "report" || kind === "contribute") ? INBOX : INFO, `entrosana: ${kind === "report" ? "module report" : kind === "contribute" ? "offer to contribute" : kind + " request"} #${id} from ${name}`, `${name} <${email}>${org ? " · " + org : ""} ${kind === "report" ? "reports" : kind === "contribute" ? "offers to contribute" : "asks (" + kind + ")"}:\n\n${moduleSlug ? "Module: " + PUBLIC + "/modules/" + moduleSlug + "\n\n" : ""}${text}\n\nReply to ${email}.\n\nentrosana`)
       .then(r => { if (r.ok) db.prepare("UPDATE requests SET mailed = ? WHERE id = ?").run(new Date().toISOString(), id);
         auditAppend(db, { kind: "request.mail", actor_id: null, resource: "request:" + id, text: r.ok ? "info inbox notified" : "info mail failed: " + (r.err || r.code) }); });
     mail(email, "entrosana: we received your request", `Hello,\n\nyour request #${id} reached entrosana. info@entrosana.com answers within a few days; you can also call ${PHONE}.\n\nIf you sent nothing to entrosana.app, ignore this mail.\n\nentrosana`);

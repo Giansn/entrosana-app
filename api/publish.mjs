@@ -150,6 +150,30 @@ export function removeEntry(section, slug, path = CATALOGUE) {
   return { removed: true, backup: b };
 }
 
+// Einen bestehenden Eintrag an Ort und Stelle ändern (2026-09-09): nur Einträge,
+// die als striktes JSON dastehen — also die von publish geschriebenen. Die Felder
+// werden zusammengeführt, der Eintrag neu gesetzt, der Rest der Datei bleibt.
+export function updateEntry(section, slug, fields, path = CATALOGUE) {
+  const src = readFileSync(path, "utf8");
+  const { open, close } = findList(src, section);
+  const body = src.slice(open + 1, close);
+  const at = body.indexOf(`"slug":${JSON.stringify(slug)}`);
+  if (at < 0) throw new Error("entry not found");
+  let start = body.lastIndexOf("\n", at); while (start > 0 && !/^\s*\{\s*$/.test(body.slice(start + 1, body.indexOf("\n", start + 1)))) start = body.lastIndexOf("\n", start - 1);
+  const lineStart = start + 1;
+  const indent = (body.slice(lineStart).match(/^( *)\{/) || [, "     "])[1];
+  let depth = 0, i = body.indexOf("{", lineStart), inStr = null;
+  for (; i < body.length; i++) { const ch = body[i]; if (inStr) { if (ch === "\\") { i++; continue; } if (ch === inStr) inStr = null; continue; } if (ch === '"') { inStr = ch; continue; } if (ch === "{") depth++; else if (ch === "}") { depth--; if (depth === 0) break; } }
+  let obj; try { obj = JSON.parse(body.slice(lineStart, i + 1)); } catch { throw new Error("entry is not strict JSON; edit it in the console"); }
+  for (const [k, v] of Object.entries(fields)) { if (v === undefined) continue; if (v === null) delete obj[k]; else obj[k] = v; }
+  const newBody = body.slice(0, lineStart) + render(obj, indent) + body.slice(i + 1);
+  const out = src.slice(0, open + 1) + newBody + src.slice(close);
+  readCatalogueSource(out);
+  const b = backup(path);
+  writeFileSync(path, out);
+  return { slug, backup: b, entry: obj };
+}
+
 // Aus einem Beitrag den Eintrag bauen. Kein Wort wird erfunden: Texte kommen
 // aus der Einreichung, der Rest ist Kennzeichnung.
 export function entryFor(c, actor) {
@@ -158,11 +182,14 @@ export function entryFor(c, actor) {
   const lede = summary.split(/(?<=[.!?])\s+/)[0].slice(0, 200);
   const files = (() => { try { return JSON.parse(c.files_json || "[]"); } catch { return []; } })();
   const entry = {
-    slug: slugify(c.title), track: TRACK.id, state: "draft", draft: true, by,
+    // 2026-09-09: veröffentlicht heisst veröffentlicht — keine Entwurfsmarke mehr. Der Stand
+    // beginnt bei «still in development»; die Beitragenden setzen ihn auf /me/modules.
+    slug: slugify(c.title), track: TRACK.id, state: "development", draft: false, by,
+    area: c.area, updated: new Date().toISOString().slice(0, 10),   // Gebiet für die Abschnitte der Modulseite, Datum der letzten Änderung
     title: String(c.title), who: `${c.area} · contributed`, lede,
-    meta: "contributed · draft, under review for publication",
+    meta: "contributed · text by the contributor",
     about: summary,
-    facts: [["Area", c.area], ["Contributed by", by], ["Status", "admitted; text as submitted, not yet edited"],
+    facts: [["Area", c.area], ["Contributed by", by], ["Status", "published; text as submitted by the contributor"],
             ["Record trail", c.trail_ok === 1 ? "verified on the server" : "not verified"]],
   };
   if (files.length) entry.downloads = [{ lang: "Files", files: files.map(f => [f.label, f.url]) }];

@@ -1819,3 +1819,32 @@ html{ scrollbar-gutter:stable }
 .me__day .me__n{ letter-spacing:0; text-transform:none }
 .me__day + .me__row{ border-top:0 }
 
+/* Zustände der Karten (2026-09-09): development bernstein, idea grau; finished bleibt note--ok. */
+.note--dev{ color:#C9A227 } .note--dev .led{ background:#C9A227; box-shadow:0 0 6px rgba(201,162,39,.55) }
+.note--idea{ color:var(--muted) } .note--idea .led{ background:var(--muted); box-shadow:none }
+
+/* Schlange (/review), eigene Module (/me/modules), Punkte (2026-09-09). */
+.chips{ display:flex; flex-wrap:wrap; gap:.4rem; margin:.6rem 0 1rem }
+button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
+.chip--on{ background:var(--seal); color:#071316; border-color:var(--seal) }
+.rev{ display:grid; grid-template-columns:8rem minmax(0,1fr) 12rem 6rem 4rem; gap:.8rem; padding:.75rem 0; border-bottom:1px solid var(--line); align-items:start }
+.rev__t{ font-weight:600; margin:0 } .rev__t a{ color:inherit }
+.rev__pre{ white-space:pre-wrap; font:inherit; line-height:1.55; margin:.4rem 0 1rem }
+.rev__tbl{ width:100%; border-collapse:collapse; font-size:.9rem }
+.rev__tbl td,.rev__tbl th{ padding:.4rem .5rem; border-bottom:1px solid var(--line); vertical-align:top; text-align:left }
+.rev__tbl th{ color:var(--muted); font-weight:400 }
+.rev__form{ display:grid; gap:.6rem; max-width:44rem; margin:.6rem 0 }
+.rev__form select,.rev__form textarea,.rev__form input{ font:inherit; font-size:.95rem; padding:.55em .7em; border:1px solid var(--line); border-radius:8px; background:transparent; color:inherit; max-width:100% }
+.rev__form textarea{ min-height:6rem }
+.mods{ display:grid; gap:1rem }
+.mods .rev__form{ max-width:none }
+.ptbar{ display:flex; flex-wrap:wrap; gap:.6rem; align-items:center }
+@media (max-width:760px){ .rev{ grid-template-columns:1fr; gap:.25rem } }
+
+/* Modulseite in Gebieten (2026-09-09): Karte + Kontaktzeile als ein Element der Kartenwand. */
+.mitem{ display:flex; flex-direction:column; gap:.45rem; min-width:0 }
+.mitem .mcard{ flex:1 }
+.mcard__contact{ margin:0 .2rem; font-family:var(--font-mono); font-size:.74rem; color:var(--muted); line-height:1.7; overflow-wrap:anywhere }
+.mcard__contact a{ color:var(--seal) }
+.area__intro{ margin-bottom:.9rem } .area__intro .work__sub{ margin-bottom:.3rem }
+

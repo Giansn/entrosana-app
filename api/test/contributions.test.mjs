@@ -44,7 +44,7 @@ test("zustandsmaschine", () => {
   assert.equal(actionFor("rejected", "reviewing"), null);
   assert.equal(actionFor("admitted", "published"), "publish");     // das Tor
   assert.equal(actionFor("published", "admitted"), "publish");     // zurücknehmen
-  assert.equal(actionFor("reviewing", "published"), null);         // nicht ohne Annahme
+  assert.equal(actionFor("reviewing", "published"), "publish");    // seit 2026-09-09 ein Schritt: Annahme und Veröffentlichung
   assert.equal(actionFor("published", "rejected"), null);
 });
 

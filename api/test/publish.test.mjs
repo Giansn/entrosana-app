@@ -24,7 +24,7 @@ test("anhängen: auswertbar, im Abschnitt modules, Gleis contributed vorhanden, 
   const after = readCatalogue(copy);
   assert.equal(after.modules.list.length, before.modules.list.length + 1);
   const e = after.modules.list[after.modules.list.length - 1];
-  assert.equal(e.by, "Anna Beispiel"); assert.equal(e.track, "contributed"); assert.equal(e.draft, true);
+  assert.equal(e.by, "Anna Beispiel"); assert.equal(e.track, "contributed"); assert.equal(e.draft, false); assert.equal(e.state, "development");   // seit 2026-09-09: veröffentlicht ist veröffentlicht
   assert.equal(JSON.stringify(e.downloads[0].files[0]), JSON.stringify(["Sheet", "https://example.org/s.pdf"]));   // Werte aus dem Sandkasten, andere Realm
   assert.ok(after.modules.tracks.some(t => t.id === "contributed"));
   assert.equal(after.tools.list.length, before.tools.list.length);

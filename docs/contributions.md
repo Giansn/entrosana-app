@@ -328,8 +328,8 @@ zweiter Weg). Tailscale Serve und Funnel leiten nichts auf diese Ports.
 
 | Konsole | Adresse | Was |
 |---|---|---|
-| Site-Admin (`~/entrosana-site/admin.py`) | http://100.115.236.97:8393/hub | Übersicht; `/hub/accounts` Konten mit Profil, Stand, Rollen, Geräten; `/hub/applications` Bewerbungen freigeben oder ablehnen; `/hub/requests` Anfragen, «erledigt»-Marke (`PATCH /api/requests/<id>`) |
-| Hub-Konsole (`admin-app.py`) | http://100.115.236.97:8396/contributions | Beiträge prüfen, annehmen, veröffentlichen; `/applications` ebenfalls |
+| Hub-Konsole (`~/entrosana-app/admin-app.py`) | http://100.115.236.97:8396/ | alles zum Hub: `/contributions` Beiträge prüfen, annehmen, veröffentlichen; `/applications` Bewerbungen freigeben oder ablehnen; `/accounts` Konten mit Profil, Stand, Rollen, Geräten; `/requests` Anfragen mit «erledigt»-Marke (`PATCH /api/requests/:id`); `/checklists` Projektvorlagen (seeds.js); `/page/<name>.html` Seitentexte; `/catalogue/<slug>` Karten; `/design` Gestaltung |
+| Site-Editor (`~/entrosana-site/admin.py`) | http://100.115.236.97:8393/ | nur entrosana.com (WordPress-Texte, Fusszeile, Gestaltung der Live-Seite); eine Zeile zeigt auf die Hub-Konsole. Die Hub-Schicht, die am 2026-09-08 hier lag, wurde am 2026-09-09 nach :8396 gezogen, damit die Backends von .com und .app getrennt bleiben |
 
 Beide sprechen mit dem Dienst über die Dienstmarke (`~/.config/entrosana-api.token`,
 Rolle reviewer); Rollen vergibt allein `node api/admin.mjs grant`. Neue
@@ -457,3 +457,16 @@ Selbstbedienung unter `/contribute/status` (mit Marke, nur Eigenes):
 - Löschen (`DELETE /api/contributions/<id>`, Zustände received/confirmed/reviewing/withdrawn/rejected; der Eigentümer darf es auch): Zeile weg, eine Kettenzeile `contribution.deleted` bleibt. Angenommene und veröffentlichte Beiträge gehen nur über die Löschung des Kontos.
 - Herunterladen (`GET /api/me/export`): Akteur, eigene Beiträge mit Records und Dateiliste, Kettenzeilen zu den eigenen Beiträgen, Marken ohne Hash; als JSON-Datei. Schreibt eine Kettenzeile `export`.
 - Konto löschen (`DELETE /api/me`, Abschnitt «Namensnennung und Löschung»).
+
+## Module nach der Veröffentlichung (2026-09-09)
+
+Ein veröffentlichter Beitrag wird ein Eintrag der Spur `contributed` in `assets/catalogue.js`, ohne Entwurfsmarke,
+mit Stand `development`. Die Beitragenden eines Moduls stehen in `module_contributors`; die erste Person ist die
+einreichende. Jede eingetragene Person und das Team bearbeiten Titel, Zeile, Kernsatz, Beschreibung, Zusatz und
+Stand unter https://entrosana.app/me/modules; weitere Beitragende werden über die E-Mail eines freigegebenen Kontos
+eingetragen, mindestens eine Person bleibt. Die Karte nennt alle («by A, B»). Punkte: ein Punkt je Konto und Modul,
+umschaltbar auf der Detailseite. Meldungen zu einem Modul gehen über das Anfrageformular (`kind: report`) an
+sygnif@entrosana.com und stehen in der Konsole unter Anfragen. Annahme und Veröffentlichung sind seit dem
+2026-09-09 ein Schritt («annehmen und veröffentlichen»); «nur annehmen» bleibt möglich. Die Schlange gibt es auch
+in der Gestaltung des Hubs unter https://entrosana.app/review (Eigentümer, Prüfende).
+

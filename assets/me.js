@@ -224,6 +224,18 @@
     });
     var pl = el("p", "fine"); pl.appendChild(document.createTextNode("Your public profile: ")); var pa = el("a", null, location.origin + "/p/" + me.id); pa.href = "/p/" + me.id; pl.appendChild(pa); pl.appendChild(document.createTextNode(" — name, picture, standing, profile and public journal entries are visible to anyone.")); idc.appendChild(pl);
 
+    // Team (2026-09-09): Eigentümer und Prüfende sehen die Schlange in der Gestaltung des Hubs.
+    if (me.standing === "owner" || me.standing === "reviewer") {
+      var secTeam = block("Team", null, null), tbx = el("div", "card me");
+      var tl = el("p", "me__line"); tl.appendChild(document.createTextNode("Proposals, decisions and contributor applications: ")); var tla = el("a", null, "open the review queue"); tla.href = "/review"; tl.appendChild(tla); tbx.appendChild(tl);
+      var tcount = el("p", "fine", "Counting…"); tbx.appendChild(tcount);
+      Promise.all([api("/api/contributions"), api("/api/applications")]).then(function (rs) {
+        var open = (rs[0].j.items || []).filter(function (c) { return ["received", "confirmed", "reviewing"].indexOf(c.status) >= 0; }).length;
+        var apps = (rs[1].j.items || []).length;
+        tcount.textContent = open + (open === 1 ? " proposal" : " proposals") + " waiting · " + apps + (apps === 1 ? " application" : " applications") + " open.";
+      }).catch(function () { tcount.textContent = ""; });
+      secTeam.appendChild(tbx);
+    }
     var sec2 = block("Contributing", null, null), box = el("div", "card me");
     if (me.standing === "collector") {
       var app = me.application;
@@ -262,6 +274,7 @@
     if (projs.length) { var tl = el("ul", "me__list"); projs.forEach(function (p) { var li = el("li", "me__row"); var a = el("a", "me__t", p.title); a.href = p.href; li.appendChild(a); li.appendChild(el("span", "me__n", p.done + "/" + p.total)); if (p.next) li.appendChild(el("span", "me__next", "next: " + p.next)); tl.appendChild(li); }); tbox.appendChild(tl); }
     var ta2 = el("div", "actions"); var np = el("a", "btn btn--ghost", "New project"); np.href = "/project"; var ap = el("a", "btn btn--ghost", "All projects"); ap.href = "/projects"; ta2.appendChild(np); ta2.appendChild(ap); tbox.appendChild(ta2); secT.appendChild(tbox);
     var secD = block("Documents", null, null), dbx = el("div", "card me");
+    if (me.standing !== "collector") { var ml = el("p", "me__line"); var mla = el("a", null, "Your published modules"); mla.href = "/me/modules"; ml.appendChild(mla); ml.appendChild(document.createTextNode(": edit text and state, add co-contributors.")); dbx.appendChild(ml); }
     dbx.appendChild(el("p", "fine", "What you sent, what you host, and the files on this device."));
     var dl = el("ul", "me__list"); dbx.appendChild(dl);
     api("/api/contributions").then(function (r) {

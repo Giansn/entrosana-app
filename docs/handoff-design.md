@@ -597,3 +597,64 @@ gemeldet und nicht übernommen. Glyphen, Rail, Suchknopf und Skripte sind ausgeb
 Nicht von hier editierbar bleiben der Katalog (`assets/catalogue.js`, Kommentare im Objekt, kein striktes JSON) und die
 Texte, die JavaScript erzeugt (Konto, Profil, Status, Suche).
 
+**Konsolen getrennt (Nachtrag, 2026-09-09).** Auf Wunsch des Eigentümers («dont mix up .com and .app backend») ist die
+Hub-Schicht aus dem .com-Editor (:8393, `~/entrosana-site/admin.py`) in die Hub-Konsole (:8396, `admin-app.py`)
+gezogen: Konten unter `/accounts`, Anfragen unter `/requests`, die Checklisten unter `/checklists` und
+`/checklists/<track>/<nnn>` (Speichern mit Sicherung, Versionshebung und Commit wie beschrieben; eine Speicherung ohne
+Änderung schreibt nichts). Bewerbungen und Beiträge lagen dort schon. Die beiden vorigen Nachträge sind entsprechend zu
+lesen: Pfade mit `/hub/…` auf :8393 gibt es nicht mehr, der .com-Editor zeigt nur noch mit einer Zeile auf :8396.
+Der eigene Seitentext-Editor `/hub/pages` wurde nicht mitgenommen: die Hub-Konsole hat unter `/page/<name>.html` seit
+dem 2026-09-08 einen Editor für die sieben Inhaltsseiten, mit Vorschau und Schriftgrössen; Contribute hat dort 122
+Textstellen. Die Parser-Funktionen (`hub_text_runs`, `hub_apply_edits`) bleiben in der Git-Geschichte von
+`entrosana-site` (Commit 5ff0761), falls ein Editor für die übrigen sieben Seiten je gebraucht wird.
+Ausserdem korrigiert: das Entscheiden-Formular der Beitragsseite lag in den `.f`-Rastern des Texteditors und bekam
+auf dem Laptop nur die 4,2 rem breite Beschriftungsspalte; es hat jetzt einen eigenen Block `.decide` in Lesebreite.
+
+**Nachtrag, 2026-09-09 spät: Versionen, ein Schritt, Stände, Schlange, Module.**
+
+*Automatische Asset-Versionen.* Die Kante hält Assets vier Stunden vor; darum «landete» eine Veröffentlichung
+zwar in Datenbank und `catalogue.js`, die Seite /modules zeigte sie aber bis zu vier Stunden nicht. `serve.mjs`
+setzt die Versionen jetzt selbst: beim Laden einer HTML-Seite bekommt jeder Verweis auf `/assets/<datei>` den
+Inhalts-Hash der Datei als `?v=`, und `<html>` trägt den Hash des Katalogs als `data-cv`. Ändert sich ein Asset
+(Katalog, Checklisten, CSS, JS), werden alle Seiten binnen 5 s neu versioniert; Handbumps entfallen. Belegt:
+`catalogue.js?v=<hash>` an der Kante enthält den neuen Slug sofort.
+
+*Ein Schritt.* Der Eigentümer will Annahme und Veröffentlichung zusammen. `actionFor("reviewing","published")`
+ist jetzt «publish»; der Dienst setzt in diesem Fall Entscheid und Veröffentlichung im selben Schritt, schreibt zwei
+Kettenzeilen (`contribution.admitted`, `publish`) und schickt eine Mail. Die Prüfungen vor dem Tor (`checks`)
+kommen für Beiträge in Prüfung und für angenommene. Konsole und Schlange bieten «annehmen und veröffentlichen»,
+«annehmen, noch nicht veröffentlichen», «ablehnen». Ein veröffentlichter Beitrag trägt keine Entwurfsmarke mehr
+(`draft:false`, `state:"development"`, `meta: "contributed · text by the contributor"`).
+
+*Stände.* Drei Worte für Karte und Detailseite: `idea` («only an idea», grau), `development` («still in
+development», bernstein), `finished` («finished», grün; `available` gilt weiter als finished, `running` für
+Dienste). Die Konsole bietet den Stand als Auswahl im Katalog-Editor; Beitragende setzen ihn auf /me/modules.
+
+*Schlange in der Gestaltung des Hubs.* `/review` (review.html, assets/review.js) zeigt Eigentümer und Prüfenden die
+Beiträge mit Filtern, die Detailseite mit Fakten, Vorschlag, Dateien, Aufzeichnungen, Prüfungen und dem
+Entscheiden-Formular, dazu die Bewerbungen (`?tab=applications`). Das Konto spricht mit dem Dienst über seine
+Bearer-Marke; die Rechte sind dieselben wie in der Konsole (`can(actor,"decide"|"publish")`). /me zeigt dem
+Eigentümer einen Block «Team» mit Zähler und Link. Die Konsole :8396 bleibt als zweiter Weg.
+
+*Module mit mehreren Beitragenden, Bearbeitung, Punkte, Meldungen.* Migration 013: `module_contributors(slug,
+actor_id, added, added_by)` (gesät aus den veröffentlichten Beiträgen) und `points(slug, actor_id, created)`.
+Endpunkte: `GET /api/me/modules`, `GET|PATCH /api/me/modules/:slug` (title, who, lede, about, note, state; nur
+Einträge der Spur `contributed`, nur eingetragene Beitragende und das Team), `POST …/contributors` (E-Mail eines
+freigegebenen Kontos mit Namen), `DELETE …/contributors/:id` (mindestens eine Person bleibt); `by` wird aus den
+Namen neu gesetzt. `publish.mjs::updateEntry` schreibt den Eintrag an Ort und Stelle (nur striktes JSON, also die
+von publish geschriebenen Einträge). `GET /api/points` (Zählung, eigene), `POST /api/modules/:slug/point`
+(umschaltbar, Konto nötig, 120/h). Meldungen: `POST /api/requests` mit `kind:"report"` und `module:<slug>` geht an
+sygnif@ statt info@; die Detailseite verlinkt `/request?kind=report&module=<slug>`, das Formular belegt den Text
+vor. Seite /me/modules (module.html, assets/module.js) für die Beitragenden; /me verlinkt sie unter «Documents».
+
+*Modulseite in drei Gebieten (2026-09-09, spät).* Die Seite /modules ordnet jedes Modul in seinen Abschnitt Nature,
+Social oder Technical (ein vierter, «Other», bleibt versteckt, bis dort etwas liegt). Massgebend ist das Feld `area`
+des Eintrags (`nature-based`, `social`, `technical`, `other`); fehlt es, wird es aus der ersten Zeile abgeleitet. Die
+Einträge der Spur `onrequest` sind keine Module, sondern die Einleitung ihres Gebiets (Kernsatz plus Verweis auf die
+Detailseite, die den Zuschnitt auf Anfrage beschreibt). Jede Karte trägt unter sich eine Kontaktzeile in Mono:
+die Beitragenden als Verweise auf ihre Profile (`GET /api/modules/meta`: Beitragende und Punkte je Modul, öffentlich),
+das Datum der letzten Änderung (`updated`, gesetzt bei Veröffentlichung, jeder Bearbeitung auf /me/modules und jedem
+Speichern im Katalog-Editor), die Zahl der Dateien und der Weg, mitzuwirken: `/request?kind=contribute&module=<slug>`
+(geht an sygnif@), Mail, Telefon. Die Karte selbst bleibt ein einziger Link. Der Katalog-Editor der Konsole bietet
+Gebiet und Stand als Auswahl.
+

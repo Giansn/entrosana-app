@@ -20,6 +20,59 @@
     return " fs-" + s;
   }
 
+  // Gebiet eines Eintrags (2026-09-09): ausdrücklich gesetzt, sonst aus der ersten Zeile abgeleitet.
+  var AREA_NAME = { "nature-based": "Nature", social: "Social", technical: "Technical", other: "Other" };
+  function areaOf(e) {
+    if (e.area) return e.area;
+    var w = String(e.who || "").toLowerCase();
+    if (/^nature/.test(w)) return "nature-based";
+    if (/^social/.test(w)) return "social";
+    if (/^(technical|code|computing)/.test(w)) return "technical";
+    return "other";
+  }
+  function fileCount(e) { return (e.downloads || []).reduce(function (n, g) { return n + ((g.files || []).length); }, 0); }
+  var META = null, metaWaiters = [];
+  fetch("/api/modules/meta").then(function (r) { return r.json(); }).then(function (j) { META = j.items || {}; metaWaiters.forEach(function (f) { f(META); }); }).catch(function () { META = {}; metaWaiters.forEach(function (f) { f(META); }); });
+  function withMeta(f) { if (META) f(META); else metaWaiters.push(f); }
+
+  // Ein Modul mit seiner Kontaktzeile: die Karte bleibt ein einziger Link; die Zeile darunter
+  // trägt die Profile der Beitragenden, das Datum, die Dateien und den Weg, mitzuwirken.
+  function item(section, e) {
+    var wrap = document.createElement("div");
+    wrap.className = "mitem";
+    wrap.appendChild(card(section, e));
+    var c = document.createElement("p");
+    c.className = "mcard__contact";
+    function paintContact(meta) {
+      c.textContent = "";
+      var m = (meta || {})[e.slug] || { contributors: [], points: 0 };
+      var byLabel = document.createElement("span"); byLabel.textContent = "Contributor" + ((m.contributors.length || 1) > 1 ? "s" : "") + ": ";
+      c.appendChild(byLabel);
+      if (m.contributors.length) {
+        m.contributors.forEach(function (p, i) {
+          if (i) c.appendChild(document.createTextNode(", "));
+          var a = document.createElement("a"); a.href = "/p/" + p.id; a.textContent = p.name || ("account " + p.id); c.appendChild(a);
+        });
+      } else {
+        c.appendChild(document.createTextNode(e.by || "entrosana"));
+      }
+      var upd = document.createElement("span"); upd.className = "mcard__sep"; upd.textContent = " · last update " + (e.updated || "—") + " · " + (fileCount(e) === 1 ? "1 file" : fileCount(e) + " files") + (m.points ? " · " + (m.points === 1 ? "1 point" : m.points + " points") : "");
+      c.appendChild(upd);
+      var br = document.createElement("br"); c.appendChild(br);
+      var contact = document.createElement("span"); contact.textContent = "Contribute to it: ";
+      c.appendChild(contact);
+      var join = document.createElement("a"); join.href = "/request?kind=contribute&module=" + encodeURIComponent(e.slug); join.textContent = "offer your part ›"; c.appendChild(join);
+      c.appendChild(document.createTextNode(" · "));
+      var mail = document.createElement("a"); mail.href = "mailto:sygnif@entrosana.com?subject=" + encodeURIComponent("Contribution to " + (e.title || e.slug)); mail.textContent = "sygnif@entrosana.com"; c.appendChild(mail);
+      c.appendChild(document.createTextNode(" · "));
+      var tel = document.createElement("a"); tel.href = "tel:+41775297301"; tel.textContent = "077 529 73 01"; c.appendChild(tel);
+    }
+    paintContact(null);
+    withMeta(paintContact);
+    wrap.appendChild(c);
+    return wrap;
+  }
+
   function card(section, e) {
     var a = document.createElement("a");
     a.className = "mcard";
@@ -33,11 +86,17 @@
     chip.className = "chip";
     chip.textContent = name;
     head.appendChild(chip);
-    if (e.state === "running" || e.state === "available") {
+    // Stand des Eintrags (2026-09-09): finished/available grün, running grün,
+    // development bernstein, idea grau. Gesetzt im Katalog-Editor der Konsole
+    // oder von der beitragenden Person auf /me/modules.
+    var STATE = { finished: ["note--ok", "finished"], available: ["note--ok", "finished"], running: ["note--ok", "running"],
+                  development: ["note--dev", "still in development"], idea: ["note--idea", "only an idea"] };
+    var st = STATE[e.state];
+    if (st) {
       var led = document.createElement("span");
-      led.className = "note note--ok";
+      led.className = "note " + st[0];
       led.innerHTML = '<span class="led"></span>';
-      led.appendChild(document.createTextNode(e.state === "available" ? "finished" : "running"));
+      led.appendChild(document.createTextNode(st[1]));
       head.appendChild(led);
     }
     a.appendChild(head);
@@ -81,18 +140,40 @@
     return a;
   }
 
+  // Einleitung eines Gebiets: der Eintrag der Spur «onrequest» beschreibt, was das Gebiet umfasst.
+  function paintIntro(box) {
+    var area = box.getAttribute("data-area-intro"), data = cat.modules;
+    if (!data) return;
+    var e = null; data.list.forEach(function (x) { if (x.track === "onrequest" && areaOf(x) === area) e = x; });
+    box.textContent = "";
+    if (!e) return;
+    var pth = document.createElement("p"); pth.className = "work__sub measure"; pth.textContent = e.lede || e.about || "";
+    var a = document.createElement("a"); a.className = "fine"; a.href = "/modules/" + e.slug; a.textContent = "What this area covers, and how a module is scoped on request ›";
+    box.appendChild(pth); box.appendChild(a);
+  }
+  var intros = document.querySelectorAll("[data-area-intro]");
+  for (var k = 0; k < intros.length; k++) paintIntro(intros[k]);
+
   function paint(box) {
     var section = box.getAttribute("data-cards");
     var only = box.getAttribute("data-track");
+    var area = box.getAttribute("data-area");
     var data = cat[section];
     if (!data) return;
     box.textContent = "";
     var shown = 0;
     data.list.forEach(function (e) {
       if (only && only !== "all" && e.track !== only) return;
+      if (area) { if (e.track === "onrequest" || areaOf(e) !== area) return; }
       shown++;
-      box.appendChild(card(section, e));
+      box.appendChild(area ? item(section, e) : card(section, e));
     });
+    if (area && !shown) {
+      var secEl = box.closest("[data-area-section]");
+      if (secEl && secEl.hasAttribute("hidden")) return;   // «Other» bleibt versteckt, solange es leer ist
+    } else if (area && shown) {
+      var secShow = box.closest("[data-area-section]"); if (secShow) secShow.removeAttribute("hidden");
+    }
     if (!box.children.length && box.getAttribute("data-empty")) {
       var empty = document.createElement("p");
       empty.className = "note note--idle";

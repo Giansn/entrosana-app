@@ -60,16 +60,18 @@
   b1.appendChild(back2);
   var head = el("div", "mcard__head");
   head.appendChild(el("span", "chip chip--head", trackName));
-  if (e.state === "running") {
-    var led = el("span", "note note--ok");
+  var STATE = { finished: ["note--ok", "finished"], available: ["note--ok", "finished"], running: ["note--ok", "running"],
+                development: ["note--dev", "still in development"], idea: ["note--idea", "only an idea"] };
+  if (STATE[e.state]) {
+    var led = el("span", "note " + STATE[e.state][0]);
     led.appendChild(el("span", "led"));
-    led.appendChild(document.createTextNode("running"));
+    led.appendChild(document.createTextNode(STATE[e.state][1]));
     head.appendChild(led);
   }
   b1.appendChild(head);
   b1.appendChild(el("h1", "work__h" + fsClass("title"), e.title));
   if (e.who) b1.appendChild(el("p", "mod__who" + fsClass("who"), e.who));
-  if (e.by) b1.appendChild(el("p", "mod__by", "Contributed by " + e.by));
+  if (e.by) b1.appendChild(el("p", "mod__by", "Contributed by " + e.by + (e.updated ? " · last update " + e.updated : "")));
   b1.appendChild(el("p", "mod__lede" + fsClass("lede"), e.lede));
   if (e.draft) {
     b1.appendChild(el("p", "draftnote",
@@ -153,6 +155,23 @@
     repo.href = e.repo;
     act.appendChild(repo);
   }
+  // Punkte und Meldung (2026-09-09): ein Punkt je Konto, umschaltbar; Meldungen gehen per Formular an sygnif@.
+  var bp = block(); bp.appendChild(el("span", "eyebrow", "Your word on it"));
+  var ptbar = el("div", "ptbar"), ptn = el("span", "note", "…"), ptb = el("button", "btn btn--ghost", "Give a point"); ptb.type = "button";
+  var tok = null; try { var tk = JSON.parse(localStorage.getItem("entrosana-app:token") || "null"); tok = tk && tk.expires > new Date().toISOString() ? tk : null; } catch (er) {}
+  function paintPoints(n, mine) { ptn.textContent = n === 1 ? "1 point" : n + " points"; ptb.textContent = mine ? "Take your point back" : "Give a point"; ptb.className = "btn " + (mine ? "btn--ghost" : ""); }
+  fetch("/api/points", { headers: tok ? { Authorization: "Bearer " + tok.token } : {} }).then(function (r) { return r.json(); })
+    .then(function (j) { paintPoints((j.counts || {})[e.slug] || 0, (j.mine || []).indexOf(e.slug) >= 0); }).catch(function () { ptn.textContent = ""; });
+  ptb.addEventListener("click", function () {
+    if (!tok) { location.href = "/me"; return; }
+    fetch("/api/modules/" + e.slug + "/point", { method: "POST", headers: { Authorization: "Bearer " + tok.token } }).then(function (r) { return r.json(); })
+      .then(function (j) { if (j.ok) paintPoints(j.points, j.mine); else ptn.textContent = j.error || "not saved"; }).catch(function () { ptn.textContent = "not reachable"; });
+  });
+  ptbar.appendChild(ptb); ptbar.appendChild(ptn);
+  var rep = el("a", "btn btn--quiet", "Report this module"); rep.href = "/request?kind=report&module=" + encodeURIComponent(e.slug); ptbar.appendChild(rep);
+  bp.appendChild(ptbar);
+  bp.appendChild(el("p", "fine", tok ? "One point per account. A report goes to sygnif@entrosana.com with the reason you give." : "Sign in to give a point. A report goes to sygnif@entrosana.com with the reason you give."));
+
   var ask = el("a", (e.seed || e.repo) ? "btn btn--ghost" : "btn",
                section === "modules"
                  ? (e.downloads ? "Ask us to run it with you" : "Request this module")

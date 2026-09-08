@@ -451,7 +451,11 @@ def page_write(name, neu: list, sizes: dict | None = None):
 # catalogue.js ist JavaScript mit Kommentaren, also nicht als JSON zu lesen
 # und zurückzuschreiben, ohne die Kommentare zu verlieren. Deshalb dieselbe
 # Technik wie bei den Seiten: Werte über ihre Position austauschen.
-FIELDS = ("title", "who", "lede", "about", "note", "meta")
+FIELDS = ("title", "who", "lede", "about", "note", "meta", "state", "area", "updated")
+AREAS_UI = [("nature-based", "Nature"), ("social", "Social"), ("technical", "Technical"), ("other", "Other")]
+# Stand eines Eintrags (2026-09-09): drei Worte für die Karte; die alten Werte bleiben gültig.
+STATES = [("idea", "nur eine Idee · only an idea"), ("development", "noch in Entwicklung · still in development"), ("finished", "fertig · finished")]
+STATE_LEGACY = {"available": "finished (bisher «available»)", "running": "running (Dienst)", "draft": "draft (Beitrag, alt)"}
 STR_RE = re.compile(r'"(' + "|".join(FIELDS) + r')"\s*:\s*"((?:[^"\\]|\\.)*)"')
 SLUG_RE = re.compile(r'"slug"\s*:\s*"([^"]*)"')
 
@@ -499,6 +503,13 @@ def cat_write(slug, werte: dict):
     e = next((x for x in eintraege if x["slug"] == slug), None)
     if not e:
         raise ValueError(f"Eintrag {slug} nicht gefunden")
+    if "state" in werte and werte["state"] not in dict(STATES) and werte["state"] not in STATE_LEGACY:
+        raise ValueError("Stand unbekannt")
+    if "area" in werte and werte["area"] not in dict(AREAS_UI):
+        raise ValueError("Gebiet unbekannt")
+    # Letzte Änderung: wird beim Speichern gesetzt, sofern der Eintrag das Feld trägt und sich sonst etwas ändert.
+    if "updated" in e["felder"] and any(k in werte and werte[k] != e["felder"][k][2] for k in e["felder"] if k != "updated"):
+        werte["updated"] = time.strftime("%Y-%m-%d")
     orte = sorted(((v[0], v[1], k) for k, v in e["felder"].items()), reverse=True)
     out = src
     geaendert = []
@@ -612,6 +623,12 @@ th{color:#8F95A1;font-weight:400;font-size:.82rem}
 .btn.ghost{background:none;color:#C6CAD1;border-color:#5A6273}
 .note{color:#8F95A1;font-size:.9rem;max-width:70ch;line-height:1.55}
 .err{color:#DC7A6E} .ok{color:#35B36B}
+.desc{color:#8F95A1;font-size:.86rem;line-height:1.45} .act{white-space:nowrap}
+/* Entscheiden (2026-09-09): ein Block in Lesebreite, Auswahl in Textgrösse, Feld voll breit; auf dem Telefon dasselbe. */
+.decide{display:grid;gap:.7rem;max-width:44rem;margin:.6rem 0}
+.decide select{font:inherit;font-size:.95rem;padding:.5em .8em;background:#101318;color:#E9EBE7;border:1px solid #323843;border-radius:8px;width:max-content;min-width:16rem;max-width:100%}
+.decide textarea{min-height:6rem}
+select.stand{font:inherit;font-size:.95rem;padding:.5em .8em;background:#101318;color:#E9EBE7;border:1px solid #323843;border-radius:8px;min-width:18rem;max-width:100%}
 textarea,input[type=text]{width:100%;background:#101318;color:#E9EBE7;border:1px solid #323843;border-radius:8px;padding:.55em .7em;font:inherit;font-size:.95rem}
 textarea{min-height:3.4rem;resize:vertical}
 label{display:block;margin:.9rem 0}
@@ -696,10 +713,18 @@ def _beitraege_kurz():
     offen = [c for c in j.get("items", []) if c["status"] in ("received", "confirmed", "reviewing")]
     acode, aj = api_call("GET", "/api/applications")
     bew = len(aj.get("items", [])) if acode == 200 else "?"
+    kcode, kj = api_call("GET", "/api/actors")
+    konten = len([a for a in kj.get("items", []) if a.get("kind") == "email"]) if kcode == 200 else "?"
+    rcode, rj = api_call("GET", "/api/requests")
+    anfragen = len(rj.get("items", [])) if rcode == 200 else "?"
     return (f"<table><tr><td><b>Schlange</b><br><span class='mono'>{len(offen)} offen · {len(j.get('items', []))} gesamt</span></td>"
             "<td><a href='/contributions'>öffnen</a></td><td></td><td></td></tr>"
             f"<tr><td><b>Bewerbungen</b><br><span class='mono'>{bew} offen</span></td>"
-            "<td><a href='/applications'>öffnen</a></td><td></td><td></td></tr></table>")
+            "<td><a href='/applications'>öffnen</a></td><td></td><td></td></tr>"
+            f"<tr><td><b>Konten</b><br><span class='mono'>{konten} Personen</span></td>"
+            "<td><a href='/accounts'>öffnen</a></td><td></td><td></td></tr>"
+            f"<tr><td><b>Anfragen</b><br><span class='mono'>{anfragen} offen · gingen an info@</span></td>"
+            "<td><a href='/requests'>öffnen</a></td><td></td><td></td></tr></table>")
 
 
 def dash():
@@ -733,7 +758,12 @@ def dash():
         "<p class='note'>Die Karten für Tools und Modules aus <span class='mono'>assets/catalogue.js</span>. "
         "Diese Texte erscheinen auf der Übersicht und auf der Detailseite des Eintrags.</p>"
         f"<table>{krows}</table>"
-        "<h2>Beiträge</h2>"
+        "<h2>Checklisten</h2>"
+        "<p class='note'>Die Vorlagen der Projektverwaltung aus <span class='mono'>assets/seeds.js</span>: Titel, Schritte, Kartenzeilen, "
+        "Details und die Prompts des Vorschlagsformulars.</p>"
+        "<table><tr><td><b>Checklisten</b><br><span class='mono'>tools · modules · contribute</span></td>"
+        "<td><a href='/checklists'>öffnen</a></td><td></td><td></td></tr></table>"
+        "<h2>Beiträge, Bewerbungen, Konten, Anfragen</h2>"
         + _beitraege_kurz() +
         "<h2>Gestaltung</h2>"
         "<table><tr><td><b>Design controls</b><br><span class='mono'>Farbe &middot; Raster &middot; Schriftgrösse</span></td>"
@@ -957,13 +987,25 @@ def cat_editor(slug, msg="", err=""):
         return page("nicht gefunden", f"<p><a href='/'>&larr; Übersicht</a></p><h1>{html.escape(slug)}</h1>"
                                       "<p class='err'>Kein Eintrag mit diesem Kürzel.</p>")
     beschriftung = {"title": "Titel", "who": "Kurzkennung", "lede": "Kernsatz",
-                    "about": "Beschreibung", "note": "Zusatz", "meta": "Fussnote"}
+                    "about": "Beschreibung", "note": "Zusatz", "meta": "Fussnote", "state": "Stand", "area": "Gebiet", "updated": "Letzte Änderung"}
     felder = ""
     for k in FIELDS:
         if k not in e["felder"]:
             continue
         wert = e["felder"][k][2]
-        kurz = k in ("title", "meta")
+        if k == "state":
+            opts = "".join(f"<option value='{v}'{' selected' if v == wert else ''}>{html.escape(l)}</option>" for v, l in STATES)
+            if wert not in dict(STATES):
+                opts = f"<option value='{html.escape(wert)}' selected>{html.escape(STATE_LEGACY.get(wert, wert))}</option>" + opts
+            felder += (f"<label>Stand <span class='mono'>state</span><br><select data-k='state' class='stand'>{opts}</select>"
+                       "<br><span class='note'>Erscheint als Punkt mit Wort auf der Karte: «only an idea», «still in development», «finished».</span></label>")
+            continue
+        if k == "area":
+            opts = "".join(f"<option value='{v}'{' selected' if v == wert else ''}>{html.escape(l)}</option>" for v, l in AREAS_UI)
+            felder += (f"<label>Gebiet <span class='mono'>area</span><br><select data-k='area' class='stand'>{opts}</select>"
+                       "<br><span class='note'>Bestimmt den Abschnitt auf der Modulseite: Nature, Social, Technical.</span></label>")
+            continue
+        kurz = k in ("title", "meta", "updated")
         felder += (f"<label>{beschriftung[k]} <span class='mono'>{k}</span><br>"
                    + (f"<input type=text data-k='{k}' value=\"{html.escape(wert, quote=True)}\">"
                       if kurz else f"<textarea data-k='{k}'>{html.escape(wert)}</textarea>")
@@ -1060,7 +1102,8 @@ STATUS_DE = {"received": "eingegangen, unbestätigt", "confirmed": "bestätigt, 
              "reviewing": "in Prüfung", "admitted": "angenommen, nicht veröffentlicht", "published": "veröffentlicht (Entwurf im Katalog)",
              "rejected": "abgelehnt", "withdrawn": "zurückgezogen"}
 NEXT = {"confirmed": [("reviewing", "in Prüfung nehmen")],
-        "reviewing": [("admitted", "annehmen"), ("rejected", "ablehnen")],
+        # 2026-09-09, Entscheid des Eigentümers: Annahme und Veröffentlichung in einem Schritt; «nur annehmen» bleibt als zweite Wahl.
+        "reviewing": [("published", "annehmen und veröffentlichen"), ("admitted", "annehmen, noch nicht veröffentlichen"), ("rejected", "ablehnen")],
         "admitted": [("published", "veröffentlichen")],
         "published": [("admitted", "aus dem Katalog zurücknehmen")]}
 ALLE_STATI = ["received", "confirmed", "reviewing", "admitted", "published", "rejected", "withdrawn"]
@@ -1114,7 +1157,7 @@ def contrib_detail(cid):
                    f"<td>{html.escape(r.get('text',''))}</td><td class='mono'>{html.escape((r.get('h') or '')[:10])}</td></tr>"
                    for r in c.get("records", [])) or "<tr><td colspan='5' class='mono'>keine Zeilen</td></tr>"
     form = ""
-    if c["status"] == "admitted":
+    if c["status"] in ("admitted", "reviewing"):
         fails = c.get("checks") or []
         if fails:
             form += "<h2>Vor der Veröffentlichung</h2><p class='err'>Das Tor ist zu: " + "; ".join(html.escape(x) for x in fails) + "</p>"
@@ -1130,8 +1173,8 @@ def contrib_detail(cid):
         opts = "".join(f"<option value='{s}'>{l}</option>" for s, l in NEXT[c["status"]])
         form += ("<h2>Entscheiden</h2>"
                 "<p class='note'>Ohne Begründung geht nichts hinaus: die Verwaltung schickt es nicht ab, und der Dienst würde es abweisen.</p>"
-                f"<div class='f'><select id='next'>{opts}</select></div>"
-                "<div class='f'><textarea id='reason' rows='4' placeholder='Begründung, mindestens drei Zeichen'></textarea></div>"
+                f"<div class='decide'><select id='next'>{opts}</select>"
+                "<textarea id='reason' rows='4' placeholder='Begründung, mindestens drei Zeichen; sie geht per Mail an die Person'></textarea></div>"
                 "<div class='bar'><button class='btn' id='decide'>Entscheiden</button> <span id='msg' class='mono'></span></div>"
                 "<script>"
                 "document.getElementById('decide').addEventListener('click',function(){"
@@ -1218,6 +1261,186 @@ def contrib_decide(cid, data):
     return j
 
 
+
+# ── Hub-Verwaltung (2026-09-09, aus der .com-Konsole hierher gezogen): Konten, Anfragen, Checklisten ──
+# Der Dienst api/ trägt die Daten; hier steht nur die Ansicht. Bewerbungen und Beiträge stehen oben.
+SEEDS_FILE = APP / "assets" / "seeds.js"
+
+
+def _hub_kopf(titel):
+    return (f"<h1>entro<span style='color:#2BD4E8'>sana</span>.app admin · {titel}</h1>"
+            "<p class='mono'><a href='/'>← Übersicht</a> · <a href='/contributions'>Beiträge</a> · <a href='/applications'>Bewerbungen</a> · "
+            "<a href='/accounts'>Konten</a> · <a href='/requests'>Anfragen</a> · <a href='/checklists'>Checklisten</a></p>")
+
+
+STANDING_DE = {"collector": "Sammler", "contributor": "Beitragende", "reviewer": "Team", "owner": "Eigentümer", "service": "Dienst"}
+
+
+ROLE_DE = {"teacher": "Lehrperson", "student": "Lernende", "parent": "Eltern", "social-worker": "Soziale Arbeit", "developer": "Entwicklung", "researcher": "Forschung", "other": "andere"}
+
+
+def _hub_wann(iso):
+    return html.escape(str(iso).replace("T", " ")[:16]) if iso else "—"
+
+
+def seeds_read():
+    """seeds.js ist ein Kommentarkopf plus `window.__seeds = {...};` mit striktem JSON."""
+    raw = SEEDS_FILE.read_text(encoding="utf-8")
+    m = re.search(r"window\.__seeds\s*=\s*(\{.*\})\s*;?\s*$", raw, re.S)
+    if not m:
+        raise ValueError("seeds.js: Zuweisung window.__seeds nicht gefunden")
+    return raw[:m.start()], json.loads(m.group(1))
+
+
+def seeds_write(head, seeds):
+    """Sicherung, dann Datei neu schreiben, dann die Version in allen Seiten heben (Kante hält 4 h)."""
+    BACKUPS.mkdir(parents=True, exist_ok=True)
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    bak = BACKUPS / f"seeds.js.{stamp}.admin"
+    bak.write_text(SEEDS_FILE.read_text(encoding="utf-8"), encoding="utf-8")
+    body = json.dumps(seeds, ensure_ascii=False, indent=1)
+    SEEDS_FILE.write_text(head + "window.__seeds = " + body + ";\n", encoding="utf-8")
+    ver = time.strftime("%Y%m%d%H%M")
+    n = 0
+    for f in APP.glob("*.html"):
+        s = f.read_text(encoding="utf-8")
+        s2 = re.sub(r"/assets/seeds\.js(\?v=[0-9a-z]+)?\"", f"/assets/seeds.js?v={ver}\"", s)
+        if s2 != s:
+            f.write_text(s2, encoding="utf-8")
+            n += 1
+    # Bestmöglicher Commit der betroffenen Dateien (nur diese Pfade; Fehler brechen das Speichern nicht ab).
+    try:
+        paths = ["assets/seeds.js"] + sorted(str(f.relative_to(APP)) for f in APP.glob("*.html"))
+        subprocess.run(["git", "-C", str(APP), "commit", "-q", "-m",
+                        f"seeds: checkliste aus der konsole bearbeitet ({stamp})\n\nCo-Authored-By: entrosana-admin <sygnif@entrosana.com>",
+                        "--"] + paths, capture_output=True, text=True, timeout=20)
+    except Exception:
+        pass
+    return str(bak), n
+
+
+def checklists_list():
+    try:
+        _, seeds = seeds_read()
+    except Exception as e:
+        return page("Checklisten", _hub_kopf("Checklisten") + f"<p class='err'>{html.escape(str(e))}</p>")
+    rows = "".join(f"<tr><td class='mono'>{html.escape(k)}</td><td><b>{html.escape(v.get('title', ''))}</b><br><span class='desc'>{html.escape(v.get('who', ''))}</span></td>"
+                   f"<td class='mono'>{len(v.get('steps', []))} Schritte{(' · ' + str(len(v['prompts'])) + ' Prompts') if v.get('prompts') else ''}</td>"
+                   f"<td><a class='act' href='/checklists/{html.escape(k)}'>bearbeiten</a></td>"
+                   f"<td><a class='act' href='https://entrosana.app/project?p={html.escape(k)}' target='_blank'>ansehen</a></td></tr>" for k, v in seeds.items())
+    return page("Checklisten", _hub_kopf("Checklisten") + "<p class='note'>Die Checklisten der Projektverwaltung (assets/seeds.js). Jede Änderung wird gesichert und geht binnen 5 s live; die Seiten laden die neue Fassung mit frischer Version. "
+                "Wer eine Liste schon geöffnet hat, behält seine Kopie auf dem Gerät.</p>" + f"<table><tr><th>Schlüssel</th><th>Titel</th><th>Umfang</th><th></th><th></th></tr>{rows}</table>")
+
+
+def checklist_edit(key):
+    try:
+        _, seeds = seeds_read()
+    except Exception as e:
+        return page("Checkliste", _hub_kopf("Checkliste") + f"<p class='err'>{html.escape(str(e))}</p>")
+    s = seeds.get(key)
+    if not s:
+        return page("Checkliste", _hub_kopf("Checkliste") + f"<p class='err'>unbekannt: {html.escape(key)}</p>")
+    def fld(label, name, value, rows=None, hint=""):
+        inner = (f"<textarea name='{name}' rows='{rows}' style='width:100%;box-sizing:border-box'>{html.escape(value)}</textarea>" if rows
+                 else f"<input name='{name}' value='{html.escape(value)}' style='width:100%;box-sizing:border-box'>")
+        return f"<p><label><span class='mono'>{label}</span><br>{inner}</label>{('<br><span class=desc>' + hint + '</span>') if hint else ''}</p>"
+    steps = s.get("steps", []) + [{}, {}]
+    step_html = "".join(f"<fieldset style='border:1px solid #323843;border-radius:8px;padding:.6rem .9rem;margin:.6rem 0'><legend class='mono'>Schritt {i + 1}{'' if st else ' (leer = wird nicht gespeichert)'}</legend>"
+                        + fld("Titel (t)", f"t{i}", st.get("t", "")) + fld("Zeile auf der Karte (n)", f"n{i}", st.get("n", ""), 2)
+                        + fld("Details im Popup (i)", f"i{i}", st.get("i", ""), 3) + "</fieldset>" for i, st in enumerate(steps))
+    form = (f"<form id='ck' data-key='{html.escape(key)}'>" + fld("Titel", "title", s.get("title", "")) + fld("Untertitel (who)", "who", s.get("who", ""))
+            + fld("Prompts fürs Vorschlagsformular, eine je Zeile (leer lassen, wenn keine)", "prompts", "\n".join(s.get("prompts", [])), 6,
+                  "Nur die Liste contribute/000 braucht sie: aus ihnen wird der vorbelegte Vorschlagstext.")
+            + f"<h2>Schritte ({len(s.get('steps', []))})</h2><p class='note'>Reihenfolge wie hier. Ein Schritt ohne Titel fällt weg; zwei leere Blöcke stehen zum Anfügen bereit.</p>" + step_html
+            + f"<div class='bar'><button class='btn' type='submit'>Speichern</button> <a class='act' href='/checklists'>zurück</a> <span id='msg' class='mono'></span></div></form>"
+            "<script>document.getElementById('ck').addEventListener('submit',function(e){e.preventDefault();var f=e.target,m=document.getElementById('msg');var steps=[];"
+            f"for(var i=0;i<{len(steps)};i++){{var t=f['t'+i].value.trim();if(!t)continue;steps.push({{t:t,n:f['n'+i].value.trim(),i:f['i'+i].value.trim()}});}}"
+            "var prompts=f.prompts.value.split('\\n').map(function(x){return x.trim()}).filter(Boolean);m.textContent='…';"
+            "fetch('/api/checklists/'+f.getAttribute('data-key'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:f.title.value.trim(),who:f.who.value.trim(),prompts:prompts,steps:steps})})"
+            ".then(function(x){return x.json()}).then(function(j){if(j.ok&&j.unchanged){m.textContent='nichts geändert';m.className='mono';}else if(j.ok){m.textContent='gespeichert · Sicherung '+j.backup+' · '+j.pages+' Seiten neu versioniert'+(j.commit?' · Commit '+j.commit:'');m.className='ok';}else{m.textContent=j.error||'Fehler';m.className='err';}})"
+            ".catch(function(){m.textContent='nicht erreichbar';m.className='err';});});</script>")
+    return page("Checkliste " + key, _hub_kopf("Checkliste · " + html.escape(key)) + form)
+
+
+def checklist_save(key, data):
+    head, seeds = seeds_read()
+    if key not in seeds:
+        raise ValueError("unbekannte Checkliste")
+    title = str(data.get("title", "")).strip()
+    if len(title) < 2:
+        raise ValueError("Titel fehlt")
+    steps = []
+    for st in data.get("steps", []):
+        t = str(st.get("t", "")).strip()
+        if not t:
+            continue
+        one = {"t": t[:200], "n": str(st.get("n", "")).strip()[:600]}
+        if str(st.get("i", "")).strip():
+            one["i"] = str(st.get("i", "")).strip()[:2000]
+        steps.append(one)
+    if not steps:
+        raise ValueError("mindestens ein Schritt")
+    new = dict(seeds[key])
+    new["title"], new["who"], new["steps"] = title[:120], str(data.get("who", "")).strip()[:200], steps
+    prompts = [str(x).strip()[:200] for x in data.get("prompts", []) if str(x).strip()]
+    if prompts:
+        new["prompts"] = prompts
+    else:
+        new.pop("prompts", None)
+    if new == seeds[key]:
+        return {"ok": True, "unchanged": True, "backup": None, "pages": 0, "commit": None}
+    seeds[key] = new
+    bak, n = seeds_write(head, seeds)
+    sha = subprocess.run(["git", "-C", str(APP), "log", "-1", "--format=%h", "--", "assets/seeds.js"], capture_output=True, text=True).stdout.strip()
+    return {"ok": True, "backup": bak.split("/")[-1], "pages": n, "commit": sha}
+
+
+def accounts_list():
+    code, j = api_call("GET", "/api/actors")
+    if code != 200:
+        return page("Konten", _hub_kopf("Konten") + f"<p class='err'>{html.escape(str(j.get('error', code)))}</p>")
+    rows = ""
+    for a in j.get("items", []):
+        pr = a.get("profile") or {}
+        profil = " · ".join(x for x in [ROLE_DE.get(pr.get("role"), pr.get("role") or ""), pr.get("org") or "", ", ".join(pr.get("langs") or [])] if x)
+        about = f"<br><span class='desc'>{html.escape(pr.get('about'))}</span>" if pr.get("about") else ""
+        web = f"<br><a class='act' href='{html.escape(pr.get('website'))}' target='_blank' rel='noopener'>{html.escape(pr.get('website'))}</a>" if pr.get("website") else ""
+        rollen = ", ".join(a.get("roles") or []) or "—"
+        rows += (f"<tr><td class='mono'>#{a['id']}</td><td><b>{html.escape(a.get('name') or '—')}</b><br><span class='mono'>{html.escape(a.get('email') or a.get('kind'))}</span>{about}{web}</td>"
+                 f"<td>{html.escape(STANDING_DE.get(a.get('standing'), a.get('standing')))}<br><span class='mono'>{html.escape(rollen)}</span></td>"
+                 f"<td class='desc'>{html.escape(profil) or '—'}</td>"
+                 f"<td class='mono'>{a.get('contributions')} Beiträge<br>{a.get('open_applications')} Bewerbungen<br>{a.get('devices')} Geräte</td>"
+                 f"<td class='mono'>{_hub_wann(a.get('created'))}</td></tr>")
+    hinweis = ("<p class='note'>Rollen vergibt der Eigentümer auf dem Server: <span class='mono'>node ~/entrosana-app/api/admin.mjs grant &lt;email&gt; reviewer</span>. "
+               "Beitragende entstehen über <a href='/applications'>Bewerbungen</a>.</p>")
+    return page("Konten", _hub_kopf("Konten") + hinweis + f"<table><tr><th></th><th>Person</th><th>Stand · Rollen</th><th>Profil</th><th>Zahlen</th><th>seit</th></tr>{rows}</table>")
+
+
+def requests_list(alle=False):
+    code, j = api_call("GET", "/api/requests" + ("?all=1" if alle else ""))
+    if code != 200:
+        return page("Anfragen", _hub_kopf("Anfragen") + f"<p class='err'>{html.escape(str(j.get('error', code)))}</p>")
+    items = j.get("items", [])
+    rows = ""
+    for r in items:
+        rid = r["id"]
+        knopf = (f"<button class='btn' data-req='{rid}' data-h='0'>wieder öffnen</button>" if r.get("handled")
+                 else f"<button class='btn' data-req='{rid}' data-h='1'>erledigt</button>")
+        rows += (f"<tr><td class='mono'>#{rid}</td><td><b>{html.escape(r.get('name') or '')}</b><br><span class='mono'>{html.escape(r.get('email') or '')}</span>"
+                 f"{('<br>' + html.escape(r.get('org'))) if r.get('org') else ''}</td><td class='mono'>{html.escape(r.get('kind') or '')}</td>"
+                 f"<td><pre style='white-space:pre-wrap;margin:0'>{html.escape(r.get('text') or '')}</pre></td>"
+                 f"<td class='mono'>{_hub_wann(r.get('created'))}<br>{'Mail an info@ ' + _hub_wann(r.get('mailed')) if r.get('mailed') else '<span class=\'err\'>Mail nicht belegt</span>'}"
+                 f"{('<br>erledigt ' + _hub_wann(r.get('handled'))) if r.get('handled') else ''}</td><td>{knopf} <span id='m{rid}' class='mono'></span></td></tr>")
+    umschalter = ("<p class='mono'>" + ("<a href='/requests'>nur offene</a>" if alle else "<a href='/requests?all=1'>alle, auch erledigte</a>") + "</p>")
+    tab = f"<table><tr><th></th><th>Person</th><th>Art</th><th>Anfrage</th><th>wann</th><th></th></tr>{rows}</table>" if items else "<p class='mono'>keine</p>"
+    script = ("<script>document.querySelectorAll('button[data-req]').forEach(function(b){b.addEventListener('click',function(){"
+              "var id=b.getAttribute('data-req'),h=b.getAttribute('data-h')==='1',m=document.getElementById('m'+id);m.textContent='…';"
+              "fetch('/api/requests/'+id+'/handled',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handled:h})})"
+              ".then(function(x){return x.json()}).then(function(j){if(j.ok){location.reload();}else{m.textContent=j.error||'Fehler';m.className='err';}})"
+              ".catch(function(){m.textContent='Dienst nicht erreichbar';m.className='err';});});});</script>")
+    return page("Anfragen", _hub_kopf("Anfragen") + "<p class='note'>Anfragen gingen als Mail an info@entrosana.com; hier steht der Eingang 180 Tage. «erledigt» ist eine Marke, keine Löschung.</p>" + umschalter + tab + script)
+
+
 class H(BaseHTTPRequestHandler):
     server_version = "entrosana-app-admin"
 
@@ -1297,6 +1520,19 @@ class H(BaseHTTPRequestHandler):
         if u.path == "/applications":
             self._send(200, applications_list())
             return
+        if u.path == "/accounts":
+            self._send(200, accounts_list())
+            return
+        if u.path == "/requests":
+            self._send(200, requests_list(parse_qs(u.query).get("all", [""])[0] == "1"))
+            return
+        if u.path == "/checklists":
+            self._send(200, checklists_list())
+            return
+        m = re.match(r"^/checklists/([a-z]+/\d{3})$", u.path)
+        if m:
+            self._send(200, checklist_edit(m.group(1)))
+            return
         if u.path == "/contributions":
             self._send(200, contrib_list(parse_qs(u.query).get("status", [""])[0]))
             return
@@ -1333,6 +1569,15 @@ class H(BaseHTTPRequestHandler):
             elif re.match(r"^/api/applications/\d{1,12}/decide$", u.path):
                 aid = int(u.path.split("/")[3])
                 self._json({"ok": True, "application": application_decide(aid, data).get("application")})
+            elif re.match(r"^/api/requests/\d{1,12}/handled$", u.path):
+                rid = int(u.path.split("/")[3])
+                code, res = api_call("PATCH", f"/api/requests/{rid}", {"handled": bool(data.get("handled", True))})
+                if code != 200:
+                    raise ValueError(str(res.get("error", code)))
+                self._json({"ok": True})
+            elif re.match(r"^/api/checklists/[a-z]+/\d{3}$", u.path):
+                key = u.path[len("/api/checklists/"):]
+                self._json(checklist_save(key, data))
             elif re.match(r"^/api/contributions/\d{1,12}/decide$", u.path):
                 cid = int(u.path.split("/")[3])
                 self._json({"ok": True, "item": contrib_decide(cid, data).get("item")})

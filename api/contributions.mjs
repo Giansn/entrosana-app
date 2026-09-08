@@ -78,6 +78,7 @@ export function actionFor(current, target) {
   if (current === "confirmed" && target === "reviewing") return "decide";
   if (current === "reviewing" && (target === "admitted" || target === "rejected")) return "decide";
   if (current === "admitted" && target === "published") return "publish";
+  if (current === "reviewing" && target === "published") return "publish";   // 2026-09-09: Annahme und Veröffentlichung in einem Schritt
   if (current === "published" && target === "admitted") return "publish";   // zurücknehmen
   return null;
 }
