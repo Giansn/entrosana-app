@@ -113,6 +113,37 @@ Begrenzung: 5 Anfragen je Stunde und IP-Adresse sowie je Adresse, gezählt im
 Speicher des Prozesses (`api/server.mjs`, `RATE`). Ein Neustart setzt die Zähler
 zurück; Phase 3 entscheidet, ob sie in die Datenbank gehören.
 
+## Annahme (Phase 3, gebaut am 2026-09-08)
+
+`POST /api/contributions` ist öffentlich. Angenommen wird `kind = module` mit
+`email`, `name`, `title`, `area`, `summary`, `trail` (Markdown des Record-Trails)
+und `files` (nur Verweise, `https`, höchstens 10; Entscheid 3). Grenzen: Titel
+3 bis 160 Zeichen, Zusammenfassung bis 4000, Trail bis 12 000, Name bis 120,
+Anfrage bis 32 KB (`api/contributions.mjs`, `LIMITS`; `api/server.mjs`,
+`BODY_CAP`). Ein leeres Feld `website` ist die Honigfalle: ist es gefüllt, wird
+nichts gespeichert, die Antwort ist trotzdem `202`, und die Kette erhält eine
+Zeile `spam.honeypot` ohne Personendaten.
+
+Die sechs ungültigen Eingaben, die das Gate prüft (`api/test/contributions.test.mjs`):
+fehlende Adresse, ungültige Adresse, leerer Titel, Bereich ausserhalb von
+`social, nature-based, technical, other`, Zusammenfassung über 4000 Zeichen,
+Datei-Verweis ohne `https`. Jede Abweisung nennt den Grund (`400`, `error`).
+
+Der Beitrag entsteht als `received`, der Akteur zur Adresse wird angelegt, falls
+neu, und der Bestätigungsverweis geht per Mail hinaus (`startVerification`). Der
+Verweis stellt alle offenen Beiträge dieser Adresse auf `confirmed` und gibt die
+Zugangsmarke aus. Wer schon eine gültige Marke für dieselbe Adresse mitschickt,
+reicht direkt als `confirmed` ein.
+
+Lesen: `GET /api/contributions` zeigt der prüfenden Rolle und dem Eigentümer die
+Schlange (`?status=` filtert), allen anderen nur Eigenes; `GET /api/contributions/:id`
+folgt `can(actor, 'read')`. Entscheiden: `PATCH /api/contributions/:id` mit
+`status` und `reason`; erlaubt sind `confirmed → reviewing`,
+`reviewing → admitted | rejected` (prüfende Rolle, Begründung ab 3 Zeichen
+Pflicht) und `received | confirmed | reviewing → withdrawn` (einreichende
+Person für Eigenes, Eigentümer für alles). Jeder Übergang ist eine Kettenzeile
+`contribution.<zustand>` mit Akteur und Begründung. Alles andere ist `409`.
+
 ## Personendaten
 
 Ein Beitrag enthält Name, E-Mail-Adresse und den Record-Trail der einreichenden

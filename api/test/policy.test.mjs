@@ -46,9 +46,9 @@ test("unbekannte handlung: immer nein", () => {
 
 test("migrationen laufen auf :memory: und sind idempotent", () => {
   const { db, migrations } = open(":memory:");
-  assert.equal(migrations.total, 2);
-  assert.equal(migrations.applied, 2);
-  assert.equal(db.prepare("SELECT value FROM meta WHERE key='schema'").get().value, "2");
+  assert.equal(migrations.total, 3);
+  assert.equal(migrations.applied, 3);
+  assert.equal(db.prepare("SELECT value FROM meta WHERE key='schema'").get().value, "3");
   db.close();
 });
 
