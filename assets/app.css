@@ -1653,6 +1653,12 @@ html{ scrollbar-gutter:stable }
   position:sticky; top:.85rem; align-self:start;
   height:calc(100dvh - 1.7rem); overflow:hidden auto; scrollbar-width:thin;
 }
+/* Der Rollbalken der Leiste: dünn, dunkler Griff, kein Trog, keine Pfeile. Windows
+   zeichnete sonst seinen hellen Systembalken in die dunkle, gerundete Leiste
+   (gtaura, 2026-09-08 22:35, Fenster rund 790 px hoch). Erscheint nur, wenn die
+   Leiste mehr trägt als das Fenster hoch ist. */
+.rail{ scrollbar-width:thin; scrollbar-color:color-mix(in srgb, var(--line-ui) 55%, transparent) transparent }
+.rail:hover{ scrollbar-color:var(--line-ui) transparent }
 @media (max-width:759.98px){
   .rail{ position:relative; top:auto; height:auto; overflow:hidden }
   .rail:not(.is-open) .nav__filters{ display:none }

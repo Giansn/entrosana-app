@@ -494,7 +494,11 @@ Marke und Konto ausser Sicht, während die Pille klebte. Neu (`app.css`, Block
 height:calc(100dvh - 1.7rem); overflow:hidden auto`. Gemessen bei 1440 × 900:
 Leiste 873 px, Oberkante 14 px bei Rolltiefe 0 und 1500, Marke und Konto
 sichtbar; bei 700 px Fensterhöhe 673 px und die Leiste rollt für sich. Unter
-760 px bleibt sie die zugeklappte Zeile im Fluss (`position:relative`).
+760 px bleibt sie die zugeklappte Zeile im Fluss (`position:relative`). Auf dem
+Rechner des Eigentümers (Windows, Fenster rund 790 px hoch, zwei Projekte) trug
+die Leiste mehr als das Fenster und zeigte den hellen Systembalken mit Pfeilen;
+seit 22:40 ist der Griff dünn und dunkel (`scrollbar-width:thin`,
+`scrollbar-color` aus `--line-ui`, Trog durchsichtig), voll erst beim Überfahren.
 
 **Das Formular unter `/contribute/submit`.** Vier Felder nebeneinander liefen
 ungleich hoch (Eingaben 44 px, Auswahl 63 px), acht von neun Beschriftungen
