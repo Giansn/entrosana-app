@@ -307,5 +307,52 @@ window.__seeds = {
     "n": "info@entrosana.com. Runway is granted against a written request, not a conversation."
    }
   ]
+ },
+ "contribute/003": {
+  "section": "contribute",
+  "title": "Contribute a module",
+  "who": "from an idea to a card on /modules under your name",
+  "steps": [
+   {
+    "t": "Pick the area and the shape",
+    "n": "Nature, social or technical; a lesson, a worksheet, a tool, a reading.",
+    "i": "Look at entrosana.app/modules to see what exists in each area. Your module lands in one of the three sections, so decide where it belongs before you write."
+   },
+   {
+    "t": "Write the one line and the lead sentence",
+    "n": "What it is, for whom, how long; one sentence that makes a teacher open it.",
+    "i": "The line under the title shows on the card: area · format · languages. The lead sentence is the first thing a visitor reads. Both can be changed later on /me/modules."
+   },
+   {
+    "t": "Gather the files",
+    "n": "Slides, worksheets, a reading; links to where they live.",
+    "i": "Files are linked, not uploaded. Put them where they can stay, for example your own site or a shared folder, and paste the links into the proposal. Nothing personal about children in any of them."
+   },
+   {
+    "t": "Send the proposal",
+    "n": "Form at entrosana.app/contribute/submit, or call 077 529 73 01.",
+    "i": "The form asks for name, e-mail, title, area, the proposal text and the file links. Mail works too: sygnif@entrosana.com."
+   },
+   {
+    "t": "Confirm your address",
+    "n": "Open the link in the mail within an hour.",
+    "i": "The proposal counts as submitted once the address is confirmed. Until then it is deleted after seven days."
+   },
+   {
+    "t": "Register and apply as contributor",
+    "n": "On entrosana.app/me: your name, then «Apply as contributor».",
+    "i": "Publishing under your name needs contributor standing; the team approves it with a reason, by mail. Collectors register freely, contributors are approved."
+   },
+   {
+    "t": "Wait for the team's reading",
+    "n": "Admit and publish is one step; you get a mail with the reason.",
+    "i": "The team reads the proposal against what it claims: does it do what it says, is the area right, are the files reachable. A «not yet» names what is missing."
+   },
+   {
+    "t": "Edit and grow the module",
+    "n": "On entrosana.app/me/modules: text, state, facts; add co-contributors.",
+    "i": "Set the state: only an idea, still in development, finished. Add the people who work on it with you; the card names everyone. Points from readers show on the card, reports reach sygnif@."
+   }
+  ]
  }
 };

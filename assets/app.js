@@ -365,7 +365,33 @@
   }
 
   // ---------------------------------------------------------------- Ansichten
+  // Erstes Projekt (2026-09-09): ein leerer Arbeitsplatz zeigt nichts, womit man anfangen könnte.
+  // Beim ersten Besuch ohne Projekte auf dem Gerät legt der Hub «Contribute a module» aus der
+  // Checkliste contribute/003 in den Board-Speicher, ohne Kettenzeile: das Gerät hat noch nichts getan.
+  var STARTER = "contribute/003", STARTER_FLAG = "entrosana-starter:v1";
+  function ensureStarter() {
+    if (!document.getElementById("oversight")) return false;
+    try {
+      if (localStorage.getItem(STARTER_FLAG)) return false;
+      var raw = localStorage.getItem("entrosana-todo-demo:v3");
+      var board = raw ? JSON.parse(raw) : null;
+      if (board && board.projects && Object.keys(board.projects).some(function (id) { return isActiveProject(board.projects[id]); })) { localStorage.setItem(STARTER_FLAG, "1"); return false; }
+      var seed = seeds[STARTER];
+      if (!seed || !seed.steps) return false;
+      var now = new Date().toISOString(), stamp = Date.now().toString(36);
+      var np = { id: STARTER, name: seed.title, seed: STARTER, created_at: now, updated_at: now, sort: "manual", view: "board", showDone: true,
+        tasks: seed.steps.map(function (s, i) { return { id: "t" + stamp + i, content: s.t || "", description: s.n || "", instructions: s.i || "", priority: 1, section_id: "pending", parent_id: null, order: i, labels: [], due: null, checked: false, completed_at: null }; }) };
+      board = board && board.projects ? board : { projects: {}, active: null, focus: null };
+      board.projects[STARTER] = np; board.active = STARTER; board.focus = null;
+      localStorage.setItem("entrosana-todo-demo:v3", JSON.stringify(board));
+      localStorage.setItem(STARTER_FLAG, "1");
+      if (window.__rail) try { window.__rail(); } catch (e) {}
+      return true;
+    } catch (e) { return false; }
+  }
+
   function paintWorkspace() {
+    ensureStarter();
     var emptyBox = document.getElementById("state-empty");
     var resumeBox = document.getElementById("state-resume");
     var resume = document.getElementById("resume");

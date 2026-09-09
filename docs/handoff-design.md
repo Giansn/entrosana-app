@@ -689,3 +689,13 @@ zwölf) und «What you get» (`gets`, bis acht Zeilen). Die Detailseite zeigt Be
 module» (Anfrage an `GET /api/me/modules/<slug>`, nur mit Marke). `updateEntry` bewahrt bei Originalen alle
 Felder, Reihenfolge und die Kommentare der Datei; belegt an einer Kopie und im Prüflauf `gate-modedit.mjs`.
 
+*Erstes Projekt im Arbeitsplatz (2026-09-09, spät).* Ein leerer Arbeitsplatz zeigte «Welcome» und sonst nichts, womit
+man anfangen konnte. `app.js::ensureStarter()` legt beim ersten Besuch der Startseite ohne aktive Projekte auf dem
+Gerät das Projekt «Contribute a module» (neue Checkliste `contribute/003`, acht Schritte: Gebiet und Form, Zeile und
+Kernsatz, Dateien, Vorschlag senden, Adresse bestätigen, registrieren und bewerben, Lesung des Teams, bearbeiten und
+wachsen lassen) in den Board-Speicher und merkt sich das in `entrosana-starter:v1`; ohne Kettenzeile, weil das Gerät
+noch nichts getan hat. Geräte mit eigenen Projekten bleiben unberührt (die Marke wird nur gesetzt). Die Karte
+«Continue and track your projects» zeigt dann 0/8 mit dem nächsten Schritt, die Leiste das Projekt, /project das
+Board mit acht Karten in Pending. Belegt: `gate-starter.mjs` (frisches Profil, zweiter Besuch ohne Dublette,
+Telefon, bestehendes Projekt).
+
