@@ -418,6 +418,15 @@ header.top .view__tools{ display:flex; align-items:center; gap:.5rem; margin-lef
   header.top .crumb{ margin-right:auto; min-width:0 }
   header.top .view__tools{ flex:1 1 100%; flex-wrap:wrap; gap:.4rem; margin-left:0 }
   header.top .view__tools select{ min-width:0 }
+  /* Karten (2026-09-09): der Text nutzt die Breite bis zum Rand. Die Knöpfe ↑↓ⓘ✕ liegen nicht mehr
+     als Spalte rechts über dem Text, sondern als Zeile unter der Karte; der Griff wird schmaler. */
+  .task, .col .task{ padding:.6rem .5rem .45rem .4rem; flex-wrap:wrap; gap:.4rem }
+  .task__rail{ width:1.9rem; gap:.35rem }
+  .task__body{ flex:1 1 0; min-width:0 }
+  .task__actions{ position:static; flex-direction:row; flex:1 1 100%; justify-content:flex-end; gap:.15rem;
+    opacity:.75; background:transparent; margin-top:-.15rem }
+  .task__actions button{ min-width:2.2rem; min-height:2rem }
+  .task__content{ font-size:1rem }
 }
 
 /* ---------- Berührung (2026-09-08) ----------
