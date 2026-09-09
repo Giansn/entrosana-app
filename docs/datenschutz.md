@@ -170,7 +170,7 @@ Encrypted backups of the database, the site and the Hub are written nightly:
 to our server, to a second disk at the same place, to our own Nextcloud on the
 same server, and one encrypted copy to Cloudflare R2 (Cloudflare, Inc.).
 Encryption happens before anything leaves our server; the providers cannot read
-the copies. Backups are kept [number] days.
+the copies. Backups are kept without a fixed limit for the time being; a retention period has not been set yet. Once it is, this statement is updated.
 
 ### 9. Who else receives data
 
@@ -328,7 +328,7 @@ Verschlüsselte Sicherungen von Datenbank, Website und Hub entstehen jede Nacht:
 auf unserem Server, auf einer zweiten Platte am selben Ort, in unserer eigenen
 Nextcloud auf demselben Server und als eine verschlüsselte Kopie bei Cloudflare
 R2 (Cloudflare, Inc.). Verschlüsselt wird, bevor etwas unseren Server verlässt;
-die Anbieter können die Kopien nicht lesen. Sicherungen bleiben [Zahl] Tage.
+die Anbieter können die Kopien nicht lesen. Sicherungen bleiben vorerst ohne feste Frist; eine Löschfrist ist noch nicht festgelegt. Sobald sie steht, wird diese Erklärung angepasst.
 
 ### 9. Wer sonst Daten erhält
 
@@ -380,4 +380,4 @@ oben nach.
 | Anfrage | Name, Adresse, Organisation, Art, Text | Antwort | Postfach info@ | 180 Tage | `api/server.mjs` |
 | Mail | Absender, Inhalt | Antwort, Sortierung | Proton AG (CH); SYGNIF-Software | Postfachregeln | Proton Bridge, Mail-Daemon |
 | Kette | Kontonummer, Handlung, Zeit, gekürzter Adress-Hash | Nachweis | — | dauerhaft | `api/audit.mjs` |
-| Sicherung | alles oben, verschlüsselt | Wiederherstellung | T9, Nextcloud (eigener Server), Cloudflare R2 | [Zahl] Tage | `~/entrosana-wp/backup.sh` |
+| Sicherung | alles oben, verschlüsselt | Wiederherstellung | T9, Nextcloud (eigener Server), Cloudflare R2 | vorerst unbefristet, Frist offen | `~/entrosana-wp/backup.sh` |
