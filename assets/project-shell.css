@@ -429,7 +429,10 @@ header.top .view__tools{ display:flex; align-items:center; gap:.5rem; margin-lef
   .task__content{ font-size:1rem }
   /* Kopfzeile (2026-09-09): Pfad, Suche und Thema in einer Reihe, die Werkzeuge darunter, «⋯» am Ende der Reihe. */
   header.top{ display:flex; align-items:center; gap:.45rem }
-  header.top .crumb{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-right:0 }
+  header.top .crumb{ flex:1 1 0; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-right:0 }   /* Basis 0: der Pfad zwingt nichts in die nächste Reihe */
+  header.top .view__tools{ gap:.35rem }
+  header.top .view__tools > *{ min-width:0 }
+  header.top .view__tools select{ flex:1 1 6rem; min-width:6rem }
   header.top .search, header.top .iconbtn{ flex:none }
   header.top .iconbtn{ width:2.75rem; height:2.75rem }
   header.top .view__tools button, header.top .view__tools select, header.top .view__tools .ghost{ min-height:2.6rem }
