@@ -48,11 +48,15 @@
       if (r.s !== 200) { out.appendChild(el("p", "note note--warn", r.j.error || ("HTTP " + r.s))); return; }
       var items = (r.j.items || []).filter(function (c) { return !filter || c.status === filter; }).sort(function (a, b) { return b.id - a.id; });
       if (!items.length) { out.appendChild(el("p", "fine", "Nothing here.")); return; }
+      var DONE = ["published", "rejected", "withdrawn"];   // abgeschlossen: nichts mehr zu tun
       items.forEach(function (c) {
-        var row = el("div", "rev");
+        var done = DONE.indexOf(c.status) >= 0;
+        var row = el("div", "rev" + (done ? " rev--done" : ""));
         var c1 = el("div", "rev__id"); c1.appendChild(el("span", null, "#" + c.id)); c1.appendChild(document.createElement("br")); c1.appendChild(el("span", "fine", when(c.created))); row.appendChild(c1);
         var c2 = el("div"); var t = el("p", "rev__t"); var ta = el("a", null, c.title); ta.href = "/review?c=" + c.id; t.appendChild(ta); c2.appendChild(t); c2.appendChild(el("span", "fine", c.area || "")); row.appendChild(c2);
-        row.appendChild(el("div", null, WORDS[c.status] || c.status));
+        var st = el("div");
+        if (done) { var dm = el("span", "note note--ok rev__done"); dm.appendChild(el("span", "led")); dm.appendChild(document.createTextNode("done")); st.appendChild(dm); st.appendChild(document.createElement("br")); }
+        st.appendChild(document.createTextNode(WORDS[c.status] || c.status)); row.appendChild(st);
         row.appendChild(el("div", "fine", "Trail: " + (c.trail_ok === 1 ? "verified" : c.trail_ok === 0 ? "wrong" : "—")));
         var o = el("a", "btn btn--quiet", "Open"); o.href = "/review?c=" + c.id; row.appendChild(o);
         out.appendChild(row);
@@ -141,9 +145,10 @@
       if (done.length) {
         out.appendChild(el("span", "eyebrow", "Decided (" + done.length + ")"));
         done.forEach(function (a) {
-          var row = el("div", "rev"); row.appendChild(el("div", "rev__id", "#" + a.id));
+          var row = el("div", "rev rev--done"); row.appendChild(el("div", "rev__id", "#" + a.id));
           var c2 = el("div"); c2.appendChild(el("p", "rev__t", a.actor_name || "—")); c2.appendChild(el("span", "fine", a.actor_email || "")); row.appendChild(c2);
-          row.appendChild(el("div", a.outcome === "approved" ? "note note--ok" : "note note--warn", a.outcome === "approved" ? "approved" : "declined"));
+          var st2 = el("div"); var dm2 = el("span", "note note--ok rev__done"); dm2.appendChild(el("span", "led")); dm2.appendChild(document.createTextNode("done")); st2.appendChild(dm2); st2.appendChild(document.createElement("br"));
+          st2.appendChild(el("span", a.outcome === "approved" ? "note note--ok" : "note note--warn", a.outcome === "approved" ? "approved" : "declined")); row.appendChild(st2);
           row.appendChild(el("div", "fine", when(a.decided))); row.appendChild(el("div", "fine", a.reason || "")); out.appendChild(row);
         });
       }

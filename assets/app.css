@@ -1834,6 +1834,9 @@ button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
 /* 2026-09-09: in den Kästen dieselbe Schrift wie im Rest der Seite (Calibri/Carlito), keine Mono-Spalten. */
 .rev, .rev .fine, .rev__id{ font-family:var(--font-sans) }
 .rev__id{ color:var(--muted) } .rev__id > span:first-child{ color:var(--seal); font-weight:600 }
+/* Abgeschlossene Kästen (2026-09-09): grüne Marke «done», leicht zurückgenommen. */
+.rev--done{ opacity:.78 } .rev--done:hover{ opacity:1 }
+.rev__done{ font-family:var(--font-mono); font-size:.72rem; letter-spacing:.08em; text-transform:uppercase }
 .rev__t{ font-weight:600; margin:0 } .rev__t a{ color:inherit }
 .rev__pre{ white-space:pre-wrap; font:inherit; line-height:1.55; margin:.4rem 0 1rem }
 .rev__tbl{ width:100%; border-collapse:collapse; font-size:.9rem }
