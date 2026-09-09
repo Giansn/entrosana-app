@@ -18,9 +18,8 @@ kommt.
 
 ## Vor dem Einfügen
 
-1. **Platzhalter füllen**: Firmenbezeichnung der Einzelfirma (Handelsregister
-   oder «entrosana, Gianluca Kühne»), Strasse, PLZ Ort, UID (CHE-…). Steht in
-   beiden Fassungen in eckigen Klammern.
+1. **Platzhalter**: gefüllt am 2026-09-09 (Entrosana, Mühlestrasse 42, 3123 Belp;
+   keine UID; Sicherungen vorerst ohne feste Frist). Nichts mehr in eckigen Klammern.
 2. **Protokolle von entrosana.com begrenzen.** Die Container `entrosana-wp-wordpress-1`
    und `entrosana-edge` schreiben Zugriffsprotokolle mit Client-Adressen in
    Docker-JSON-Dateien ohne Grenze (`docker inspect`: `json-file`, keine
@@ -55,8 +54,8 @@ Was die Zahlen belegt: `api/maintenance.mjs` (Fristen), `api/server.mjs`
 # Privacy
 
 **Who is responsible.** Entrosana is the sole proprietorship (Einzelfirma) of
-Gianluca Kühne, Mühlestrasse 42, 3123 Belp, Switzerland, business identification
-number [CHE-…]. Reach us at info@entrosana.com or 077 529 73 01. This statement
+Gianluca Kühne, Mühlestrasse 42, 3123 Belp, Switzerland. Reach us at
+info@entrosana.com or 077 529 73 01. This statement
 covers entrosana.com, entrosana.app and the mailboxes info@ and sygnif@. It
 follows the Swiss Data Protection Act (DSG) and, for people in the EU or EEA,
 the GDPR. Last changed 8 September 2026.
@@ -208,8 +207,8 @@ We change this statement when the service changes and note the date at the top.
 ## Deutsch — Datenschutzerklärung
 
 **Verantwortlich.** Entrosana ist die Einzelfirma von Gianluca Kühne,
-Mühlestrasse 42, 3123 Belp, Schweiz, UID [CHE-…], erreichbar unter info@entrosana.com
-oder 077 529 73 01. Diese Erklärung gilt für entrosana.com, entrosana.app und die
+Mühlestrasse 42, 3123 Belp, Schweiz, erreichbar unter info@entrosana.com oder
+077 529 73 01. Diese Erklärung gilt für entrosana.com, entrosana.app und die
 Postfächer info@ und sygnif@. Sie folgt dem Schweizer Datenschutzgesetz (DSG)
 und, für Personen im EU/EWR-Raum, der DSGVO. Stand 8. September 2026.
 
