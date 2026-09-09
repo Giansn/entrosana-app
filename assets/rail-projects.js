@@ -91,7 +91,8 @@
       return new Date(r.t).toDateString() === heute;
     }).length);
   }
-  if (window.__services) set("svc-count", window.__services.services.length);
+  // Zähler (2026-09-10): die eigene Liste setzt ihn auf /services; der Schnappschuss von e14 zählt nur für das Team.
+  try { var tk = JSON.parse(localStorage.getItem("entrosana-app:token") || "null"); if (window.__services && tk && (tk.standing === "owner" || tk.standing === "reviewer")) set("svc-count", window.__services.services.length); else set("svc-count", ""); } catch (e) { set("svc-count", ""); }
 
   // Die Projektliste klappt am Eintrag selbst auf und zu; der Zustand
   // übersteht den Seitenwechsel. Standard ist offen. Läuft synchron vor dem

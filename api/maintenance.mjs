@@ -55,6 +55,7 @@ export function exportActor(db, actor) {
   const requests = actor.email ? db.prepare("SELECT id, name, org, kind, text, created FROM requests WHERE email = ? ORDER BY id").all(actor.email) : [];
   const journal = db.prepare("SELECT id, text, public, created, updated FROM journal WHERE actor_id = ? ORDER BY id").all(actor.id);
   const invites = db.prepare("SELECT id, email, message, created, accepted FROM invites WHERE inviter_id = ? ORDER BY id").all(actor.id);
+  const services = db.prepare("SELECT id, name, what, grp, place, kind, target, interval_min, created, last_state, last_status, last_checked, last_beat FROM services WHERE actor_id = ? ORDER BY id").all(actor.id);
   return { exported: new Date().toISOString(), actor: { id: actor.id, kind: actor.kind, email: actor.email, name: actor.name, created: actor.created, org: actor.org || null, role: actor.role || null, about: actor.about || null, website: actor.website || null, langs: actor.langs || [], roles: [...(actor.roles || [])] },
-           contributions, applications, requests, journal, invites, audit, tokens };
+           contributions, applications, requests, journal, invites, services, audit, tokens };
 }

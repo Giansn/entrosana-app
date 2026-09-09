@@ -699,3 +699,12 @@ noch nichts getan hat. Geräte mit eigenen Projekten bleiben unberührt (die Mar
 Board mit acht Karten in Pending. Belegt: `gate-starter.mjs` (frisches Profil, zweiter Besuch ohne Dublette,
 Telefon, bestehendes Projekt).
 
+*Eigene Dienste (2026-09-10).* «Running services» war die Maschine des Hubs für alle; jetzt ist es die Liste des
+Kontos: leer mit Erklärungsblase für neue Konten, mit Knopf zur Anmeldung für Besucher, der Schnappschuss von e14 nur
+noch für das Team darunter. Der Dialog fragt Prüfart (url, mcp, webhook, tcp, tls), Adresse, Kategorie, Ort und
+Intervall; nach einem Webhook zeigt die Seite die geheime Adresse einmal mit einem curl-Einzeiler. Die Zeile trägt
+Punkt, Name mit Host, Zweck, Ort, Art und Intervall, Stand mit Zeit, «check now» oder «new address», «remove».
+Der Zähler in der Leiste zeigt die eigene Zahl, für das Team die der Maschine. Einzelheiten in docs/contributions.md.
+Helles Thema geprüft auf allen 18 Seiten (Kontrast nach WCAG): Bernstein «still in development» und der aktive
+Chip auf dem Siegel waren zu schwach, `--verify` im hellen Thema auf 4.9:1 gehoben.
+

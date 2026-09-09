@@ -361,7 +361,7 @@
     var rt = document.getElementById("rec-today");
     if (rt) rt.textContent = state.records.filter(function (r) { return isToday(r.t); }).length || "";
     var sc = document.getElementById("svc-count");
-    if (sc && window.__services) sc.textContent = window.__services.services.length;
+    if (sc && window.__services) { try { var stk = JSON.parse(localStorage.getItem("entrosana-app:token") || "null"); sc.textContent = (stk && (stk.standing === "owner" || stk.standing === "reviewer")) ? window.__services.services.length : ""; } catch (e) { sc.textContent = ""; } }
   }
 
   // ---------------------------------------------------------------- Ansichten

@@ -21,6 +21,7 @@ import { exportActor } from "./maintenance.mjs";
 import { standingOf, currentApplication, openApplication, listApplications, decideApplication } from "./applications.mjs";
 import { LANG_CODES, MAX_LANGS } from "./languages.mjs";
 import { listJournal, addEntry, updateEntry, deleteEntry, publicProfile, searchPublic } from "./journal.mjs";
+import { KINDS as SVC_KINDS, GROUPS as SVC_GROUPS, PLACES as SVC_PLACES, INTERVALS as SVC_INTERVALS, MAX_PER_ACTOR as SVC_MAX, parseCheck, guardTarget, runCheck, heartbeatState } from "./services.mjs";
 import { serviceToken, ensureServiceActor, resolveActor, issueToken, withRoles, newToken, sha } from "./auth.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -520,6 +521,116 @@ routes.set("POST /api/me/invites", async (ctx) => {
   send(ctx.res, 200, { ok: true, item: { id, email, message, created: now.toISOString(), accepted: null } });
 });
 
+// ── Eigene Dienste (2026-09-10): je Konto eine Liste, geprüft von e14 oder selbst gemeldet.
+const svcRow = (r) => {
+  const hb = r.kind === "webhook" ? heartbeatState(r) : null;
+  return { id: r.id, name: r.name, what: r.what || "", group: r.grp, place: r.place, kind: r.kind, interval: r.interval_min,
+           target_hint: r.kind === "webhook" ? null : (r.target || "").replace(/^(https?:\/\/[^/]+).*$/, "$1").slice(0, 80),
+           state: hb ? hb.state : (r.last_state || "wait"), status: hb ? hb.status : (r.last_status || "not checked yet"),
+           checked: r.last_checked, ms: r.last_ms, beat: r.last_beat, created: r.created };
+};
+const svcOf = (ctx, id) => {
+  const r = db.prepare("SELECT * FROM services WHERE id = ? AND actor_id = ?").get(Number(id), ctx.actor.id);
+  if (!r) throw new HttpError(404, "service not found");
+  return r;
+};
+async function svcCheckAndStore(r) {
+  if (r.kind === "webhook") return;
+  const res = await runCheck(r);
+  db.prepare("UPDATE services SET last_state = ?, last_status = ?, last_checked = ?, last_ms = ? WHERE id = ?").run(res.state, String(res.status).slice(0, 160), new Date().toISOString(), res.ms | 0, r.id);
+}
+routes.set("GET /api/me/services", (ctx) => {
+  if (!ctx.actor || ctx.actor.kind !== "email") throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+  const rows = db.prepare("SELECT * FROM services WHERE actor_id = ? ORDER BY grp, name").all(ctx.actor.id);
+  send(ctx.res, 200, { items: rows.map(svcRow), team: isTeam(ctx.actor), kinds: SVC_KINDS, groups: SVC_GROUPS, places: SVC_PLACES, intervals: SVC_INTERVALS, max: SVC_MAX });
+});
+routes.set("POST /api/me/services", async (ctx) => {
+  if (!ctx.actor || ctx.actor.kind !== "email") throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+  const body = await readJson(ctx.req);
+  const str = (v, max) => String(v == null ? "" : v).trim().slice(0, max);
+  const name = str(body.name, 80); if (name.length < 2) throw new HttpError(400, "name too short");
+  const n = db.prepare("SELECT COUNT(*) n FROM services WHERE actor_id = ?").get(ctx.actor.id).n;
+  if (n >= SVC_MAX) throw new HttpError(409, `at most ${SVC_MAX} services per account`);
+  const p = parseCheck(body.check); if (p.error) throw new HttpError(400, p.error);
+  const owner = ctx.actor.roles.has("owner");
+  if (p.host) { const g = await guardTarget(p.host, owner); if (g) throw new HttpError(400, g); }
+  const grp = SVC_GROUPS.includes(body.group) ? body.group : "Public";
+  const place = SVC_PLACES.includes(body.place) ? body.place : "via tunnel";
+  const interval = SVC_INTERVALS.includes(Number(body.interval)) ? Number(body.interval) : 60;
+  const now = new Date().toISOString();
+  let hook = null, hookHash = null;
+  if (p.kind === "webhook") { hook = newToken(); hookHash = sha(hook); }
+  const id = db.prepare(`INSERT INTO services(actor_id, name, what, grp, place, kind, target, hook_hash, interval_min, created, updated)
+                         VALUES (?,?,?,?,?,?,?,?,?,?,?)`).run(ctx.actor.id, name, str(body.what, 160) || null, grp, place, p.kind, p.target, hookHash, interval, now, now).lastInsertRowid;
+  auditAppend(db, { kind: "service.add", actor_id: ctx.actor.id, resource: "service:" + id, text: `${p.kind} service «${name}» added` });
+  const r = db.prepare("SELECT * FROM services WHERE id = ?").get(id);
+  await svcCheckAndStore(r);
+  const out = { ok: true, item: svcRow(db.prepare("SELECT * FROM services WHERE id = ?").get(id)) };
+  if (hook) out.hook_url = `${PUBLIC}/api/hooks/${hook}`;   // nur dieses eine Mal im Klartext
+  send(ctx.res, 200, out);
+});
+patterns.push([/^\/api\/me\/services\/(\d{1,12})$/, {
+  PATCH: async (ctx, [id]) => {
+    if (!ctx.actor || ctx.actor.kind !== "email") throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+    const r = svcOf(ctx, id); const body = await readJson(ctx.req);
+    const str = (v, max) => String(v == null ? "" : v).trim().slice(0, max);
+    const name = body.name !== undefined ? str(body.name, 80) : r.name; if (name.length < 2) throw new HttpError(400, "name too short");
+    const what = body.what !== undefined ? (str(body.what, 160) || null) : r.what;
+    const grp = body.group !== undefined && SVC_GROUPS.includes(body.group) ? body.group : r.grp;
+    const place = body.place !== undefined && SVC_PLACES.includes(body.place) ? body.place : r.place;
+    const interval = body.interval !== undefined && SVC_INTERVALS.includes(Number(body.interval)) ? Number(body.interval) : r.interval_min;
+    db.prepare("UPDATE services SET name = ?, what = ?, grp = ?, place = ?, interval_min = ?, updated = ? WHERE id = ?").run(name, what, grp, place, interval, new Date().toISOString(), r.id);
+    send(ctx.res, 200, { ok: true, item: svcRow(db.prepare("SELECT * FROM services WHERE id = ?").get(r.id)) });
+  },
+  DELETE: (ctx, [id]) => {
+    if (!ctx.actor || ctx.actor.kind !== "email") throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+    const r = svcOf(ctx, id);
+    db.prepare("DELETE FROM services WHERE id = ?").run(r.id);
+    auditAppend(db, { kind: "service.remove", actor_id: ctx.actor.id, resource: "service:" + r.id, text: `service «${r.name}» removed` });
+    send(ctx.res, 200, { ok: true });
+  },
+}]);
+patterns.push([/^\/api\/me\/services\/(\d{1,12})\/check$/, {
+  POST: async (ctx, [id]) => {
+    if (!ctx.actor || ctx.actor.kind !== "email") throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+    if (limited("svc-check:" + ctx.actor.id, 60)) throw new HttpError(429, "too many checks; the timer keeps checking on its own");
+    const r = svcOf(ctx, id); await svcCheckAndStore(r);
+    send(ctx.res, 200, { ok: true, item: svcRow(db.prepare("SELECT * FROM services WHERE id = ?").get(r.id)) });
+  },
+}]);
+patterns.push([/^\/api\/me\/services\/(\d{1,12})\/rotate$/, {
+  POST: (ctx, [id]) => {
+    if (!ctx.actor || ctx.actor.kind !== "email") throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+    const r = svcOf(ctx, id); if (r.kind !== "webhook") throw new HttpError(409, "only webhooks have an address");
+    const hook = newToken(); db.prepare("UPDATE services SET hook_hash = ?, updated = ? WHERE id = ?").run(sha(hook), new Date().toISOString(), r.id);
+    auditAppend(db, { kind: "service.rotate", actor_id: ctx.actor.id, resource: "service:" + r.id, text: "webhook address renewed" });
+    send(ctx.res, 200, { ok: true, hook_url: `${PUBLIC}/api/hooks/${hook}` });
+  },
+}]);
+// Lebenszeichen: öffentlich, nur die geheime Adresse zählt. GET reicht für einen Cron-Einzeiler.
+patterns.push([/^\/api\/hooks\/([A-Za-z0-9_-]{20,80})$/, {
+  GET: (ctx, [tok]) => hookBeat(ctx, tok, null),
+  POST: async (ctx, [tok]) => { let body = {}; try { body = await readJson(ctx.req); } catch {} hookBeat(ctx, tok, body); },
+}]);
+function hookBeat(ctx, tok, body) {
+  const r = db.prepare("SELECT * FROM services WHERE hook_hash = ? AND kind = 'webhook'").get(sha(tok));
+  if (!r) throw new HttpError(404, "unknown address");
+  if (limited("hook:" + r.id, 600)) throw new HttpError(429, "too many heartbeats");
+  const status = body && body.status != null ? String(body.status).trim().slice(0, 120) : (ctx.query.get("status") || "").slice(0, 120);
+  db.prepare("UPDATE services SET last_beat = ?, last_status = ?, last_checked = ? WHERE id = ?").run(new Date().toISOString(), status || null, new Date().toISOString(), r.id);
+  send(ctx.res, 200, { ok: true, service: r.name, received: new Date().toISOString() });
+}
+// Prüfuhr: jede Minute, was fällig ist; höchstens drei zugleich.
+async function svcTick() {
+  try {
+    const now = Date.now();
+    const due = db.prepare("SELECT * FROM services WHERE kind != 'webhook' ORDER BY last_checked").all()
+      .filter(r => !r.last_checked || now - Date.parse(r.last_checked) >= r.interval_min * 60e3).slice(0, 30);
+    for (let i = 0; i < due.length; i += 3) await Promise.all(due.slice(i, i + 3).map(r => svcCheckAndStore(r).catch(() => {})));
+  } catch (e) { console.error("service check failed:", e.message); }
+}
+setTimeout(() => { svcTick(); setInterval(svcTick, 60e3); }, 20e3);
+
 function lift(fn) { try { return fn(); } catch (e) { if (e && e.status) throw new HttpError(e.status, e.message); throw e; } }
 
 // Profil: Name (Pflicht vor dem Beitragen), Organisation, Rolle, eine Zeile,
@@ -737,6 +848,7 @@ routes.set("DELETE /api/me", async (ctx) => {
     db.prepare("DELETE FROM journal WHERE actor_id = ?").run(ctx.actor.id);                // Journal geht mit
     if (ctx.actor.email) db.prepare("DELETE FROM requests WHERE email = ?").run(ctx.actor.email);   // Anfragen unter derselben Adresse
     db.prepare("DELETE FROM invites WHERE inviter_id = ?").run(ctx.actor.id);              // eigene Einladungen gehen mit
+    db.prepare("DELETE FROM services WHERE actor_id = ?").run(ctx.actor.id);              // eigene Dienste gehen mit
     if (ctx.actor.email) db.prepare("UPDATE invites SET email = '(erased)' WHERE email = ?").run(ctx.actor.email);   // erhaltene: Adresse weg
     // Name bleibt nur, wenn ein Modul unter ihm stehen bleibt; die Adresse geht immer.
     db.prepare("UPDATE actors SET email = NULL, name = ?, org_id = NULL, org = NULL, role = NULL, about = NULL, website = NULL, langs = NULL, avatar = NULL, avatar_type = NULL, avatar_updated = NULL WHERE id = ?").run(kept ? ctx.actor.name : "(erased)", ctx.actor.id);

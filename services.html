@@ -80,9 +80,8 @@
       <section class="block hair">
         <span class="eyebrow">What is actually up</span>
         <h1 class="work__h">Running services.</h1>
-        <p class="work__sub measure">Read from the machine by
-          <span class="mono">tools/services-snapshot.sh</span>, not from a config file. Groups that
-          need attention are open; the quiet ones stay folded away.</p>
+        <p class="work__sub measure">Your own list of things that must be up: a school server, a file share, an MCP server, a job that
+          reports itself. Checked from the Hub's server, or reported by the service; groups that need attention are open, the quiet ones stay folded away.</p>
         <div id="svc-ui"></div>
       </section>
     </div>
@@ -93,7 +92,7 @@
 <dialog class="pick" id="svc-add">
   <div class="pick__box">
     <span class="eyebrow">Add a service</span>
-    <p class="h3">Something of yours, measured alongside ours.</p>
+    <p class="h3">Something of yours, watched from the Hub.</p>
     <div class="field">
       <label for="svc-name">Name</label>
       <input id="svc-name" type="text" placeholder="schulserver.local">
@@ -113,12 +112,32 @@
         <select id="svc-where"></select>
       </div>
     </div>
-    <div class="field">
-      <label for="svc-check">How e14 checks it</label>
-      <input id="svc-check" type="text" placeholder="url:http://schulserver.local:8080/">
-      <span class="help">One of <span class="mono">url:</span>, <span class="mono">unit:</span> or
-        <span class="mono">docker:</span>. The address stays on e14 — this page is public, so only
-        the name, the category and the result are shown.</span>
+    <div class="row2">
+      <div class="field">
+        <label for="svc-kind">How it is checked</label>
+        <select id="svc-kind">
+          <option value="url">url · the Hub opens an address</option>
+          <option value="mcp">mcp · an MCP server, tools counted</option>
+          <option value="webhook">webhook · it reports itself</option>
+          <option value="tcp">tcp · a port answers</option>
+          <option value="tls">tls · certificate and its expiry</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="svc-interval">How often</label>
+        <select id="svc-interval">
+          <option value="5">every 5 minutes</option>
+          <option value="15">every 15 minutes</option>
+          <option value="60" selected>every hour</option>
+          <option value="240">every 4 hours</option>
+          <option value="1440">once a day</option>
+        </select>
+      </div>
+    </div>
+    <div class="field" id="svc-target-field">
+      <label for="svc-target">Address</label>
+      <input id="svc-target" type="text" placeholder="https://schulserver.example.org/">
+      <span class="help" id="svc-target-help">The Hub's server opens it and expects an answer below 400. The address stays on the server; only name, category and result are shown, and only to you.</span>
     </div>
     <div class="actions">
       <button class="btn" type="button" data-act="svc-save">Add</button>

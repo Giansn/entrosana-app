@@ -482,3 +482,18 @@ Konten sind ausgeschlossen, je Adresse eine Einladung pro Tag, je Konto zehn pro
 Dienstes. Unbeantwortete Einladungen räumt die Wartung nach 180 Tagen weg; der Datenexport enthält die eigenen
 Einladungen, die Löschung des Kontos nimmt sie mit und anonymisiert erhaltene.
 
+## Eigene Dienste (2026-09-10)
+
+Die Seite /services führt je Konto eine eigene Liste (Migration 015, Tabelle `services`); ohne Konto und bei
+leerer Liste steht dort die Erklärung als Blase. Fünf Prüfarten: `url:` (e14 öffnet die Adresse, gut unter 400,
+401/403 als «needs sign-in»), `mcp:` (JSON-RPC `initialize` und `tools/list` über Streamable HTTP, zählt die
+Werkzeuge, Server hinter einem Schlüssel als «needs auth»), `tcp:host:port`, `tls:host` (Zertifikat, Warnung zwei
+Wochen vor Ablauf) und `webhook:` (der Dienst meldet sich per GET oder POST an `/api/hooks/<geheim>`, die Adresse
+wird einmal gezeigt, `status` wird mitgeführt; bleibt die Meldung länger als das Intervall aus, wird der Punkt
+bernstein, nach dem doppelten Intervall grau). Intervalle 5, 15, 60, 240, 1440 Minuten; eine Uhr im Dienst prüft
+jede Minute, was fällig ist, höchstens drei zugleich, mit 8 s Frist. Höchstens 30 Dienste je Konto, 60 Sofortprüfungen
+je Stunde, 600 Lebenszeichen je Adresse und Stunde. Zielschutz: private Adressen (Loopback, LAN, Link-local, Tailnet
+100.64/10, `.local`, `.ts.net`) und Namen, die dorthin auflösen, darf nur der Eigentümer messen lassen; e14 wird sonst
+zum Sprungbrett. Adressen bleiben auf dem Server; der Export enthält die eigenen Dienste, die Löschung nimmt sie mit.
+Der Schnappschuss der eigenen Maschine (`tools/services-snapshot.sh`) steht nur noch dem Team unter der Liste.
+

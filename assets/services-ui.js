@@ -1,243 +1,178 @@
-/* Dienste-Ansicht: Kategorien zum Auf- und Zuklappen, Herkunft je Zeile, und
-   eine eigene Liste.
- *
- * Drei Herkünfte, weil sie verschiedene Versprechen tragen:
- *   entrosana — kommt aus tools/services-snapshot.sh, auf e14 gemessen
- *   module    — mit einem Modul dazugekommen, gleiche Messung
- *   yours     — von dir eingetragen
- *
- * Ein grüner Punkt heisst: jemand hat nachgesehen. Gemessen wird auf e14, und
- * zwar nur, was in tools/services-watch.txt steht. Ein hier eingetragener
- * Dienst liegt deshalb zuerst nur auf diesem Gerät und steht als «not checked yet» — nie als «ok». Sobald derselbe Name aus dem Schnappschuss
- * kommt, verschwindet der lokale Eintrag von selbst; ab dann zeigt die Zeile
- * eine echte Messung.
- *
- * Zustand der Klappen und die eigene Liste liegen im localStorage, wie alles
- * andere in dieser App auch. */
+/* Eigene Dienste (2026-09-10): jedes Konto führt seine Liste auf dem Server. Geprüft wird
+   von e14 (url, mcp, tcp, tls) oder der Dienst meldet sich selbst (webhook). Ohne Konto
+   steht hier die Erklärung und der Weg zur Anmeldung; ein neues Konto sieht eine leere
+   Liste mit derselben Erklärung. Das Team sieht darunter den Schnappschuss der eigenen
+   Maschine (window.__services aus tools/services-snapshot.sh). */
 (function () {
   var UI = document.getElementById("svc-ui");
   if (!UI) return;
-
-  var K_OWN = "entrosana-services:v1";
-  var K_OPEN = "entrosana-svcgroups:v1";
-  var GROUPS = ["Public", "LAN and tailnet", "Data", "Jobs"];
-  var WHERE = ["via tunnel", "cloudflared", "LAN", "tailnet", "container only", "oneshot"];
-  var snap = window.__services || { host: "?", read: "?", services: [] };
-
-  function read(key, fallback) {
-    try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (e) { return fallback; }
+  var TOKEN_KEY = "entrosana-app:token", K_OPEN = "entrosana-svcgroups:v2";
+  function el(t, c, x) { var n = document.createElement(t); if (c) n.className = c; if (x != null) n.textContent = x; return n; }
+  function token() { try { var t = JSON.parse(localStorage.getItem(TOKEN_KEY) || "null"); return t && t.expires > new Date().toISOString() ? t : null; } catch (e) { return null; } }
+  function api(path, opts) {
+    opts = opts || {}; var tk = token(); var h = { Accept: "application/json" }; if (tk) h.Authorization = "Bearer " + tk.token; if (opts.body) h["Content-Type"] = "application/json";
+    return fetch(path, Object.assign({ headers: h }, opts)).then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }, function () { return { s: r.status, j: {} }; }); });
   }
-  function write(key, val) {
-    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { /* voll oder gesperrt */ }
-  }
-
-  var own = read(K_OWN, { items: [] });
-  if (!own.items) own.items = [];
+  function read(key, fb) { try { return JSON.parse(localStorage.getItem(key)) || fb; } catch (e) { return fb; } }
+  function write(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }
   var openState = read(K_OPEN, {});
+  var KIND_WORD = { url: "address", mcp: "MCP", webhook: "heartbeat", tcp: "port", tls: "certificate" };
+  var tk = token(), data = null;
 
-  // Was e14 inzwischen selbst misst, braucht keinen lokalen Platzhalter mehr.
-  var known = {};
-  snap.services.forEach(function (s) { known[s.name] = true; });
-  var before = own.items.length;
-  own.items = own.items.filter(function (o) { return !known[o.name]; });
-  if (own.items.length !== before) write(K_OWN, own);
-
-
-  function el(t, c, x) {
-    var n = document.createElement(t);
-    if (c) n.className = c;
-    if (x != null) n.textContent = x;
-    return n;
+  // Die Erklärung: für Besucher ohne Konto und für Konten ohne Eintrag dieselbe.
+  function bubble(signedIn) {
+    var h = el("div", "hint svc__bubble");
+    h.appendChild(el("p", "hint__t", signedIn ? "Your list is empty. Here is what it is for." : "What this page is"));
+    h.appendChild(el("p", null, "A list of things that must be up for your work: a school server, a file share in the staff room, an MCP server your assistant talks to, a nightly backup job. The Hub watches them and shows a dot per service: green when it answers, amber when something is off, grey when nothing has been heard yet."));
+    var ul = el("ul", "measure");
+    [["address", "the Hub's server opens a web address and expects an answer."],
+     ["MCP", "it speaks to an MCP server, lists its tools and counts them."],
+     ["port", "it checks that a port answers."],
+     ["certificate", "it reads the TLS certificate and warns two weeks before it expires."],
+     ["heartbeat", "for anything the Hub cannot reach, inside your network or a cron job: the service calls a secret address of its own, and the dot stays green as long as it keeps calling."]].forEach(function (k) { var li = el("li"); li.appendChild(el("b", null, k[0] + " — ")); li.appendChild(document.createTextNode(k[1])); ul.appendChild(li); });
+    h.appendChild(ul);
+    h.appendChild(el("p", null, signedIn ? "Addresses stay on the server; the list is yours and nobody else sees it. Add the first one below." : "The list belongs to your account and nobody else sees it. Sign in or register to keep one; it takes one mail."));
+    return h;
   }
 
-  function watchLine(o) {
-    return [o.name, o.what, o.group, o.where, o.check, "own"].join(" | ");
-  }
-
-  function rows() {
-    var out = [];
-    snap.services.forEach(function (s) {
-      out.push({ group: s.group, name: s.name, what: s.what, where: s.where,
-                 state: s.state, status: s.status, origin: s.origin || "entrosana" });
-    });
-    own.items.forEach(function (o, i) {
-      out.push({ group: o.group, name: o.name, what: o.what, where: o.where,
-                 state: "wait", status: "not checked yet", origin: "own", idx: i });
-    });
-    return out;
-  }
+  function ledFor(state) { return el("span", "led led--" + (state === "ok" ? "ok" : state === "warn" ? "warn" : state === "off" ? "off" : "wait")); }
+  function when(iso) { return iso ? String(iso).replace("T", " ").slice(0, 16) : "—"; }
 
   function paint() {
     UI.textContent = "";
-    var all = rows();
+    if (!tk) {
+      UI.appendChild(bubble(false));
+      var act = el("div", "actions"); var a1 = el("a", "btn", "Sign in or register"); a1.href = "/me"; act.appendChild(a1); UI.appendChild(act);
+      paintSnapshot(false);
+      return;
+    }
+    var items = (data && data.items) || [];
+    var bar = el("div", "svcbar");
+    var nOk = items.filter(function (r) { return r.state === "ok"; }).length, nBad = items.filter(function (r) { return r.state === "warn" || r.state === "off"; }).length, nWait = items.length - nOk - nBad;
+    if (items.length) {
+      var ok = el("span", "note note--ok"); ok.appendChild(el("span", "led")); ok.appendChild(document.createTextNode(nOk + " running")); bar.appendChild(ok);
+      if (nBad) { var w = el("span", "note note--warn"); w.appendChild(el("span", "led led--warn")); w.appendChild(document.createTextNode(nBad + " down")); bar.appendChild(w); }
+      if (nWait) { var q = el("span", "note note--idle"); q.appendChild(el("span", "led led--wait")); q.appendChild(document.createTextNode(nWait + " waiting")); bar.appendChild(q); }
+    }
+    var add = el("button", "btn", "+ Add a service"); add.type = "button"; add.addEventListener("click", openAdd); bar.appendChild(add);
+    UI.appendChild(bar);
+    var sc = document.getElementById("svc-count"); if (sc) sc.textContent = items.length || "";
+    if (!items.length) { UI.appendChild(bubble(true)); paintSnapshot(true); return; }
 
     var order = [], byGroup = {};
-    all.forEach(function (r) {
-      if (!byGroup[r.group]) { byGroup[r.group] = []; order.push(r.group); }
-      byGroup[r.group].push(r);
-    });
-
-    // Kopfzeile: zuerst die Zahl, die eine Antwort ist.
-    var nOk = 0, nBad = 0, nWait = 0;
-    all.forEach(function (r) {
-      if (r.state === "ok") nOk++;
-      else if (r.state === "warn" || r.state === "off") nBad++;
-      else nWait++;
-    });
-    var bar = el("div", "svcbar");
-    var ok = el("span", "note note--ok");
-    ok.appendChild(el("span", "led"));
-    ok.appendChild(document.createTextNode(nOk + " running"));
-    bar.appendChild(ok);
-    if (nBad) {
-      var w = el("span", "note note--warn");
-      w.appendChild(el("span", "led led--warn"));
-      w.appendChild(document.createTextNode(nBad + " down"));
-      bar.appendChild(w);
-    }
-    if (nWait) {
-      var q = el("span", "note note--idle");
-      q.appendChild(el("span", "led led--wait"));
-      q.appendChild(document.createTextNode(nWait + " waiting"));
-      bar.appendChild(q);
-    }
-    bar.appendChild(el("span", "note note--idle", snap.host + " · read " + snap.read));
-    var add = el("button", "btn", "+ Add a service");
-    add.type = "button";
-    add.addEventListener("click", openAdd);
-    bar.appendChild(add);
-    UI.appendChild(bar);
-
+    items.forEach(function (r) { if (!byGroup[r.group]) { byGroup[r.group] = []; order.push(r.group); } byGroup[r.group].push(r); });
     order.forEach(function (g) {
       var list = byGroup[g];
       var bad = list.filter(function (r) { return r.state === "warn" || r.state === "off"; }).length;
       var wait = list.filter(function (r) { return r.state !== "ok" && r.state !== "warn" && r.state !== "off"; }).length;
-
-      var d = el("details", "grp");
-      // Voreinstellung: zu, wenn alles läuft. Was Aufmerksamkeit braucht, steht offen.
-      d.open = openState[g] != null ? !!openState[g] : (bad > 0 || wait > 0);
+      var d = el("details", "grp"); d.open = openState[g] != null ? !!openState[g] : true;
       d.addEventListener("toggle", function () { openState[g] = d.open; write(K_OPEN, openState); });
-
-      var sum = el("summary");
-      sum.appendChild(el("span", "grp__n", g));
-      sum.appendChild(el("span", "grp__c", String(list.length)));
-      sum.appendChild(el("span", "grp__s " + (bad ? "warn" : wait ? "" : "ok"),
-                         bad ? bad + " down" : wait ? wait + " waiting" : "all ok"));
-      d.appendChild(sum);
-
-      var body = el("div", "grp__body");
-      var tbl = el("table", "tbl");
-      tbl.innerHTML = "<thead><tr><th></th><th>service</th><th>what it serves</th>" +
-        "<th>where</th><th>origin</th><th class='num'>state</th><th></th></tr></thead>";
+      var sum = el("summary"); sum.appendChild(el("span", "grp__n", g)); sum.appendChild(el("span", "grp__c", String(list.length)));
+      sum.appendChild(el("span", "grp__s " + (bad ? "warn" : wait ? "" : "ok"), bad ? bad + " down" : wait ? wait + " waiting" : "all ok")); d.appendChild(sum);
+      var body = el("div", "grp__body"), tbl = el("table", "tbl");
+      tbl.innerHTML = "<thead><tr><th></th><th>service</th><th>what it serves</th><th>where</th><th>check</th><th class='num'>state</th><th></th></tr></thead>";
       var tb = el("tbody");
       list.forEach(function (r) {
-        var tr = el("tr");
-        tr.innerHTML =
-          '<td><span class="led led--' + (r.state || "off") + '"></span></td>' +
-          '<td class="svc__n"></td><td class="svc__w"></td><td class="svc__p"></td>' +
-          '<td><span class="origin origin--' + r.origin + '"></span></td>' +
-          '<td class="svc__s ' + (r.state === "ok" ? "ok" : (r.state === "warn" || r.state === "off") ? "warn" : "") + ' num"></td>' +
-          '<td class="num"></td>';
-        tr.children[1].textContent = r.name;
-        tr.children[2].textContent = r.what;
-        tr.children[3].textContent = r.where;
-        tr.children[4].firstChild.textContent =
-          r.origin === "own" ? "yours" : r.origin === "module" ? "module" : "entrosana";
-        tr.children[5].textContent = r.status;
-        if (r.idx != null) {
-          var rm = el("button", "rowact rowact--danger", "remove");
-          rm.type = "button";
-          rm.addEventListener("click", function () {
-            own.items.splice(r.idx, 1);
-            write(K_OWN, own);
-            paint();
-          });
-          tr.children[6].appendChild(rm);
-        }
-        tb.appendChild(tr);
+        var tr = el("tr"); var c0 = el("td"); c0.appendChild(ledFor(r.state)); tr.appendChild(c0);
+        var c1 = el("td", "svc__n"); c1.appendChild(document.createTextNode(r.name)); if (r.target_hint) { c1.appendChild(document.createElement("br")); c1.appendChild(el("span", "fine", r.target_hint)); } tr.appendChild(c1);
+        tr.appendChild(el("td", "svc__w", r.what || "")); tr.appendChild(el("td", "svc__p", r.place));
+        var c4 = el("td", "svc__p"); c4.appendChild(el("span", "origin origin--own", KIND_WORD[r.kind] || r.kind)); c4.appendChild(document.createElement("br")); c4.appendChild(el("span", "fine", "every " + (r.interval >= 60 ? (r.interval / 60) + " h" : r.interval + " min"))); tr.appendChild(c4);
+        var c5 = el("td", "svc__s num " + (r.state === "ok" ? "ok" : (r.state === "warn" || r.state === "off") ? "warn" : "")); c5.appendChild(document.createTextNode(r.status || "")); c5.appendChild(document.createElement("br")); c5.appendChild(el("span", "fine", r.kind === "webhook" ? (r.beat ? "last " + when(r.beat) : "") : (r.checked ? "checked " + when(r.checked) : ""))); tr.appendChild(c5);
+        var c6 = el("td", "num");
+        if (r.kind !== "webhook") { var chk = el("button", "rowact", "check now"); chk.type = "button"; chk.addEventListener("click", function () { chk.textContent = "…"; api("/api/me/services/" + r.id + "/check", { method: "POST" }).then(function (x) { if (x.s === 200) load(); else chk.textContent = x.j.error || "failed"; }); }); c6.appendChild(chk); }
+        else { var rot = el("button", "rowact", "new address"); rot.type = "button"; rot.addEventListener("click", function () { if (!confirm("Renew the secret address? The old one stops working.")) return; api("/api/me/services/" + r.id + "/rotate", { method: "POST" }).then(function (x) { if (x.s === 200) showHook(r.name, x.j.hook_url); else rot.textContent = x.j.error || "failed"; }); }); c6.appendChild(rot); }
+        var rm = el("button", "rowact rowact--danger", "remove"); rm.type = "button"; rm.addEventListener("click", function () { if (!confirm("Remove «" + r.name + "» from your list?")) return; api("/api/me/services/" + r.id, { method: "DELETE" }).then(load); }); c6.appendChild(rm);
+        tr.appendChild(c6); tb.appendChild(tr);
       });
-      tbl.appendChild(tb);
-      body.appendChild(tbl);
-      d.appendChild(body);
-      UI.appendChild(d);
+      tbl.appendChild(tb); body.appendChild(tbl); d.appendChild(body); UI.appendChild(d);
     });
+    UI.appendChild(el("p", "note note--idle", "Checked from the Hub's server on the interval you set; heartbeats count when they arrive. Addresses stay on the server."));
+    paintSnapshot(true);
+  }
 
-    if (own.items.length) {
-      var h = el("div", "hint");
-      h.appendChild(el("p", "hint__t", own.items.length === 1
-        ? "One entry is waiting for its first check."
-        : own.items.length + " entries are waiting for their first check."));
-      h.appendChild(el("p", null,
-        "They live on this device. e14 measures a service once its line stands in " +
-        "tools/services-watch.txt — until then no green dot is claimed for it."));
-      var pre = el("pre", "watchline", own.items.map(watchLine).join("\n"));
-      h.appendChild(pre);
-      var copy = el("button", "btn btn--ghost", "Copy the lines");
-      copy.type = "button";
-      copy.addEventListener("click", function () {
-        var text = own.items.map(watchLine).join("\n");
-        function done() { copy.textContent = "Copied"; }
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(done, select);
-        } else { select(); }
-        function select() {
-          var r = document.createRange();
-          r.selectNodeContents(pre);
-          var s = window.getSelection();
-          s.removeAllRanges();
-          s.addRange(r);
-          copy.textContent = "Selected — copy it";
-        }
-      });
-      h.appendChild(copy);
-      UI.appendChild(h);
-    }
+  // Schnappschuss der eigenen Maschine: nur für das Team.
+  function paintSnapshot(signedIn) {
+    var snap = window.__services; if (!snap || !tk || !(tk.standing === "owner" || tk.standing === "reviewer")) return;
+    var sec = el("div", "svc__snap");
+    sec.appendChild(el("span", "eyebrow", "The Hub's own machine"));
+    sec.appendChild(el("p", "fine", snap.host + " · read " + snap.read + " · " + snap.services.length + " services · from tools/services-snapshot.sh, team only"));
+    var tbl = el("table", "tbl"); tbl.innerHTML = "<thead><tr><th></th><th>service</th><th>what it serves</th><th>where</th><th class='num'>state</th></tr></thead>";
+    var tb = el("tbody"), group = null;
+    snap.services.forEach(function (s) {
+      if (s.group !== group) { group = s.group; var g = el("tr", "svc__grp"); var gc = el("td", null, group); gc.colSpan = 5; g.appendChild(gc); tb.appendChild(g); }
+      var tr = el("tr"); var c0 = el("td"); c0.appendChild(ledFor(s.state)); tr.appendChild(c0);
+      tr.appendChild(el("td", "svc__n", s.name)); tr.appendChild(el("td", "svc__w", s.what)); tr.appendChild(el("td", "svc__p", s.where));
+      tr.appendChild(el("td", "svc__s num " + (s.state === "ok" ? "ok" : s.state === "warn" ? "warn" : ""), s.status)); tb.appendChild(tr);
+      if (s.flag) { var f = el("tr"); var fc = el("td"); fc.colSpan = 5; fc.appendChild(el("span", "svc__flag", s.flag)); f.appendChild(fc); tb.appendChild(f); }
+    });
+    tbl.appendChild(tb); sec.appendChild(tbl); UI.appendChild(sec);
+  }
+
+  function showHook(name, url) {
+    var box = el("div", "hint svc__hook");
+    box.appendChild(el("p", "hint__t", "The secret address for «" + name + "»"));
+    box.appendChild(el("p", null, "Shown once. Have the service call it on its schedule; GET or POST both count, an optional «status» text is kept. The dot stays green while the calls keep coming."));
+    var pre = el("pre", "watchline", url + "\n\ncurl -fsS " + url + "?status=ok"); box.appendChild(pre);
+    var copy = el("button", "btn btn--ghost", "Copy the address"); copy.type = "button";
+    copy.addEventListener("click", function () { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { copy.textContent = "Copied"; }); });
+    box.appendChild(copy);
+    var close = el("button", "btn btn--quiet", "Done"); close.type = "button"; close.addEventListener("click", function () { box.remove(); }); box.appendChild(close);
+    UI.insertBefore(box, UI.firstChild.nextSibling);
   }
 
   // ------------------------------------------------------------ Hinzufügen
   var dlg = document.getElementById("svc-add");
-
-  function fill(id, values) {
-    var sel = dlg.querySelector(id);
-    values.forEach(function (v) {
-      var o = document.createElement("option");
-      o.value = v; o.textContent = v;
-      sel.appendChild(o);
-    });
+  var HELP = { url: "The Hub's server opens it and expects an answer below 400. The address stays on the server; only you see this list.",
+               mcp: "Streamable HTTP endpoint of an MCP server, for example https://host/mcp. The Hub sends initialize and tools/list and counts the tools. Servers behind a key show as «needs auth».",
+               webhook: "No address needed: you get a secret address after adding. Your service calls it on its schedule; if the calls stop for longer than the interval, the dot turns amber, then grey.",
+               tcp: "host:port, for example mail.example.org:993. The Hub checks that the port answers.",
+               tls: "A host name, for example example.org. The Hub reads the certificate and warns two weeks before it expires." };
+  var PLACEHOLDER = { url: "https://schulserver.example.org/", mcp: "https://tools.example.org/mcp", webhook: "", tcp: "mail.example.org:993", tls: "example.org" };
+  function fill(id, values, selected) { var sel = dlg.querySelector(id); sel.textContent = ""; values.forEach(function (v) { var o = document.createElement("option"); o.value = v; o.textContent = v; if (v === selected) o.selected = true; sel.appendChild(o); }); }
+  function syncKind() {
+    var k = dlg.querySelector("#svc-kind").value, tf = dlg.querySelector("#svc-target-field");
+    dlg.querySelector("#svc-target-help").textContent = HELP[k]; dlg.querySelector("#svc-target").placeholder = PLACEHOLDER[k];
+    tf.hidden = k === "webhook";
   }
-
   function openAdd() {
     if (!dlg) return;
-    ["#svc-name", "#svc-what", "#svc-check"].forEach(function (id) {
-      dlg.querySelector(id).value = "";
-      dlg.querySelector(id).closest(".field").className = "field";
-    });
-    dlg.showModal();
+    if (!tk) { location.href = "/me"; return; }
+    ["#svc-name", "#svc-what", "#svc-target"].forEach(function (id) { dlg.querySelector(id).value = ""; dlg.querySelector(id).closest(".field").className = "field"; });
+    var msg = dlg.querySelector(".svc__msg"); if (msg) msg.remove();
+    syncKind(); dlg.showModal();
   }
-
   if (dlg) {
-    fill("#svc-group", GROUPS);
-    fill("#svc-where", WHERE);
+    var d0 = data || {};
+    fill("#svc-group", d0.groups || ["Public", "LAN and tailnet", "Data", "Jobs"], "Public");
+    fill("#svc-where", d0.places || ["via tunnel", "cloudflared", "LAN", "tailnet", "container only", "oneshot", "cloud", "on site"], "via tunnel");
+    dlg.querySelector("#svc-kind").addEventListener("change", syncKind);
     dlg.querySelector("[data-act='svc-save']").addEventListener("click", function () {
-      var name = dlg.querySelector("#svc-name").value.trim();
-      var nf = dlg.querySelector("#svc-name").closest(".field");
-      if (!name) { nf.className = "field is-bad"; return; }
-      nf.className = "field";
-      own.items.push({
-        name: name,
-        what: dlg.querySelector("#svc-what").value.trim() || "no description",
-        group: dlg.querySelector("#svc-group").value,
-        where: dlg.querySelector("#svc-where").value,
-        check: dlg.querySelector("#svc-check").value.trim() || "url:"
-      });
-      write(K_OWN, own);
-      dlg.close();
-      paint();
+      var name = dlg.querySelector("#svc-name").value.trim(), nf = dlg.querySelector("#svc-name").closest(".field");
+      if (!name) { nf.className = "field is-bad"; return; } nf.className = "field";
+      var kind = dlg.querySelector("#svc-kind").value, target = dlg.querySelector("#svc-target").value.trim();
+      var tfld = dlg.querySelector("#svc-target-field");
+      if (kind !== "webhook" && !target) { tfld.className = "field is-bad"; return; } tfld.className = "field";
+      var old = dlg.querySelector(".svc__msg"); if (old) old.remove();
+      var btn = dlg.querySelector("[data-act='svc-save']"); btn.disabled = true; btn.textContent = "Checking…";
+      api("/api/me/services", { method: "POST", body: JSON.stringify({ name: name, what: dlg.querySelector("#svc-what").value.trim(), group: dlg.querySelector("#svc-group").value, place: dlg.querySelector("#svc-where").value, check: kind + ":" + target, interval: Number(dlg.querySelector("#svc-interval").value) }) })
+        .then(function (r) {
+          btn.disabled = false; btn.textContent = "Add";
+          if (r.s === 200) { dlg.close(); load().then(function () { if (r.j.hook_url) showHook(name, r.j.hook_url); }); }
+          else { var m = el("p", "note note--warn svc__msg", r.j.error || ("HTTP " + r.s)); dlg.querySelector(".actions").before(m); }
+        }).catch(function () { btn.disabled = false; btn.textContent = "Add"; var m = el("p", "note note--warn svc__msg", "The Hub's server is not reachable right now."); dlg.querySelector(".actions").before(m); });
     });
     dlg.querySelector("[data-act='svc-cancel']").addEventListener("click", function () { dlg.close(); });
   }
 
-  paint();
-  // /services?add öffnet den Dialog direkt — praktisch zum Verlinken.
-  if (/(^|[?&])add(=|&|$)/.test(location.search)) openAdd();
+  function load() {
+    if (!tk) { paint(); return Promise.resolve(); }
+    return api("/api/me/services").then(function (r) {
+      if (r.s === 401) { tk = null; paint(); return; }
+      data = r.s === 200 ? r.j : { items: [] };
+      if (dlg && data.groups) { fill("#svc-group", data.groups, dlg.querySelector("#svc-group").value || "Public"); fill("#svc-where", data.places, dlg.querySelector("#svc-where").value || "via tunnel"); }
+      paint();
+    }).catch(function () { UI.textContent = ""; UI.appendChild(el("p", "note note--warn", "The Hub's server is not reachable right now.")); });
+  }
+  load();
+  if (/(^|[?&])add(=|&|$)/.test(location.search)) setTimeout(openAdd, 300);
 })();
