@@ -176,7 +176,7 @@
         if (pr.about) c2.appendChild(el("p", "fine", pr.about));
         row.appendChild(c2);
         var c3 = el("div"); c3.appendChild(el("span", "chip", STAND[a.standing] || a.standing)); if ((a.roles || []).length) c3.appendChild(el("p", "fine", "roles: " + a.roles.join(", "))); row.appendChild(c3);
-        row.appendChild(el("div", "fine", (a.contributions || 0) + " contributions · " + (a.open_applications || 0) + " open applications · " + (a.devices || 0) + " devices"));
+        row.appendChild(el("div", "fine", (a.contributions || 0) + " contributions · " + (a.open_applications || 0) + " open applications · " + (a.devices || 0) + " devices · " + (a.invites_sent || 0) + " invitations, " + (a.invites_accepted || 0) + " accepted"));
         var o = el("a", "btn btn--quiet", "Profile"); o.href = "/p/" + a.id; row.appendChild(o);
         out.appendChild(row);
       });

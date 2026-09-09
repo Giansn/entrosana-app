@@ -717,6 +717,12 @@ def _beitraege_kurz():
     konten = len([a for a in kj.get("items", []) if a.get("kind") == "email"]) if kcode == 200 else "?"
     rcode, rj = api_call("GET", "/api/requests")
     anfragen = len(rj.get("items", [])) if rcode == 200 else "?"
+    icode, ij = api_call("GET", "/api/invites")
+    einl = len(ij.get("items", [])) if icode == 200 else "?"
+    einl_offen = len([i for i in ij.get("items", []) if not i.get("accepted")]) if icode == 200 else "?"
+    mcode, mj = api_call("GET", "/api/modules/meta")
+    module = len(mj.get("items", {})) if mcode == 200 else "?"
+    punkte = sum(v.get("points", 0) for v in mj.get("items", {}).values()) if mcode == 200 else "?"
     return (f"<table><tr><td><b>Schlange</b><br><span class='mono'>{len(offen)} offen · {len(j.get('items', []))} gesamt</span></td>"
             "<td><a href='/contributions'>öffnen</a></td><td></td><td></td></tr>"
             f"<tr><td><b>Bewerbungen</b><br><span class='mono'>{bew} offen</span></td>"
@@ -724,7 +730,11 @@ def _beitraege_kurz():
             f"<tr><td><b>Konten</b><br><span class='mono'>{konten} Personen</span></td>"
             "<td><a href='/accounts'>öffnen</a></td><td></td><td></td></tr>"
             f"<tr><td><b>Anfragen</b><br><span class='mono'>{anfragen} offen · gingen an info@</span></td>"
-            "<td><a href='/requests'>öffnen</a></td><td></td><td></td></tr></table>")
+            "<td><a href='/requests'>öffnen</a></td><td></td><td></td></tr>"
+            f"<tr><td><b>Einladungen</b><br><span class='mono'>{einl_offen} offen · {einl} gesamt</span></td>"
+            "<td><a href='/invites'>öffnen</a></td><td></td><td></td></tr>"
+            f"<tr><td><b>Module aus Beiträgen</b><br><span class='mono'>{module} Module · {punkte} Punkte</span></td>"
+            "<td><a href='/modules'>öffnen</a></td><td></td><td></td></tr></table>")
 
 
 def dash():
@@ -1270,7 +1280,8 @@ SEEDS_FILE = APP / "assets" / "seeds.js"
 def _hub_kopf(titel):
     return (f"<h1>entro<span style='color:#2BD4E8'>sana</span>.app admin · {titel}</h1>"
             "<p class='mono'><a href='/'>← Übersicht</a> · <a href='/contributions'>Beiträge</a> · <a href='/applications'>Bewerbungen</a> · "
-            "<a href='/accounts'>Konten</a> · <a href='/requests'>Anfragen</a> · <a href='/checklists'>Checklisten</a></p>")
+            "<a href='/accounts'>Konten</a> · <a href='/requests'>Anfragen</a> · <a href='/invites'>Einladungen</a> · "
+            "<a href='/modules'>Module</a> · <a href='/checklists'>Checklisten</a></p>")
 
 
 STANDING_DE = {"collector": "Sammler", "contributor": "Beitragende", "reviewer": "Team", "owner": "Eigentümer", "service": "Dienst"}
@@ -1317,6 +1328,50 @@ def seeds_write(head, seeds):
     except Exception:
         pass
     return str(bak), n
+
+
+def invites_list():
+    code, j = api_call("GET", "/api/invites")
+    if code != 200:
+        return page("Einladungen", _hub_kopf("Einladungen") + f"<p class='err'>{html.escape(str(j.get('error', code)))}</p>")
+    items = j.get("items", [])
+    rows = "".join(f"<tr><td class='mono'>#{i['id']}</td><td><b>{html.escape(i.get('inviter_name') or '—')}</b><br><span class='mono'>{html.escape(i.get('inviter_email') or '')}</span></td>"
+                   f"<td class='mono'>{html.escape(i.get('email') or '')}</td><td>{html.escape(i.get('message') or '')}</td>"
+                   f"<td class='mono'>{_hub_wann(i.get('created'))}</td><td class='{'ok' if i.get('accepted') else 'mono'}'>{('angenommen ' + _hub_wann(i.get('accepted')) + ' · Konto ' + str(i.get('accepted_id'))) if i.get('accepted') else 'offen'}</td></tr>" for i in items)
+    offen = len([i for i in items if not i.get("accepted")])
+    return page("Einladungen", _hub_kopf("Einladungen") + f"<p class='note'>{len(items)} Einladungen, {offen} offen. Jedes Konto lädt auf seiner Kontoseite ein; der Link gilt sieben Tage, "
+                "unbeantwortete Einladungen räumt die Wartung nach 180 Tagen weg.</p>"
+                + (f"<table><tr><th></th><th>von</th><th>an</th><th>Nachricht</th><th>gesendet</th><th>Stand</th></tr>{rows}</table>" if items else "<p class='mono'>keine</p>"))
+
+
+def modules_list():
+    """Veröffentlichte Module der Spur «contributed»: Stand, Gebiet, Beitragende, Punkte; Beitragende hier ein- und austragen."""
+    mcode, meta = api_call("GET", "/api/modules/meta")
+    meta = meta.get("items", {}) if mcode == 200 else {}
+    _, eintraege = cat_entries()
+    mods = [e for e in eintraege if e.get("abteilung") == "modules" and e.get("gleis") == "contributed"]
+    rows = ""
+    for e in mods:
+        f = {k: v[2] for k, v in e["felder"].items()}
+        m = meta.get(e["slug"], {"contributors": [], "points": 0})
+        leute = "".join(f"<span class='mono'>{html.escape(c.get('name') or ('Konto ' + str(c.get('id'))))}</span> "
+                        f"<button class='btn ghost' data-rm='{e['slug']}' data-id='{c.get('id')}'>austragen</button><br>" for c in m.get("contributors", [])) or "<span class='mono'>—</span>"
+        form = (f"<input type='email' data-add='{e['slug']}' placeholder='E-Mail eines freigegebenen Kontos' style='width:16rem'> "
+                f"<button class='btn' data-addb='{e['slug']}'>eintragen</button> <span id='m-{e['slug']}' class='mono'></span>")
+        rows += (f"<tr><td><b>{html.escape(f.get('title', e['slug']))}</b><br><span class='mono'>{e['slug']}</span></td>"
+                 f"<td class='mono'>{html.escape(f.get('area', '—'))}<br>{html.escape(f.get('state', '—'))}<br>{html.escape(f.get('updated', '—'))}</td>"
+                 f"<td>{leute}{form}</td><td class='mono'>{m.get('points', 0)} Punkte</td>"
+                 f"<td><a href='/catalogue/{e['slug']}'>Text</a> · <a href='https://entrosana.app/modules/{e['slug']}' target='_blank'>ansehen</a></td></tr>")
+    script = ("<script>document.querySelectorAll('button[data-rm]').forEach(function(b){b.addEventListener('click',function(){var s=b.getAttribute('data-rm'),m=document.getElementById('m-'+s);m.textContent='…';"
+              "fetch('/api/modules/'+s+'/contributors/'+b.getAttribute('data-id')+'/remove',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})"
+              ".then(function(x){return x.json()}).then(function(j){if(j.ok){location.reload();}else{m.textContent=j.error||'Fehler';m.className='err';}});});});"
+              "document.querySelectorAll('button[data-addb]').forEach(function(b){b.addEventListener('click',function(){var s=b.getAttribute('data-addb'),i=document.querySelector('input[data-add=\"'+s+'\"]'),m=document.getElementById('m-'+s);"
+              "if(!i.value.trim()){m.textContent='Adresse fehlt';return;}m.textContent='…';m.className='mono';"
+              "fetch('/api/modules/'+s+'/contributors',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:i.value.trim()})})"
+              ".then(function(x){return x.json()}).then(function(j){if(j.ok){location.reload();}else{m.textContent=j.error||'Fehler';m.className='err';}});});});</script>")
+    return page("Module", _hub_kopf("Module") + "<p class='note'>Module, die aus Beiträgen entstanden sind. Jede eingetragene Person bearbeitet Text und Stand auf entrosana.app/me/modules; "
+                "hier trägt das Team Beitragende ein oder aus (mindestens eine Person bleibt). Die Karten der Modulseite nennen alle.</p>"
+                + (f"<table><tr><th>Modul</th><th>Gebiet · Stand · Änderung</th><th>Beitragende</th><th>Punkte</th><th></th></tr>{rows}</table>" if mods else "<p class='mono'>keine</p>") + script)
 
 
 def checklists_list():
@@ -1409,7 +1464,7 @@ def accounts_list():
         rows += (f"<tr><td class='mono'>#{a['id']}</td><td><b>{html.escape(a.get('name') or '—')}</b><br><span class='mono'>{html.escape(a.get('email') or a.get('kind'))}</span>{about}{web}</td>"
                  f"<td>{html.escape(STANDING_DE.get(a.get('standing'), a.get('standing')))}<br><span class='mono'>{html.escape(rollen)}</span></td>"
                  f"<td class='desc'>{html.escape(profil) or '—'}</td>"
-                 f"<td class='mono'>{a.get('contributions')} Beiträge<br>{a.get('open_applications')} Bewerbungen<br>{a.get('devices')} Geräte</td>"
+                 f"<td class='mono'>{a.get('contributions')} Beiträge<br>{a.get('open_applications')} Bewerbungen<br>{a.get('devices')} Geräte<br>{a.get('invites_sent', 0)} Einladungen, {a.get('invites_accepted', 0)} angenommen</td>"
                  f"<td class='mono'>{_hub_wann(a.get('created'))}</td></tr>")
     hinweis = ("<p class='note'>Rollen vergibt der Eigentümer auf dem Server: <span class='mono'>node ~/entrosana-app/api/admin.mjs grant &lt;email&gt; reviewer</span>. "
                "Beitragende entstehen über <a href='/applications'>Bewerbungen</a>.</p>")
@@ -1526,6 +1581,12 @@ class H(BaseHTTPRequestHandler):
         if u.path == "/requests":
             self._send(200, requests_list(parse_qs(u.query).get("all", [""])[0] == "1"))
             return
+        if u.path == "/invites":
+            self._send(200, invites_list())
+            return
+        if u.path == "/modules":
+            self._send(200, modules_list())
+            return
         if u.path == "/checklists":
             self._send(200, checklists_list())
             return
@@ -1572,6 +1633,18 @@ class H(BaseHTTPRequestHandler):
             elif re.match(r"^/api/requests/\d{1,12}/handled$", u.path):
                 rid = int(u.path.split("/")[3])
                 code, res = api_call("PATCH", f"/api/requests/{rid}", {"handled": bool(data.get("handled", True))})
+                if code != 200:
+                    raise ValueError(str(res.get("error", code)))
+                self._json({"ok": True})
+            elif re.match(r"^/api/modules/[a-z0-9-]+/contributors$", u.path):
+                slug = u.path.split("/")[3]
+                code, res = api_call("POST", f"/api/me/modules/{slug}/contributors", {"email": data.get("email", "")})
+                if code != 200:
+                    raise ValueError(str(res.get("error", code)))
+                self._json({"ok": True})
+            elif re.match(r"^/api/modules/[a-z0-9-]+/contributors/\d{1,12}/remove$", u.path):
+                parts = u.path.split("/")
+                code, res = api_call("DELETE", f"/api/me/modules/{parts[3]}/contributors/{parts[5]}")
                 if code != 200:
                     raise ValueError(str(res.get("error", code)))
                 self._json({"ok": True})

@@ -602,10 +602,19 @@ routes.set("GET /api/actors", (ctx) => {
   if (!isTeam(ctx.actor)) throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
   const rows = db.prepare(`SELECT a.*, (SELECT COUNT(*) FROM contributions c WHERE c.actor_id = a.id) contributions,
       (SELECT COUNT(*) FROM applications p WHERE p.actor_id = a.id AND p.decided IS NULL) open_applications,
-      (SELECT COUNT(*) FROM actor_tokens t WHERE t.actor_id = a.id AND t.expires > ?) devices FROM actors a ORDER BY a.id`).all(new Date().toISOString());
+      (SELECT COUNT(*) FROM actor_tokens t WHERE t.actor_id = a.id AND t.expires > ?) devices,
+      (SELECT COUNT(*) FROM invites i WHERE i.inviter_id = a.id) invites_sent,
+      (SELECT COUNT(*) FROM invites i WHERE i.inviter_id = a.id AND i.accepted IS NOT NULL) invites_accepted FROM actors a ORDER BY a.id`).all(new Date().toISOString());
   send(ctx.res, 200, { ok: true, items: rows.map(r => { const roles = rolesOf(db, r.id); return { id: r.id, kind: r.kind, email: r.email, name: r.name, created: r.created, roles: [...roles], standing: r.kind === "email" ? standingOf(roles) : r.kind,
     profile: { org: r.org || "", role: r.role || "", about: r.about || "", website: r.website || "", langs: r.langs ? String(r.langs).split(",").filter(Boolean) : [] },
-    contributions: r.contributions, open_applications: r.open_applications, devices: r.devices }; }) });
+    contributions: r.contributions, open_applications: r.open_applications, devices: r.devices, invites_sent: r.invites_sent, invites_accepted: r.invites_accepted }; }) });
+});
+// Einladungen fürs Team (2026-09-09): wer wen eingeladen hat, und ob die Adresse ein Konto wurde.
+routes.set("GET /api/invites", (ctx) => {
+  if (!isTeam(ctx.actor)) throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+  const items = db.prepare(`SELECT i.id, i.email, i.message, i.created, i.accepted, i.accepted_id, i.inviter_id, a.name inviter_name, a.email inviter_email
+      FROM invites i LEFT JOIN actors a ON a.id = i.inviter_id ORDER BY i.id DESC LIMIT 500`).all();
+  send(ctx.res, 200, { ok: true, items });
 });
 routes.set("GET /api/requests", (ctx) => {
   if (!isTeam(ctx.actor)) throw new HttpError(ctx.actor ? 403 : 401, "not allowed");

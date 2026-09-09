@@ -328,7 +328,7 @@ zweiter Weg). Tailscale Serve und Funnel leiten nichts auf diese Ports.
 
 | Konsole | Adresse | Was |
 |---|---|---|
-| Hub-Konsole (`~/entrosana-app/admin-app.py`) | http://100.115.236.97:8396/ | alles zum Hub: `/contributions` Beiträge prüfen, annehmen, veröffentlichen; `/applications` Bewerbungen freigeben oder ablehnen; `/accounts` Konten mit Profil, Stand, Rollen, Geräten; `/requests` Anfragen mit «erledigt»-Marke (`PATCH /api/requests/:id`); `/checklists` Projektvorlagen (seeds.js); `/page/<name>.html` Seitentexte; `/catalogue/<slug>` Karten; `/design` Gestaltung |
+| Hub-Konsole (`~/entrosana-app/admin-app.py`) | http://100.115.236.97:8396/ | alles zum Hub: `/contributions` Beiträge prüfen, annehmen, veröffentlichen; `/applications` Bewerbungen freigeben oder ablehnen; `/accounts` Konten mit Profil, Stand, Rollen, Geräten; `/requests` Anfragen mit «erledigt»-Marke (`PATCH /api/requests/:id`); `/invites` Einladungen (von, an, Stand); `/modules` Module aus Beiträgen mit Beitragenden und Punkten, Beitragende ein- und austragen; `/checklists` Projektvorlagen (seeds.js); `/page/<name>.html` Seitentexte; `/catalogue/<slug>` Karten mit Gebiet und Stand; `/design` Gestaltung |
 | Site-Editor (`~/entrosana-site/admin.py`) | http://100.115.236.97:8393/ | nur entrosana.com (WordPress-Texte, Fusszeile, Gestaltung der Live-Seite); eine Zeile zeigt auf die Hub-Konsole. Die Hub-Schicht, die am 2026-09-08 hier lag, wurde am 2026-09-09 nach :8396 gezogen, damit die Backends von .com und .app getrennt bleiben |
 
 Beide sprechen mit dem Dienst über die Dienstmarke (`~/.config/entrosana-api.token`,
