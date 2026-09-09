@@ -55,7 +55,7 @@
       a.className = "navitem" + (id === s.active ? " is-on" : "");
       a.href = "/project";
       a.appendChild(document.createElement("span")).className = "pdot";
-      a.appendChild(document.createTextNode(p.name || "Untitled"));
+      var nm = document.createElement("span"); nm.className = "navitem__t"; nm.textContent = p.name || "Untitled"; a.appendChild(nm);   // Ellipse statt abgeschnittenem Zähler (2026-09-09)
       var cnt = document.createElement("span");
       cnt.className = "cnt";
       cnt.textContent = done + "/" + tasks.length;

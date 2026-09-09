@@ -475,7 +475,7 @@
       var b = el("button", "navitem" + (id === state.active ? " is-on" : ""));
       b.type = "button";
       b.appendChild(el("span", "pdot"));
-      b.appendChild(document.createTextNode(pr.name));
+      b.appendChild(el("span", "navitem__t", pr.name));
       b.appendChild(el("span", "cnt", progress(pr)));
       b.addEventListener("click", function () {
         state.active = id; state.focus = null; save(); paint();

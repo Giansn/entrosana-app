@@ -427,6 +427,19 @@ header.top .view__tools{ display:flex; align-items:center; gap:.5rem; margin-lef
     opacity:.75; background:transparent; margin-top:-.15rem }
   .task__actions button{ min-width:2.2rem; min-height:2rem }
   .task__content{ font-size:1rem }
+  /* Kopfzeile (2026-09-09): Pfad, Suche und Thema in einer Reihe, die Werkzeuge darunter, «⋯» am Ende der Reihe. */
+  header.top{ display:flex; align-items:center; gap:.45rem }
+  header.top .crumb{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-right:0 }
+  header.top .search, header.top .iconbtn{ flex:none }
+  header.top .iconbtn{ width:2.75rem; height:2.75rem }
+  header.top .view__tools button, header.top .view__tools select, header.top .view__tools .ghost{ min-height:2.6rem }
+  header.top .top__more{ margin-left:auto; width:2.75rem; height:2.75rem }
+  .lanebar{ flex-wrap:wrap; overflow:visible }
+  .lanebar__b{ min-height:2.6rem }
+  /* Kartenknöpfe: Priorität, Spaltenwahl, Leistenchips der Eingabezeile in Fingerhöhe. */
+  .task .prio{ min-width:2.4rem; min-height:2.4rem }
+  .move-sel{ min-height:2.4rem; font-size:.8rem }
+  .chipbtn{ min-height:2.4rem; padding-inline:.7rem }
 }
 
 /* ---------- Berührung (2026-09-08) ----------

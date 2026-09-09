@@ -1873,3 +1873,23 @@ button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
   select option:checked{ color:var(--seal); font-weight:600 }
   select option::checkmark{ content:"" }
 }
+
+/* Leiste (2026-09-09): lange Projektnamen enden in einer Ellipse, der Zähler bleibt stehen. */
+.nav__projects .navitem{ display:flex; align-items:center; min-width:0 }
+.nav__projects .navitem__t{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.nav__projects .navitem .cnt{ flex:none; margin-left:auto }
+/* Eigene Module: das Adressfeld für Mitwirkende in voller Breite. */
+.mods .actions input[type=email]{ flex:1 1 14rem; min-width:12rem; font:inherit; font-size:.95rem; padding:.5rem .7rem; border:1px solid var(--line); border-radius:8px; background:transparent; color:inherit }
+
+/* Telefon (2026-09-09): Fingerziele nach Material mindestens 44 px; Kartenfusszeile darf umbrechen. */
+@media (max-width:760px){
+  .iconbtn{ width:2.75rem; height:2.75rem }
+  .btn{ min-height:2.75rem; padding:.6rem 1.1rem; display:inline-flex; align-items:center; justify-content:center }
+  a.chip, button.chip{ padding:.5rem .85rem; min-height:2.4rem; display:inline-flex; align-items:center }
+  .langpick__letter{ width:2.4rem; height:2.4rem; font-size:.9rem }
+  .ov__more, .top__more{ width:2.75rem; height:2.75rem }
+  input[type=checkbox]{ width:1.5rem; height:1.5rem }
+  .mcard__m{ flex-wrap:wrap }
+  .mcard__m > span:first-child{ white-space:normal; overflow:visible }
+}
+
