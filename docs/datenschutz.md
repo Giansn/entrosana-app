@@ -55,7 +55,7 @@ Was die Zahlen belegt: `api/maintenance.mjs` (Fristen), `api/server.mjs`
 # Privacy
 
 **Who is responsible.** entrosana is the sole proprietorship (Einzelfirma) of
-Gianluca Kühne, [street], [ZIP city], Switzerland, business identification
+Gianluca Kühne, Mühlestrasse 42, [ZIP city], Switzerland, business identification
 number [CHE-…]. Reach us at info@entrosana.com or 077 529 73 01. This statement
 covers entrosana.com, entrosana.app and the mailboxes info@ and sygnif@. It
 follows the Swiss Data Protection Act (DSG) and, for people in the EU or EEA,
@@ -208,7 +208,7 @@ We change this statement when the service changes and note the date at the top.
 ## Deutsch — Datenschutzerklärung
 
 **Verantwortlich.** entrosana ist die Einzelfirma von Gianluca Kühne,
-[Strasse], [PLZ Ort], Schweiz, UID [CHE-…], erreichbar unter info@entrosana.com
+Mühlestrasse 42, [PLZ Ort], Schweiz, UID [CHE-…], erreichbar unter info@entrosana.com
 oder 077 529 73 01. Diese Erklärung gilt für entrosana.com, entrosana.app und die
 Postfächer info@ und sygnif@. Sie folgt dem Schweizer Datenschutzgesetz (DSG)
 und, für Personen im EU/EWR-Raum, der DSGVO. Stand 8. September 2026.
