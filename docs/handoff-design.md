@@ -664,3 +664,10 @@ eigenen Worten und der Liste der gesendeten Einladungen (gesendet am, angenommen
 Die Schlange (/review) trägt seit heute Kästen in der Seitenschrift, eine Marke «done» für abgeschlossene Vorgänge
 und den Reiter «Members» (alle Konten mit Stand, Rollen, Profil und Zahlen).
 
+*Aufklärung auf der Kontoseite (2026-09-09, spät).* Unter dem Profil steht ein Block «Record trail and visibility»:
+was der Record Trail ist (nur wachsende Liste, jede Zeile gegen die vorige versiegelt, bleibt im Browser, verlässt
+das Gerät nur mit einem Vorschlag oder Export; der Dienst führt seine eigene, prüfbare Kette), was öffentlich ist
+(Profilseite, veröffentlichte Module, Punkte als Zahl) und was privat bleibt (Adresse, private Journalzeilen,
+Aufzeichnungen auf dem Gerät, Vorschläge bis zur Veröffentlichung, Bewerbungen, Einladungen; das Team sieht, was es
+für seine Arbeit braucht). Für Rechte und Fristen verweist er auf https://entrosana.com/privacy.
+

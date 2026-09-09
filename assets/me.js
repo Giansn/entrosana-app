@@ -224,6 +224,14 @@
     });
     var pl = el("p", "fine"); pl.appendChild(document.createTextNode("Your public profile: ")); var pa = el("a", null, location.origin + "/p/" + me.id); pa.href = "/p/" + me.id; pl.appendChild(pa); pl.appendChild(document.createTextNode(" — name, picture, standing, profile and public journal entries are visible to anyone.")); idc.appendChild(pl);
 
+    // Aufklärung (2026-09-09): was der Record Trail ist und wer was sieht; Einzelheiten in der Datenschutzerklärung.
+    var secInfo = block("Record trail and visibility", null, null), infb = el("div", "card me");
+    infb.appendChild(el("p", "me__line", "Record trail: every step you take in a project on this device is written to a list that only grows. Each line is sealed against the one before it, so a change anywhere shows up when the chain is verified. The trail stays in this browser; it leaves the device only when you attach it to a proposal or export it. The Hub keeps a chain of its own for decisions, and anyone can verify it."));
+    infb.appendChild(el("p", "me__line", "Public: your profile page with name, organisation, role, the one line about you, website, languages, picture and the journal entries you mark public; modules published under your name; points as a count, never by name."));
+    infb.appendChild(el("p", "me__line", "Private: your e-mail address, private journal entries, the records on this device, proposals until they are published, applications and invitations. The team (owner and reviewers) sees proposals, applications, requests and accounts to do its work."));
+    var pv = el("p", "fine"); pv.appendChild(document.createTextNode("Further information, your rights and the retention periods: ")); var pva = el("a", null, "privacy statement"); pva.href = "https://entrosana.com/privacy"; pva.target = "_blank"; pva.rel = "noopener"; pv.appendChild(pva); pv.appendChild(document.createTextNode(". Export or erase your data under «Your data» below."));
+    infb.appendChild(pv); secInfo.appendChild(infb);
+
     // Team (2026-09-09): Eigentümer und Prüfende sehen die Schlange in der Gestaltung des Hubs.
     if (me.standing === "owner" || me.standing === "reviewer") {
       var secTeam = block("Team", null, null), tbx = el("div", "card me");
