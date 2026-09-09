@@ -1857,3 +1857,19 @@ button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
 .mcard__contact a{ color:var(--seal) }
 .area__intro{ margin-bottom:.9rem } .area__intro .work__sub{ margin-bottom:.3rem }
 
+/* Aufklappmenüs (2026-09-09): der Browser zeichnete die offene Liste in seinen Farben. Wo der
+   Browser «customizable select» kann (Chromium seit 135, auch Android), gehört die Liste dem Haus:
+   Kartenfarbe, Linie, Siegel für die Auswahl, Mono wo das Feld Mono ist. Sonst bleibt es nativ. */
+@supports (appearance: base-select) {
+  select, ::picker(select){ appearance:base-select }
+  select{ border:1px solid var(--line); border-radius:8px; background:var(--card-bg, transparent); color:inherit; padding:.45em .7em }
+  select::picker-icon{ color:var(--muted); content:"▾"; margin-left:.5em }
+  ::picker(select){
+    background:var(--card-bg); color:var(--ink); border:1px solid var(--line); border-radius:10px;
+    padding:.3rem; box-shadow:var(--shadow-2, 0 12px 30px rgba(0,0,0,.35)); margin-top:.25rem; font:inherit;
+  }
+  select option{ padding:.5rem .8rem; border-radius:6px; color:var(--ink); background:transparent; min-height:2.2rem }
+  select option:hover, select option:focus-visible{ background:color-mix(in srgb, var(--seal) 16%, transparent); outline:none }
+  select option:checked{ color:var(--seal); font-weight:600 }
+  select option::checkmark{ content:"" }
+}
