@@ -20,7 +20,9 @@ kommt.
 
 1. **Platzhalter**: gefüllt am 2026-09-09 (Entrosana, Mühlestrasse 42, 3123 Belp;
    keine UID; Sicherungen vorerst ohne feste Frist). Nichts mehr in eckigen Klammern.
-2. **Protokolle von entrosana.com begrenzen.** Die Container `entrosana-wp-wordpress-1`
+2. **Protokolle: entschieden 2026-09-09.** Keine 30-Tage-Zusage mehr; der Text sagt «noch ohne
+   feste Löschfrist». Die Begrenzung bleibt als Wunsch (unten), ist aber keine Bedingung mehr.
+   Die Container `entrosana-wp-wordpress-1`
    und `entrosana-edge` schreiben Zugriffsprotokolle mit Client-Adressen in
    Docker-JSON-Dateien ohne Grenze (`docker inspect`: `json-file`, keine
    `max-size`). Der Text verspricht 30 Tage. Das braucht root:
@@ -29,14 +31,18 @@ kommt.
    in `docker-compose.yml` je Dienst `logging: {driver: json-file, options: {max-size: "20m", max-file: "3"}}`
    und `docker compose up -d`. Bis dahin den Satz auf «bis wir sie löschen» ändern
    oder ihn weglassen.
-3. **SYGNIF und Modelle bestätigen.** Das Postfach sygnif@entrosana.com wird
+3. **SYGNIF und Modelle: bestätigt 2026-09-09.** Claude (Anthropic, PBC, USA) liest das Postfach
+   sygnif@entrosana.com; der Text nennt Anbieter und Land. Zur Geschichte: das Postfach wird
    von eigener Software über Proton Bridge auf dem eigenen Server gelesen
    (IMAP 127.0.0.1:1143). Ob Mailinhalte an ein gehostetes Sprachmodell
    (RunPod, USA) gehen, konnte ich aus dem Code nicht belegen. Der Satz in
    Klammern in Abschnitt «Mail» ist entsprechend zu setzen oder zu streichen.
-4. **Zertifizierungen prüfen**: Cloudflare, Inc. und GitHub, Inc. (Microsoft)
-   führen das Data Privacy Framework mit Schweizer Erweiterung; nachsehen unter
-   dataprivacyframework.gov/list, Datum notieren.
+4. **Zertifizierungen: geprüft 2026-09-09.** Cloudflare, Inc. und GitHub, Inc. nennen in ihren
+   eigenen Datenschutzerklärungen die Zertifizierung unter dem Swiss-U.S. Data Privacy Framework
+   (cloudflare.com/privacypolicy, docs.github.com/privacy). Anthropic, PBC nennt in seiner Erklärung
+   vom 8. Juli 2026 keine DPF-Zertifizierung und stützt Übermittlungen auf Standardvertragsklauseln.
+   Die Teilnehmerliste dataprivacyframework.gov/list ist ohne JavaScript nicht lesbar; bei
+   Gelegenheit dort nachsehen und das Datum nachführen.
 5. **Einfügen**: Seite «Privacy» auf entrosana.com im Editor :8393 oder per
    wp-cli (`docs/handoff.md` von entrosana-wp); danach die englische Fassung
    dort, die deutsche als Unterseite oder Umschalter. Datum «8 September 2026»
@@ -58,13 +64,21 @@ Gianluca Kühne, Mühlestrasse 42, 3123 Belp, Switzerland. Reach us at
 info@entrosana.com or 077 529 73 01. This statement
 covers entrosana.com, entrosana.app and the mailboxes info@ and sygnif@. It
 follows the Swiss Data Protection Act (DSG) and, for people in the EU or EEA,
-the GDPR. Last changed 8 September 2026.
+the GDPR. Last changed 9 September 2026.
 
 **The short version.** We collect as little as the service needs. No advertising,
 no analytics, no tracking, no third-party content on our pages. Most of what you
 do in the Hub stays in your browser. What you send us is used to answer you, to
 review what you propose, and, if you ask for it, to publish under your name.
 Everything has a deletion date, and you can delete your own data yourself.
+
+**Where your data rests, and where it is processed.** Our residency promise
+covers storage: your data rests on our own server in Switzerland, with one
+encrypted backup copy at Cloudflare R2. Processing is a separate matter.
+Delivery runs through Cloudflare (USA), our code lives at GitHub (USA), and mail
+to sygnif@entrosana.com is read by Claude, a language model run by Anthropic
+(USA). Where our pages say «Swiss/EU», they mean the residency of stored data,
+not the seat of every provider that processes it.
 
 ### 1. Visiting our pages
 
@@ -77,7 +91,8 @@ security features may inject a small script into pages; it does not track you.
 
 Our origin server keeps a request log: IP address, path, status, duration and, if
 you are signed in to the Hub, your account number. The Hub's log is deleted after
-14 days. The website's log is deleted after 30 days.
+14 days. The website's log has no fixed deletion period yet; we say so here
+rather than promise one.
 
 Fonts and scripts come from our own domain. Loading a page contacts nothing else.
 
@@ -149,9 +164,12 @@ is needed.
 
 Our mailboxes are hosted at Proton AG, Geneva, Switzerland. Confirmation,
 decision and notification mails are sent from our account through Proton's
-servers. Mail to sygnif@entrosana.com is pre-sorted by our own software on our
-server in Switzerland; people read it and people decide. [If that software sends
-mail content to a hosted language model, name the provider and country here.]
+servers. Mail to sygnif@entrosana.com is read by our own software on our server in
+Switzerland, which passes the content to Claude, a language model run by
+Anthropic, PBC, San Francisco, USA, to sort it and to draft replies; people
+decide what goes out. Mail content therefore reaches a provider in the USA.
+Anthropic works under standard contractual clauses; its privacy policy of
+8 July 2026 names no Data Privacy Framework certification.
 What you tell us by phone is noted only as far as needed to answer you.
 
 ### 7. Our own record
@@ -175,9 +193,11 @@ the copies. Backups are kept without a fixed limit for the time being; a retenti
 
 Cloudflare, Inc., USA (delivery, security, tunnel, one encrypted backup copy);
 Proton AG, Switzerland (mail); GitHub, Inc., USA (code repository, which
-includes the catalogue with published contributors' names). Cloudflare and
-GitHub are certified under the Swiss-U.S. Data Privacy Framework; where that does
-not apply, standard contractual clauses do. We sell nothing and share nothing
+includes the catalogue with published contributors' names); Anthropic, PBC, USA
+(the language model that reads the sygnif@ mailbox). Cloudflare and GitHub state
+in their privacy statements that they are certified under the Swiss-U.S. Data
+Privacy Framework (checked 9 September 2026); Anthropic relies on standard
+contractual clauses, as does everything else that the framework does not cover. We sell nothing and share nothing
 for advertising. A teacher or a school never receives more than what you
 publish.
 
@@ -210,7 +230,7 @@ We change this statement when the service changes and note the date at the top.
 Mühlestrasse 42, 3123 Belp, Schweiz, erreichbar unter info@entrosana.com oder
 077 529 73 01. Diese Erklärung gilt für entrosana.com, entrosana.app und die
 Postfächer info@ und sygnif@. Sie folgt dem Schweizer Datenschutzgesetz (DSG)
-und, für Personen im EU/EWR-Raum, der DSGVO. Stand 8. September 2026.
+und, für Personen im EU/EWR-Raum, der DSGVO. Stand 9. September 2026.
 
 **Kurz.** Wir erheben so wenig, wie der Dienst braucht. Keine Werbung, keine
 Analyse, kein Tracking, keine fremden Inhalte auf unseren Seiten. Das meiste,
@@ -218,6 +238,15 @@ was Sie im Hub tun, bleibt in Ihrem Browser. Was Sie uns schicken, dient der
 Antwort, der Prüfung Ihres Vorschlags und, wenn Sie es wollen, der
 Veröffentlichung unter Ihrem Namen. Alles hat eine Löschfrist, und Ihre eigenen
 Daten löschen Sie selbst.
+
+**Wo Ihre Daten liegen, und wo sie verarbeitet werden.** Unser Versprechen zur
+Datenresidenz betrifft die Ablage: Ihre Daten liegen auf unserem eigenen Server
+in der Schweiz, mit einer verschlüsselten Sicherungskopie bei Cloudflare R2. Die
+Verarbeitung ist etwas anderes. Die Auslieferung läuft über Cloudflare (USA),
+unser Code liegt bei GitHub (USA), und Mail an sygnif@entrosana.com liest Claude,
+ein Sprachmodell von Anthropic (USA). Wo unsere Seiten «Swiss/EU» sagen, ist die
+Residenz der abgelegten Daten gemeint, nicht der Sitz jedes Anbieters, der sie
+verarbeitet.
 
 ### 1. Besuch der Seiten
 
@@ -231,7 +260,8 @@ Seiten einfügen; es verfolgt Sie nicht.
 
 Unser Server führt ein Zugriffsprotokoll: IP-Adresse, Pfad, Status, Dauer und,
 wenn Sie im Hub angemeldet sind, Ihre Kontonummer. Das Protokoll des Hubs wird
-nach 14 Tagen gelöscht, das der Website nach 30 Tagen.
+nach 14 Tagen gelöscht; das der Website hat noch keine feste Löschfrist, was wir
+hier sagen, statt eine zu versprechen.
 
 Schriften und Skripte kommen von unserer eigenen Domain. Der Aufruf einer Seite
 kontaktiert sonst nichts.
@@ -306,10 +336,12 @@ ohne Ihren Text. Ein Konto ist nicht nötig.
 
 Unsere Postfächer liegen bei Proton AG, Genf, Schweiz. Bestätigungen, Entscheide
 und Hinweise verschicken wir aus unserem Konto über Protons Server. Mail an
-sygnif@entrosana.com wird von eigener Software auf unserem Server in der Schweiz
-vorsortiert; gelesen wird sie von Menschen, entschieden wird von Menschen. [Wenn
-diese Software Mailinhalte an ein gehostetes Sprachmodell gibt: Anbieter und
-Land hier nennen.] Was Sie uns am Telefon sagen, notieren wir nur, soweit es die
+sygnif@entrosana.com liest eigene Software auf unserem Server in der Schweiz und
+gibt den Inhalt an Claude, ein Sprachmodell von Anthropic, PBC, San Francisco,
+USA, das sortiert und Antworten entwirft; entschieden wird von Menschen.
+Mailinhalte gelangen damit zu einem Anbieter in den USA. Anthropic arbeitet auf
+Grundlage von Standardvertragsklauseln; seine Erklärung vom 8. Juli 2026 nennt
+keine Zertifizierung unter dem Data Privacy Framework. Was Sie uns am Telefon sagen, notieren wir nur, soweit es die
 Antwort braucht.
 
 ### 7. Unsere eigene Aufzeichnung
@@ -333,9 +365,12 @@ die Anbieter können die Kopien nicht lesen. Sicherungen bleiben vorerst ohne fe
 
 Cloudflare, Inc., USA (Auslieferung, Sicherheit, Tunnel, eine verschlüsselte
 Sicherungskopie); Proton AG, Schweiz (Mail); GitHub, Inc., USA (Code-Archiv mit
-dem Katalog, der die Namen veröffentlichter Beitragender enthält). Cloudflare
-und GitHub sind unter dem Swiss-U.S. Data Privacy Framework zertifiziert; wo das
-nicht greift, gelten Standardvertragsklauseln. Wir verkaufen nichts und geben
+dem Katalog, der die Namen veröffentlichter Beitragender enthält); Anthropic,
+PBC, USA (das Sprachmodell, das das Postfach sygnif@ liest). Cloudflare und
+GitHub nennen in ihren Datenschutzerklärungen die Zertifizierung unter dem
+Swiss-U.S. Data Privacy Framework (geprüft am 9. September 2026); Anthropic
+stützt sich auf Standardvertragsklauseln, wie alles, was das Framework nicht
+deckt. Wir verkaufen nichts und geben
 nichts für Werbung weiter. Eine Lehrperson oder Schule erhält nie mehr, als Sie
 veröffentlichen.
 
@@ -371,12 +406,12 @@ oben nach.
 |---|---|---|---|---|---|
 | Auslieferung | IP, Browserkennung, Anfrage | Betrieb, Sicherheit | Cloudflare (USA) | bei Cloudflare nach deren Regeln | Tunnel, `~/.cloudflared/config.yml` |
 | Protokoll Hub-API | IP, Pfad, Status, Dauer, Kontonummer | Betrieb, Missbrauch | — | 14 Tage | `tools/rotate-logs.sh` |
-| Protokoll Website | IP, Pfad, Status | Betrieb | — | 30 Tage (nach Punkt 2 oben) | Docker json-file |
+| Protokoll Website | IP, Pfad, Status | Betrieb | — | noch ohne feste Frist | Docker json-file |
 | Konto | Adresse, Registrierung, Marken (gehasht), Profil, Bild | Identität, Veröffentlichung, Entscheide, öffentliches Profil | öffentlich: alles ausser Adresse und Marken | bis zur Löschung; unbestätigt 7 d; Marke 30 d; Verweis 1 h | `api/auth.mjs`, `api/maintenance.mjs` |
 | Journal | Text, Zeit, öffentlich/privat | Lernjournal, öffentliches Profil | öffentliche Einträge: alle | bis zur Löschung des Eintrags oder Kontos | `api/journal.mjs` |
 | Bewerbung | Text, Zeit, Entscheid, Begründung | Freigabe als Beitragende | Team; Postfach sygnif@ | 24 Monate nach Entscheid | `api/applications.mjs` |
 | Vorschlag | Name, Adresse, Titel, Bereich, Text, Dateiverweise, Trail | Prüfung, Veröffentlichung | Team; Postfach sygnif@; GitHub (Katalog) | unbestätigt 7 d; sonst bis Entscheid / solange veröffentlicht | `api/contributions.mjs` |
 | Anfrage | Name, Adresse, Organisation, Art, Text | Antwort | Postfach info@ | 180 Tage | `api/server.mjs` |
-| Mail | Absender, Inhalt | Antwort, Sortierung | Proton AG (CH); SYGNIF-Software | Postfachregeln | Proton Bridge, Mail-Daemon |
+| Mail | Absender, Inhalt | Antwort, Sortierung | Proton AG (CH); SYGNIF-Software; Anthropic (USA, Claude) | Postfachregeln | Proton Bridge, Mail-Daemon |
 | Kette | Kontonummer, Handlung, Zeit, gekürzter Adress-Hash | Nachweis | — | dauerhaft | `api/audit.mjs` |
 | Sicherung | alles oben, verschlüsselt | Wiederherstellung | T9, Nextcloud (eigener Server), Cloudflare R2 | vorerst unbefristet, Frist offen | `~/entrosana-wp/backup.sh` |
