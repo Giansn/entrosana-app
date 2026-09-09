@@ -26,7 +26,7 @@
 
   function nav(active) {
     var chips = el("div", "chips");
-    [["queue", "Proposals", "/review"], ["applications", "Applications", "/review?tab=applications"]].forEach(function (t) {
+    [["queue", "Proposals", "/review"], ["applications", "Applications", "/review?tab=applications"], ["members", "Members", "/review?tab=members"]].forEach(function (t) {
       var a = el("a", "chip" + (t[0] === active ? " chip--on" : ""), t[1]); a.href = t[2]; chips.appendChild(a);
     });
     var c = el("a", "chip", "Console :8396 ↗"); c.href = "http://100.115.236.97:8396/contributions"; c.target = "_blank"; c.rel = "noopener"; chips.appendChild(c);
@@ -50,7 +50,7 @@
       if (!items.length) { out.appendChild(el("p", "fine", "Nothing here.")); return; }
       items.forEach(function (c) {
         var row = el("div", "rev");
-        var c1 = el("div", "mono"); c1.appendChild(el("span", null, "#" + c.id)); c1.appendChild(document.createElement("br")); c1.appendChild(el("span", "fine", when(c.created))); row.appendChild(c1);
+        var c1 = el("div", "rev__id"); c1.appendChild(el("span", null, "#" + c.id)); c1.appendChild(document.createElement("br")); c1.appendChild(el("span", "fine", when(c.created))); row.appendChild(c1);
         var c2 = el("div"); var t = el("p", "rev__t"); var ta = el("a", null, c.title); ta.href = "/review?c=" + c.id; t.appendChild(ta); c2.appendChild(t); c2.appendChild(el("span", "fine", c.area || "")); row.appendChild(c2);
         row.appendChild(el("div", null, WORDS[c.status] || c.status));
         row.appendChild(el("div", "fine", "Trail: " + (c.trail_ok === 1 ? "verified" : c.trail_ok === 0 ? "wrong" : "—")));
@@ -122,7 +122,7 @@
       out.appendChild(el("span", "eyebrow", "Open (" + open.length + ")"));
       if (!open.length) out.appendChild(el("p", "fine", "none"));
       open.forEach(function (a) {
-        var row = el("div", "rev"); var c1 = el("div", "mono", "#" + a.id); row.appendChild(c1);
+        var row = el("div", "rev"); var c1 = el("div", "rev__id", "#" + a.id); row.appendChild(c1);
         var c2 = el("div"); c2.appendChild(el("p", "rev__t", a.actor_name || "—")); c2.appendChild(el("span", "fine", a.actor_email || "")); c2.appendChild(el("pre", "rev__pre", a.text || "")); row.appendChild(c2);
         row.appendChild(el("div", "fine", when(a.created)));
         var form = el("div", "rev__form"); var reason = el("textarea"); reason.rows = 2; reason.placeholder = "Reason, at least three characters"; form.appendChild(reason);
@@ -141,7 +141,7 @@
       if (done.length) {
         out.appendChild(el("span", "eyebrow", "Decided (" + done.length + ")"));
         done.forEach(function (a) {
-          var row = el("div", "rev"); row.appendChild(el("div", "mono", "#" + a.id));
+          var row = el("div", "rev"); row.appendChild(el("div", "rev__id", "#" + a.id));
           var c2 = el("div"); c2.appendChild(el("p", "rev__t", a.actor_name || "—")); c2.appendChild(el("span", "fine", a.actor_email || "")); row.appendChild(c2);
           row.appendChild(el("div", a.outcome === "approved" ? "note note--ok" : "note note--warn", a.outcome === "approved" ? "approved" : "declined"));
           row.appendChild(el("div", "fine", when(a.decided))); row.appendChild(el("div", "fine", a.reason || "")); out.appendChild(row);
@@ -150,5 +150,33 @@
     });
   }
 
-  if (q.get("c")) detail(q.get("c")); else if (q.get("tab") === "applications") applications(); else list();
+  // Mitglieder (2026-09-09): alle Konten mit Stand, Rollen, Profil und Zahlen; die Rollen vergibt der Server.
+  var STAND = { collector: "collector", contributor: "contributor", reviewer: "reviewer", owner: "owner" };
+  function members() {
+    var sec = block("Team", "Members", "Everyone with an account. Collectors register freely; contributor standing comes through an application. Roles are granted on the server.");
+    sec.appendChild(nav("members"));
+    var out = el("div"); sec.appendChild(out); out.appendChild(el("p", "fine", "Loading…"));
+    api("/api/actors").then(function (r) {
+      out.textContent = "";
+      if (r.s !== 200) { out.appendChild(el("p", "note note--warn", r.j.error || ("HTTP " + r.s))); return; }
+      var items = (r.j.items || []).filter(function (a) { return a.kind === "email"; }).sort(function (a, b) { return b.id - a.id; });
+      out.appendChild(el("p", "fine", items.length + (items.length === 1 ? " account" : " accounts")));
+      items.forEach(function (a) {
+        var pr = a.profile || {};
+        var row = el("div", "rev");
+        var c1 = el("div", "rev__id"); c1.appendChild(el("span", null, "#" + a.id)); c1.appendChild(document.createElement("br")); c1.appendChild(el("span", "fine", "since " + when(a.created).slice(0, 10))); row.appendChild(c1);
+        var c2 = el("div"); var t = el("p", "rev__t"); var ta = el("a", null, a.name || "(no name yet)"); ta.href = "/p/" + a.id; t.appendChild(ta); c2.appendChild(t);
+        c2.appendChild(el("span", "fine", a.email || ""));
+        var line = [pr.role, pr.org, (pr.langs || []).join(", ")].filter(Boolean).join(" · "); if (line) c2.appendChild(el("p", "fine", line));
+        if (pr.about) c2.appendChild(el("p", "fine", pr.about));
+        row.appendChild(c2);
+        var c3 = el("div"); c3.appendChild(el("span", "chip", STAND[a.standing] || a.standing)); if ((a.roles || []).length) c3.appendChild(el("p", "fine", "roles: " + a.roles.join(", "))); row.appendChild(c3);
+        row.appendChild(el("div", "fine", (a.contributions || 0) + " contributions · " + (a.open_applications || 0) + " open applications · " + (a.devices || 0) + " devices"));
+        var o = el("a", "btn btn--quiet", "Profile"); o.href = "/p/" + a.id; row.appendChild(o);
+        out.appendChild(row);
+      });
+    });
+  }
+
+  if (q.get("c")) detail(q.get("c")); else if (q.get("tab") === "applications") applications(); else if (q.get("tab") === "members") members(); else list();
 })();

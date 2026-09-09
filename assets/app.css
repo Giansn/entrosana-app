@@ -1827,7 +1827,13 @@ html{ scrollbar-gutter:stable }
 .chips{ display:flex; flex-wrap:wrap; gap:.4rem; margin:.6rem 0 1rem }
 button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
 .chip--on{ background:var(--seal); color:#071316; border-color:var(--seal) }
-.rev{ display:grid; grid-template-columns:8rem minmax(0,1fr) 12rem 6rem 4rem; gap:.8rem; padding:.75rem 0; border-bottom:1px solid var(--line); align-items:start }
+.rev{ display:grid; grid-template-columns:8rem minmax(0,1fr) 12rem 6rem 4rem; gap:.8rem; align-items:start;
+  border:1px solid var(--line); border-radius:var(--radius); background:var(--card-bg); box-shadow:var(--shadow-1);
+  padding:var(--pad-card); margin:0 0 .8rem }   /* 2026-09-09: jede Zeile ein Kasten, wie die Karten der Seite */
+.rev .btn--quiet{ justify-self:end }
+/* 2026-09-09: in den Kästen dieselbe Schrift wie im Rest der Seite (Calibri/Carlito), keine Mono-Spalten. */
+.rev, .rev .fine, .rev__id{ font-family:var(--font-sans) }
+.rev__id{ color:var(--muted) } .rev__id > span:first-child{ color:var(--seal); font-weight:600 }
 .rev__t{ font-weight:600; margin:0 } .rev__t a{ color:inherit }
 .rev__pre{ white-space:pre-wrap; font:inherit; line-height:1.55; margin:.4rem 0 1rem }
 .rev__tbl{ width:100%; border-collapse:collapse; font-size:.9rem }
@@ -1839,7 +1845,7 @@ button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
 .mods{ display:grid; gap:1rem }
 .mods .rev__form{ max-width:none }
 .ptbar{ display:flex; flex-wrap:wrap; gap:.6rem; align-items:center }
-@media (max-width:760px){ .rev{ grid-template-columns:1fr; gap:.25rem } }
+@media (max-width:760px){ .rev{ grid-template-columns:1fr; gap:.3rem; padding:.9rem 1rem } .rev .btn--quiet{ justify-self:start } }
 
 /* Modulseite in Gebieten (2026-09-09): Karte + Kontaktzeile als ein Element der Kartenwand. */
 .mitem{ display:flex; flex-direction:column; gap:.45rem; min-width:0 }
