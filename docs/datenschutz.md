@@ -43,7 +43,9 @@ kommt.
    vom 8. Juli 2026 keine DPF-Zertifizierung und stützt Übermittlungen auf Standardvertragsklauseln.
    Die Teilnehmerliste dataprivacyframework.gov/list ist ohne JavaScript nicht lesbar; bei
    Gelegenheit dort nachsehen und das Datum nachführen.
-5. **Einfügen**: Seite «Privacy» auf entrosana.com im Editor :8393 oder per
+5. **Eingefügt am 2026-09-09**: Seite «Privacy» (ID 17) trägt die englische Fassung, die
+   Unterseite /privacy/de/ (ID 161) die deutsche; beide als ein `wp:html`-Block mit den Klassen
+   der bisherigen Seite. Ursprünglicher Weg: Seite «Privacy» auf entrosana.com im Editor :8393 oder per
    wp-cli (`docs/handoff.md` von entrosana-wp); danach die englische Fassung
    dort, die deutsche als Unterseite oder Umschalter. Datum «8 September 2026»
    stehen lassen, bei Änderungen nachführen.

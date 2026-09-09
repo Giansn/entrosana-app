@@ -671,3 +671,13 @@ das Gerät nur mit einem Vorschlag oder Export; der Dienst führt seine eigene, 
 Aufzeichnungen auf dem Gerät, Vorschläge bis zur Veröffentlichung, Bewerbungen, Einladungen; das Team sieht, was es
 für seine Arbeit braucht). Für Rechte und Fristen verweist er auf https://entrosana.com/privacy.
 
+*Residenz gegen Verarbeitung (2026-09-09, spät).* Der Eigentümer bestätigte: Claude (Anthropic, USA) liest das
+Postfach sygnif@; «Swiss/EU» gilt der Datenresidenz, nicht dem Dienst. Auf entrosana.com sagen Service (ID 12) und
+Roadmap (ID 112) das nun: die Zelle «model» der gehosteten Stufe heisst «CH/EU or USA», die Marke «managed ·
+Swiss/EU data residency», der Absatz der gehosteten Stufe nennt die Anbieter in der Schweiz und den USA. Die Seite
+Privacy (ID 17) trägt die neue englische Erklärung, /privacy/de/ (ID 161) die deutsche. Die Textschnittstelle
+(`/texts/<id>`) lehnte die Änderungen ab, weil sie die Klassenzahl der Seite vergleicht; gesetzt wurde per
+`wp eval-file` im wpcli-Container mit `kses_remove_filters()` und `--user=gianson`, Sicherungen der drei Beiträge
+in `~/entrosana-app-backups/wp-post-<id>.*.html`. Im Hub sagt der Block «Record trail and visibility» auf /me
+dasselbe in einem Absatz, und der Schritt «It arrives» auf /contribute nennt Claude.
+
