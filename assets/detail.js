@@ -169,6 +169,10 @@
   });
   ptbar.appendChild(ptb); ptbar.appendChild(ptn);
   var rep = el("a", "btn btn--quiet", "Report this module"); rep.href = "/request?kind=report&module=" + encodeURIComponent(e.slug); ptbar.appendChild(rep);
+  // Wer das Modul bearbeiten darf (Beitragende, Team), bekommt den Weg dorthin (2026-09-09).
+  if (tok) {
+    fetch("/api/me/modules/" + e.slug, { headers: { Authorization: "Bearer " + tok.token } }).then(function (r) { if (r.status !== 200) return; var ed = el("a", "btn btn--ghost", "Edit this module"); ed.href = "/me/modules#" + e.slug; ptbar.appendChild(ed); }).catch(function () {});
+  }
   bp.appendChild(ptbar);
   bp.appendChild(el("p", "fine", tok ? "One point per account. A report goes to sygnif@entrosana.com with the reason you give." : "Sign in to give a point. A report goes to sygnif@entrosana.com with the reason you give."));
 

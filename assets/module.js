@@ -24,8 +24,8 @@
   function field(label, input, help) { var w = el("div", "field"); var l = el("label", null, label); w.appendChild(l); w.appendChild(input); if (help) w.appendChild(el("span", "help", help)); return w; }
 
   function card(m) {
-    var c = el("div", "card me");
-    var head = el("div", "ptbar"); head.appendChild(el("span", "chip", "contributed")); var live = el("a", "fine", "open the live page ›"); live.href = m.url; head.appendChild(live); c.appendChild(head);
+    var c = el("div", "card me"); c.id = "m-" + m.slug;
+    var head = el("div", "ptbar"); head.appendChild(el("span", "chip", m.track === "contributed" ? "contributed" : (m.track || "module"))); if (m.area) head.appendChild(el("span", "fine", m.area)); var live = el("a", "fine", "open the live page ›"); live.href = m.url; head.appendChild(live); c.appendChild(head);
     var form = el("div", "rev__form");
     var title = el("input"); title.value = m.title; title.maxLength = 120;
     var who = el("input"); who.value = m.who; who.maxLength = 160;
@@ -33,16 +33,24 @@
     var about = el("textarea"); about.value = m.about; about.rows = 6; about.maxLength = 4000;
     var note = el("textarea"); note.value = m.note; note.rows = 3; note.maxLength = 2000;
     var state = el("select"); STATES.forEach(function (s) { var o = el("option", null, s[1]); o.value = s[0]; state.appendChild(o); }); state.value = STATES.some(function (s) { return s[0] === m.state; }) ? m.state : "development";
+    var meta = el("input"); meta.value = m.meta || ""; meta.maxLength = 160;
+    var facts = el("textarea"); facts.rows = Math.max(3, (m.facts || []).length + 1); facts.value = (m.facts || []).map(function (f) { return f[0] + ": " + f[1]; }).join("\n");
+    var gets = el("textarea"); gets.rows = Math.max(3, (m.gets || []).length + 1); gets.value = (m.gets || []).join("\n");
     form.appendChild(field("Title", title, "The address of the page stays as it is."));
     form.appendChild(field("One line under the title", who, "Area, format, languages; for example «social · 9 slides · English and German»."));
     form.appendChild(field("Lead sentence", lede, null));
     form.appendChild(field("What it is", about, null));
     form.appendChild(field("Closing note", note, "Optional."));
     form.appendChild(field("State", state, "Shows on the card as «only an idea», «still in development» or «finished»."));
+    form.appendChild(field("Footer line", meta, "The small line at the bottom of the card, for example «still in development · open to build on it»."));
+    form.appendChild(field("Facts", facts, "One per line as «Label: value», up to twelve; shown as the facts table on the module page."));
+    form.appendChild(field("What you get", gets, "One line each, up to eight."));
     var bar = el("div", "actions"); var save = el("button", "btn", "Save"); save.type = "button"; var msg = el("span", "fine", ""); bar.appendChild(save); bar.appendChild(msg); form.appendChild(bar);
     save.addEventListener("click", function () {
       msg.textContent = "…"; save.disabled = true;
-      api("/api/me/modules/" + m.slug, { method: "PATCH", body: JSON.stringify({ title: title.value, who: who.value, lede: lede.value, about: about.value, note: note.value, state: state.value }) })
+      var factPairs = facts.value.split("\n").map(function (l) { var i = l.indexOf(":"); return i > 0 ? [l.slice(0, i).trim(), l.slice(i + 1).trim()] : null; }).filter(function (f) { return f && f[0] && f[1]; });
+      var getLines = gets.value.split("\n").map(function (l) { return l.trim(); }).filter(Boolean);
+      api("/api/me/modules/" + m.slug, { method: "PATCH", body: JSON.stringify({ title: title.value, who: who.value, lede: lede.value, about: about.value, note: note.value, state: state.value, meta: meta.value, facts: factPairs, gets: getLines }) })
         .then(function (r) { save.disabled = false; if (r.s === 200) { msg.textContent = "Saved. Live within seconds."; } else { msg.textContent = r.j.error || ("HTTP " + r.s); } })
         .catch(function () { save.disabled = false; msg.textContent = "The Hub's server is not reachable."; });
     });
@@ -74,7 +82,9 @@
     out.textContent = "";
     if (r.s !== 200) { out.appendChild(el("p", "note note--warn", r.j.error || ("HTTP " + r.s))); return; }
     var items = r.j.items || [];
+    if (r.j.team) out.appendChild(el("p", "fine", "You are on the team: every module of the catalogue is listed, not only your own. Area descriptions are edited in the console."));
     if (!items.length) { var p = el("p", "fine"); p.appendChild(document.createTextNode("No published module under your name yet. ")); var a = el("a", null, "Propose a track"); a.href = "/contribute/submit"; p.appendChild(a); p.appendChild(document.createTextNode(" to start one.")); out.appendChild(p); return; }
     items.forEach(function (m) { render(m, null); });
+    if (location.hash) { var target = document.getElementById("m-" + location.hash.slice(1)); if (target) target.scrollIntoView(); }
   }).catch(function () { out.textContent = ""; out.appendChild(el("p", "note note--warn", "The Hub's server is not reachable right now.")); });
 })();

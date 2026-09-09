@@ -159,7 +159,7 @@ window.__catalogue = {
     "facts":[
      ["Area","technical"],
      ["Contributed by","SYGNIF"],
-     ["Status","admitted; text as submitted, not yet edited"],
+     ["Format","a 90-minute lesson, on paper"],
      ["Record trail","not verified"]
     ],
     "area":"technical",

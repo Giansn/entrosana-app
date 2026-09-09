@@ -375,9 +375,12 @@ function contributorsOf(slug) {
 }
 function pointsCount(slug) { return db.prepare("SELECT COUNT(*) n FROM points WHERE slug = ?").get(slug).n; }
 function moduleView(slug, e) {
-  return { slug, title: e.title, who: e.who || "", lede: e.lede || "", about: e.about || "", note: e.note || "", state: e.state || "development",
-           by: e.by || "", contributors: contributorsOf(slug), points: pointsCount(slug), url: `${PUBLIC}/modules/${slug}` };
+  return { slug, title: e.title, who: e.who || "", lede: e.lede || "", about: e.about || "", note: e.note || "", meta: e.meta || "", state: e.state || "development",
+           track: e.track || "", area: e.area || "", updated: e.updated || "", by: e.by || "", facts: Array.isArray(e.facts) ? e.facts : [], gets: Array.isArray(e.gets) ? e.gets : [],
+           contributors: contributorsOf(slug), points: pointsCount(slug), url: `${PUBLIC}/modules/${slug}` };
 }
+// Bearbeiten darf, wer als Beitragende eingetragen ist, und das Team — seit 2026-09-09 auch bei
+// Originalen des Katalogs (der Eintrag muss als striktes JSON dastehen; updateEntry prüft das).
 function moduleAccess(ctx, slug) {
   if (!ctx.actor) throw new HttpError(401, "no actor");
   if (!SLUG_RE.test(slug)) throw new HttpError(404, "module not found");
@@ -385,7 +388,7 @@ function moduleAccess(ctx, slug) {
   if (!mine && !can(ctx.actor, "publish")) throw new HttpError(403, "not a contributor of this module");
   const e = moduleEntry(slug);
   if (!e) throw new HttpError(404, "module not found");
-  if (e.track !== "contributed") throw new HttpError(409, "original catalogue entry: the team edits it in the console");
+  if (e.track === "onrequest") throw new HttpError(409, "area description, not a module: the team edits it in the console");
   return e;
 }
 function refreshBy(slug) {
@@ -394,9 +397,11 @@ function refreshBy(slug) {
 }
 routes.set("GET /api/me/modules", (ctx) => {
   if (!ctx.actor) throw new HttpError(401, "no actor");
-  const slugs = db.prepare("SELECT slug FROM module_contributors WHERE actor_id = ? ORDER BY added").all(ctx.actor.id).map(r => r.slug);
+  const team = can(ctx.actor, "publish");
+  const slugs = team ? (((readCatalogue().modules || {}).list) || []).filter(e => e.track !== "onrequest").map(e => e.slug)
+                     : db.prepare("SELECT slug FROM module_contributors WHERE actor_id = ? ORDER BY added").all(ctx.actor.id).map(r => r.slug);
   const items = slugs.map(s => { const e = moduleEntry(s); return e ? moduleView(s, e) : null; }).filter(Boolean);
-  send(ctx.res, 200, { items });
+  send(ctx.res, 200, { items, team });
 });
 patterns.push([/^\/api\/me\/modules\/([a-z0-9-]{1,80})$/, {
   GET: (ctx, [slug]) => { const e = moduleAccess(ctx, slug); send(ctx.res, 200, { item: moduleView(slug, e) }); },
@@ -410,6 +415,17 @@ patterns.push([/^\/api\/me\/modules\/([a-z0-9-]{1,80})$/, {
     if (body.about !== undefined) fields.about = str(body.about, 4000);
     if (body.note !== undefined) fields.note = str(body.note, 2000) || null;
     if (body.state !== undefined) { if (!MODULE_STATES.includes(body.state)) throw new HttpError(400, "state unknown"); fields.state = body.state; }
+    if (body.meta !== undefined) fields.meta = str(body.meta, 160) || null;
+    if (body.facts !== undefined) {   // Paare [Beschriftung, Wert], höchstens zwölf
+      if (!Array.isArray(body.facts) || body.facts.length > 12) throw new HttpError(400, "facts: up to 12 pairs");
+      const facts = body.facts.map(f => Array.isArray(f) ? [str(f[0], 60), str(f[1], 200)] : null).filter(f => f && f[0] && f[1]);
+      fields.facts = facts.length ? facts : null;
+    }
+    if (body.gets !== undefined) {   // Zeilen «what you get», höchstens acht
+      if (!Array.isArray(body.gets) || body.gets.length > 8) throw new HttpError(400, "gets: up to 8 lines");
+      const gets = body.gets.map(g => str(g, 200)).filter(Boolean);
+      fields.gets = gets.length ? gets : null;
+    }
     if (!Object.keys(fields).length) throw new HttpError(400, "nothing to change");
     fields.updated = new Date().toISOString().slice(0, 10);
     lift(() => updateCatalogueEntry("modules", slug, fields));

@@ -681,3 +681,11 @@ Privacy (ID 17) trägt die neue englische Erklärung, /privacy/de/ (ID 161) die 
 in `~/entrosana-app-backups/wp-post-<id>.*.html`. Im Hub sagt der Block «Record trail and visibility» auf /me
 dasselbe in einem Absatz, und der Schritt «It arrives» auf /contribute nennt Claude.
 
+*Modulbearbeitung vollständig verdrahtet (2026-09-09, spät).* `/me/modules` bearbeitet nun auch Originale des
+Katalogs (Value System), sofern die Person als Beitragende eingetragen ist oder zum Team gehört; das Team sieht
+dort alle Module ausser den Gebietsbeschreibungen (`onrequest`, weiter in der Konsole). Felder: Titel, Zeile,
+Kernsatz, Beschreibung, Zusatz, Stand, Fusszeile (`meta`), Fakten (`facts`, «Beschriftung: Wert» je Zeile, bis
+zwölf) und «What you get» (`gets`, bis acht Zeilen). Die Detailseite zeigt Berechtigten den Knopf «Edit this
+module» (Anfrage an `GET /api/me/modules/<slug>`, nur mit Marke). `updateEntry` bewahrt bei Originalen alle
+Felder, Reihenfolge und die Kommentare der Datei; belegt an einer Kopie und im Prüflauf `gate-modedit.mjs`.
+
