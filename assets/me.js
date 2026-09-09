@@ -224,6 +224,26 @@
     });
     var pl = el("p", "fine"); pl.appendChild(document.createTextNode("Your public profile: ")); var pa = el("a", null, location.origin + "/p/" + me.id); pa.href = "/p/" + me.id; pl.appendChild(pa); pl.appendChild(document.createTextNode(" — name, picture, standing, profile and public journal entries are visible to anyone.")); idc.appendChild(pl);
 
+    // Team (2026-09-09): Eigentümer und Prüfende sehen die Schlange direkt nach dem Kopf, mit Knopf und den wartenden Vorschlägen.
+    if (me.standing === "owner" || me.standing === "reviewer") {
+      var secTeam = block("Team", null, null), tbx = el("div", "card me");
+      tbx.appendChild(el("p", "h3", "Review queue"));
+      tbx.appendChild(el("p", "me__line", "Proposals, decisions and contributor applications, in the Hub's own design. Every decision needs a reason."));
+      var tcount = el("p", "me__line", "Counting…"); tbx.appendChild(tcount);
+      var tlist = el("div"); tbx.appendChild(tlist);
+      var tact = el("div", "actions"); var tbtn = el("a", "btn", "Open the review queue"); tbtn.href = "/review"; tact.appendChild(tbtn);
+      var tapp = el("a", "btn btn--ghost", "Applications"); tapp.href = "/review?tab=applications"; tact.appendChild(tapp);
+      var tmem = el("a", "btn btn--ghost", "Members"); tmem.href = "/review?tab=members"; tact.appendChild(tmem);
+      tbx.appendChild(tact);
+      Promise.all([api("/api/contributions"), api("/api/applications")]).then(function (rs) {
+        var waiting = (rs[0].j.items || []).filter(function (c) { return ["received", "confirmed", "reviewing"].indexOf(c.status) >= 0; }).sort(function (x, y) { return y.id - x.id; });
+        var apps = (rs[1].j.items || []).length;
+        tcount.textContent = waiting.length + (waiting.length === 1 ? " proposal" : " proposals") + " waiting · " + apps + (apps === 1 ? " application" : " applications") + " open.";
+        waiting.slice(0, 5).forEach(function (c) { var l = el("p", "fine"); var la = el("a", null, "#" + c.id + " " + c.title); la.href = "/review?c=" + c.id; l.appendChild(la); l.appendChild(document.createTextNode(" · " + (c.area || "") + " · " + String(c.created || "").slice(0, 10))); tlist.appendChild(l); });
+      }).catch(function () { tcount.textContent = ""; });
+      secTeam.appendChild(tbx);
+    }
+
     // Aufklärung (2026-09-09): was der Record Trail ist und wer was sieht; Einzelheiten in der Datenschutzerklärung.
     var secInfo = block("Record trail and visibility", null, null), infb = el("div", "card me");
     infb.appendChild(el("p", "me__line", "Record trail: every step you take in a project on this device is written to a list that only grows. Each line is sealed against the one before it, so a change anywhere shows up when the chain is verified. The trail stays in this browser; it leaves the device only when you attach it to a proposal or export it. The Hub keeps a chain of its own for decisions, and anyone can verify it."));
@@ -233,18 +253,6 @@
     var pv = el("p", "fine"); pv.appendChild(document.createTextNode("Further information, your rights and the retention periods: ")); var pva = el("a", null, "privacy statement"); pva.href = "https://entrosana.com/privacy"; pva.target = "_blank"; pva.rel = "noopener"; pv.appendChild(pva); pv.appendChild(document.createTextNode(". Export or erase your data under «Your data» below."));
     infb.appendChild(pv); secInfo.appendChild(infb);
 
-    // Team (2026-09-09): Eigentümer und Prüfende sehen die Schlange in der Gestaltung des Hubs.
-    if (me.standing === "owner" || me.standing === "reviewer") {
-      var secTeam = block("Team", null, null), tbx = el("div", "card me");
-      var tl = el("p", "me__line"); tl.appendChild(document.createTextNode("Proposals, decisions and contributor applications: ")); var tla = el("a", null, "open the review queue"); tla.href = "/review"; tl.appendChild(tla); tbx.appendChild(tl);
-      var tcount = el("p", "fine", "Counting…"); tbx.appendChild(tcount);
-      Promise.all([api("/api/contributions"), api("/api/applications")]).then(function (rs) {
-        var open = (rs[0].j.items || []).filter(function (c) { return ["received", "confirmed", "reviewing"].indexOf(c.status) >= 0; }).length;
-        var apps = (rs[1].j.items || []).length;
-        tcount.textContent = open + (open === 1 ? " proposal" : " proposals") + " waiting · " + apps + (apps === 1 ? " application" : " applications") + " open.";
-      }).catch(function () { tcount.textContent = ""; });
-      secTeam.appendChild(tbx);
-    }
     var sec2 = block("Contributing", null, null), box = el("div", "card me");
     if (me.standing === "collector") {
       var app = me.application;
