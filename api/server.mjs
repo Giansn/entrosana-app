@@ -183,6 +183,12 @@ routes.set("GET /api/verify", (ctx) => {
     db.exec("COMMIT");
   } catch (e) { db.exec("ROLLBACK"); throw e; }
   auditAppend(db, { kind: "verify.ok", actor_id: actor.id, resource: "actor:" + actor.id, text: "email confirmed" });
+  // Einladungen (2026-09-09): die älteste offene Einladung an diese Adresse gilt als angenommen.
+  const inv = db.prepare("SELECT id, inviter_id FROM invites WHERE email = ? AND accepted IS NULL ORDER BY id LIMIT 1").get(actor.email);
+  if (inv) {
+    db.prepare("UPDATE invites SET accepted = ?, accepted_id = ? WHERE id = ?").run(nowIso, actor.id, inv.id);
+    auditAppend(db, { kind: "invite.accepted", actor_id: actor.id, resource: "actor:" + inv.inviter_id, text: `invitation #${inv.id} accepted` });
+  }
   // Offene Beiträge dieser Adresse gelten jetzt als eingereicht.
   const pending = db.prepare("SELECT id, title, area FROM contributions WHERE actor_id = ? AND status = 'received'").all(actor.id);
   for (const c of pending) {
@@ -464,6 +470,40 @@ patterns.push([/^\/api\/modules\/([a-z0-9-]{1,80})\/point$/, {
   },
 }]);
 
+// ── Einladungen (2026-09-09): jedes Konto lädt per Adresse ein. Die Mail trägt einen
+// Anmeldelink, der sieben Tage gilt; das Konto entsteht erst, wenn der Link geöffnet wird.
+routes.set("GET /api/me/invites", (ctx) => {
+  if (!ctx.actor || ctx.actor.kind !== "email") throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+  const items = db.prepare("SELECT id, email, message, created, accepted FROM invites WHERE inviter_id = ? ORDER BY id DESC LIMIT 100").all(ctx.actor.id);
+  send(ctx.res, 200, { items });
+});
+routes.set("POST /api/me/invites", async (ctx) => {
+  if (!ctx.actor || ctx.actor.kind !== "email") throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+  if (!ctx.actor.name) throw new HttpError(409, "set your name first; the invitation carries it");
+  const body = await readJson(ctx.req);
+  const email = String(body.email || "").trim().toLowerCase();
+  const message = String(body.message || "").trim().slice(0, 500);
+  if (!EMAIL.test(email) || email.length > 254) throw new HttpError(400, "bad email");
+  if (email === ctx.actor.email) throw new HttpError(400, "that is your own address");
+  if (db.prepare("SELECT 1 FROM actors WHERE email = ?").get(email)) throw new HttpError(409, "this address already has an account");
+  const recent = db.prepare("SELECT created FROM invites WHERE email = ? AND accepted IS NULL ORDER BY id DESC LIMIT 1").get(email);
+  if (recent && Date.now() - Date.parse(recent.created) < 86400e3) throw new HttpError(429, "this address was invited within the last day");
+  if (limited("invite:" + ctx.actor.id, 10) || limited("email:" + email)) throw new HttpError(429, "too many invitations; try again later");
+  if (limited("mail:global", MAIL_CAP)) throw new HttpError(429, "mail cap reached; try again later");
+  const token = newToken(), now = new Date();
+  db.prepare("INSERT INTO verifications(email, token_hash, created, expires) VALUES (?,?,?,?)")
+    .run(email, sha(token), now.toISOString(), new Date(now.getTime() + 7 * 86400e3).toISOString());
+  const r = await mail(email, `${ctx.actor.name} invites you to the entrosana Hub`,
+    `Hello,\n\n${ctx.actor.name} (${ctx.actor.email}) invites you to the entrosana Hub: modules, tools and a record trail that schools and families can check by hand.\n\n` +
+    (message ? `Their words:\n${message}\n\n` : "") +
+    `Open this link within seven days on the device you want to use. It registers you as a collector under this address, no password:\n\n${PUBLIC}/me?verify=${token}\n\n` +
+    `If you do not want this, ignore the mail; nothing happens. The address stays only as an unanswered invitation for 180 days.\n\nentrosana`);
+  if (!r.ok) { auditAppend(db, { kind: "invite.failed", actor_id: ctx.actor.id, resource: "email:" + sha(email).slice(0, 12), text: "invitation mail failed: " + (r.err || r.code) }); throw new HttpError(502, "the mail could not be sent"); }
+  const id = db.prepare("INSERT INTO invites(inviter_id, email, message, created) VALUES (?,?,?,?)").run(ctx.actor.id, email, message || null, now.toISOString()).lastInsertRowid;
+  auditAppend(db, { kind: "invite.sent", actor_id: ctx.actor.id, resource: "email:" + sha(email).slice(0, 12), text: "invitation mailed" });
+  send(ctx.res, 200, { ok: true, item: { id, email, message, created: now.toISOString(), accepted: null } });
+});
+
 function lift(fn) { try { return fn(); } catch (e) { if (e && e.status) throw new HttpError(e.status, e.message); throw e; } }
 
 // Profil: Name (Pflicht vor dem Beitragen), Organisation, Rolle, eine Zeile,
@@ -671,6 +711,8 @@ routes.set("DELETE /api/me", async (ctx) => {
     db.prepare("DELETE FROM applications WHERE actor_id = ?").run(ctx.actor.id);          // Bewerbungstexte gehen mit
     db.prepare("DELETE FROM journal WHERE actor_id = ?").run(ctx.actor.id);                // Journal geht mit
     if (ctx.actor.email) db.prepare("DELETE FROM requests WHERE email = ?").run(ctx.actor.email);   // Anfragen unter derselben Adresse
+    db.prepare("DELETE FROM invites WHERE inviter_id = ?").run(ctx.actor.id);              // eigene Einladungen gehen mit
+    if (ctx.actor.email) db.prepare("UPDATE invites SET email = '(erased)' WHERE email = ?").run(ctx.actor.email);   // erhaltene: Adresse weg
     // Name bleibt nur, wenn ein Modul unter ihm stehen bleibt; die Adresse geht immer.
     db.prepare("UPDATE actors SET email = NULL, name = ?, org_id = NULL, org = NULL, role = NULL, about = NULL, website = NULL, langs = NULL, avatar = NULL, avatar_type = NULL, avatar_updated = NULL WHERE id = ?").run(kept ? ctx.actor.name : "(erased)", ctx.actor.id);
     db.exec("COMMIT");

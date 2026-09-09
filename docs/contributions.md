@@ -470,3 +470,15 @@ sygnif@entrosana.com und stehen in der Konsole unter Anfragen. Annahme und Verö
 2026-09-09 ein Schritt («annehmen und veröffentlichen»); «nur annehmen» bleibt möglich. Die Schlange gibt es auch
 in der Gestaltung des Hubs unter https://entrosana.app/review (Eigentümer, Prüfende).
 
+## Einladungen (2026-09-09)
+
+Jedes Konto, Sammler wie Beitragende, lädt auf seiner Kontoseite (/me, Abschnitt «Invite») eine Adresse ein,
+mit einer Zeile in eigenen Worten (bis 500 Zeichen). Der Dienst schickt der Adresse eine Mail unter dem Namen der
+einladenden Person mit einem Anmeldelink, der sieben Tage gilt; das Konto entsteht erst, wenn der Link geöffnet
+wird, und zwar als Sammler. Die Einladung steht in `invites` (Einladende, Adresse, Nachricht, Zeit); wird die Adresse
+ein Konto, gilt die älteste offene Einladung als angenommen (Kette: `invite.sent`, `invite.accepted`), und die
+einladende Person sieht den Stand in ihrer Liste. Grenzen: ein Name ist Pflicht, die eigene Adresse und bestehende
+Konten sind ausgeschlossen, je Adresse eine Einladung pro Tag, je Konto zehn pro Stunde, dazu die Mailgrenzen des
+Dienstes. Unbeantwortete Einladungen räumt die Wartung nach 180 Tagen weg; der Datenexport enthält die eigenen
+Einladungen, die Löschung des Kontos nimmt sie mit und anonymisiert erhaltene.
+

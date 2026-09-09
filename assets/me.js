@@ -269,6 +269,36 @@
 
     // Plan → Begleiten → Reflektieren (Vorbild LearningView): Aufgaben, Dokumente, Journal.
     var projs = deviceProjects(), recs = deviceRecords();
+    // Einladen (2026-09-09): jedes Konto lädt per Adresse ein; die Mail trägt den Anmeldelink unter dem eigenen Namen.
+    var secI = block("Invite", null, null), ibx = el("div", "card me");
+    ibx.appendChild(el("p", "me__line", "Bring a colleague, a parent, another teacher. They get a mail under your name with a link that registers them as a collector, no password. Contributing is approved by the team as always."));
+    var iform = el("form"); var iEmail = el("input"); iEmail.type = "email"; iEmail.required = true; iEmail.placeholder = "their e-mail address"; iEmail.maxLength = 254; iEmail.autocomplete = "off";
+    var iMsg = el("textarea"); iMsg.rows = 3; iMsg.maxLength = 500; iMsg.placeholder = "A line from you (optional)";
+    var fE = el("div", "field"); fE.appendChild(el("label", null, "Address")); fE.appendChild(iEmail);
+    var fM = el("div", "field"); fM.appendChild(el("label", null, "Your message")); fM.appendChild(iMsg); fM.appendChild(el("span", "help", "Optional, up to 500 characters; it goes into the mail as your words."));
+    var iBtn = el("button", "btn", "Send the invitation"); iBtn.type = "submit"; var iOut = el("div"); var iAct = el("div", "actions"); iAct.appendChild(iBtn);
+    iform.appendChild(fE); iform.appendChild(fM); iform.appendChild(iAct); iform.appendChild(iOut); ibx.appendChild(iform);
+    var iList = el("div"); ibx.appendChild(iList);
+    function paintInvites() {
+      api("/api/me/invites").then(function (r) {
+        iList.textContent = ""; var items = r.j.items || []; if (!items.length) return;
+        iList.appendChild(el("span", "eyebrow", "Sent"));
+        items.forEach(function (i) { var p = el("p", "me__line"); p.appendChild(el("b", null, i.email)); p.appendChild(document.createTextNode(" · " + (i.accepted ? "accepted " + i.accepted.slice(0, 10) : "sent " + i.created.slice(0, 10) + ", not accepted yet"))); iList.appendChild(p); });
+      }).catch(function () {});
+    }
+    iform.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      if (!me.name) { note(iOut, "warn", "Set your name first; the invitation carries it."); return; }
+      note(iOut, "idle", "Sending…"); iBtn.disabled = true;
+      api("/api/me/invites", { method: "POST", body: JSON.stringify({ email: iEmail.value.trim(), message: iMsg.value.trim() }) }).then(function (r) {
+        iBtn.disabled = false;
+        if (r.s === 200) { note(iOut, "ok", "Sent to " + r.j.item.email + ". The link is valid for seven days."); iEmail.value = ""; iMsg.value = ""; paintInvites(); }
+        else note(iOut, "warn", r.j.error || ("HTTP " + r.s));
+      }).catch(function () { iBtn.disabled = false; note(iOut, "warn", "The Hub's server is not reachable right now."); });
+    });
+    paintInvites();
+    secI.appendChild(ibx);
+
     var secT = block("Tasks", null, null), tbox = el("div", "card me");
     tbox.appendChild(el("p", "fine", "Your projects and their steps live on this device. " + (projs.length ? projs.length + " project(s), " + projs.reduce(function (n, p) { return n + (p.total - p.done); }, 0) + " open step(s)." : "None yet.")));
     if (projs.length) { var tl = el("ul", "me__list"); projs.forEach(function (p) { var li = el("li", "me__row"); var a = el("a", "me__t", p.title); a.href = p.href; li.appendChild(a); li.appendChild(el("span", "me__n", p.done + "/" + p.total)); if (p.next) li.appendChild(el("span", "me__next", "next: " + p.next)); tl.appendChild(li); }); tbox.appendChild(tl); }

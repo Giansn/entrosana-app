@@ -658,3 +658,9 @@ Speichern im Katalog-Editor), die Zahl der Dateien und der Weg, mitzuwirken: `/r
 (geht an sygnif@), Mail, Telefon. Die Karte selbst bleibt ein einziger Link. Der Katalog-Editor der Konsole bietet
 Gebiet und Stand als Auswahl.
 
+*Einladen (2026-09-09, spät).* Kontoseite: Block «Invite» zwischen «Contributing» und «Tasks» mit Adresse, Zeile in
+eigenen Worten und der Liste der gesendeten Einladungen (gesendet am, angenommen am). Dienst: Migration 014
+(`invites`), `GET|POST /api/me/invites`, Annahme in `GET /api/verify`; Einzelheiten in docs/contributions.md.
+Die Schlange (/review) trägt seit heute Kästen in der Seitenschrift, eine Marke «done» für abgeschlossene Vorgänge
+und den Reiter «Members» (alle Konten mit Stand, Rollen, Profil und Zahlen).
+
