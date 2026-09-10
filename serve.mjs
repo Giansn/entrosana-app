@@ -151,7 +151,10 @@ function load(route) {
 // detail.html gehört zu keiner festen Route mehr, wird aber von allen
 // abgeleiteten gebraucht; deshalb steht sie hier ausdrücklich.
 const DETAIL = { file: "detail.html", type: HTML };
-const PROFILE = { file: "profile.html", type: HTML };   // /p/<id>: öffentliches Profil
+// /p/<id> und /contributors/<name>: das öffentliche Profil, alleinstehend ohne
+// Leiste und Kopfleiste (2026-09-10). profile.html bleibt auf der Platte, wird
+// aber nicht mehr ausgeliefert.
+const PROFILE = { file: "contributor.html", type: HTML };
 const FILES = () => [...ROUTES.values(), DETAIL, PROFILE];
 // Erst die Assets, dann die Seiten: die Seiten brauchen die Hashes der Assets.
 for (const route of FILES()) if (route.type !== HTML) load(route);
@@ -221,7 +224,7 @@ createServer((req, res) => {
     return;
   }
 
-  const route = ROUTES.get(path) || DERIVED.get(path) || (/^\/p\/\d{1,12}$/.test(path) ? PROFILE : undefined);
+  const route = ROUTES.get(path) || DERIVED.get(path) || ((/^\/p\/\d{1,12}$/.test(path) || /^\/contributors\/[a-z0-9-]{1,80}$/.test(path)) ? PROFILE : undefined);
   // Unbekannte Pfade liefern die Startseite mit 404, damit nichts vorgetäuscht wird.
   const entry = cache.get((route ?? ROUTES.get("/")).file);
   const status = route ? 200 : 404;

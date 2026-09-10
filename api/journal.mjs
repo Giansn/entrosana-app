@@ -34,13 +34,37 @@ export function deleteEntry(db, actor, id) {
   return n;
 }
 // Das öffentliche Profil: Name, Stand, Profilfelder, veröffentlichte Module, öffentliche Einträge. Ohne Adresse.
+// Der Slug für /contributors/<name>: Umlaute nach ae/oe/ue, ß nach ss, dann
+// alles ausser Buchstaben und Ziffern zu Bindestrichen. Nicht gespeichert,
+// sondern aus dem Namen gerechnet; bei zwei gleichen Namen trägt der spätere
+// die Nummer hinten. Ändert sich der Name, ändert sich die Adresse — /p/<id>
+// bleibt darum als feste Adresse bestehen und leitet weiter.
+export function slugify(name) {
+  return String(name || "").toLowerCase()
+    .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
+    .normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
+}
+export function slugOf(db, actor) {
+  const base = slugify(actor.name); if (!base) return null;
+  const earlier = db.prepare("SELECT id, name FROM actors WHERE kind = 'email' AND email IS NOT NULL AND name IS NOT NULL AND id < ?").all(actor.id)
+    .some(a => slugify(a.name) === base);
+  return earlier ? base + "-" + actor.id : base;
+}
+export function publicProfileBySlug(db, slug) {
+  slug = String(slug || "").toLowerCase();
+  const rows = db.prepare("SELECT id, name FROM actors WHERE kind = 'email' AND email IS NOT NULL AND name IS NOT NULL").all();
+  const hit = rows.find(a => slugOf(db, a) === slug);
+  return hit ? publicProfile(db, hit.id) : null;
+}
 export function publicProfile(db, id) {
   const a = db.prepare("SELECT * FROM actors WHERE id = ? AND kind = 'email' AND email IS NOT NULL").get(Number(id));
   if (!a || !a.name) return null;
   const roles = rolesOf(db, a.id);
   const modules = db.prepare("SELECT title, slug, published FROM contributions WHERE actor_id = ? AND status = 'published' AND slug IS NOT NULL ORDER BY published DESC").all(a.id);
-  return { id: a.id, name: a.name, standing: standingOf(roles), since: String(a.created).slice(0, 10), avatar: a.avatar ? (a.avatar_updated || "1") : null,
-    profile: { org: a.org || "", role: a.role || "", about: a.about || "", website: a.website || "", langs: a.langs ? String(a.langs).split(",").filter(Boolean) : [] },
+  return { id: a.id, name: a.name, slug: slugOf(db, a), standing: standingOf(roles), since: String(a.created).slice(0, 10), avatar: a.avatar ? (a.avatar_updated || "1") : null,
+    contact: a.contact_email || "",
+    profile: { org: a.org || "", role: a.role || "", about: a.about || "", bio: a.bio || "", place: a.place || "", website: a.website || "", langs: a.langs ? String(a.langs).split(",").filter(Boolean) : [] },
     modules, journal: listJournal(db, a.id, true).map(e => ({ id: e.id, text: e.text, created: e.created, updated: e.updated })) };
 }
 // Suche über Öffentliches: Profile, öffentliche Journaleinträge, veröffentlichte Module. Kein Protokoll der Frage.

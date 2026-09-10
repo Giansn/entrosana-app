@@ -268,19 +268,13 @@ p{ margin:0 0 var(--pad-para) }
   border:1px solid var(--line); border-radius:var(--radius);
   background:var(--card-bg); padding:var(--pad-card); box-shadow:var(--shadow-1);
 }
-/* Verlauf statt Fläche: --seal in geringer Sättigung über --card-bg,
-   dazu ein Schimmer, der oben rechts ausläuft. Keine neue Farbe. */
+/* Verlauf statt Fläche: --seal in geringer Sättigung über --card-bg. Der
+   Schimmer in der rechten Ecke ist weg (Wunsch des Eigentümers, 2026-09-10). */
 .tile{
   display:flex; flex-direction:column; gap:.45rem; color:inherit;
   position:relative; overflow:hidden; box-shadow:var(--shadow-2);
   background:linear-gradient(165deg,
     color-mix(in srgb, var(--seal) 9%, var(--card-bg)) 0%, var(--card-bg) 58%);
-}
-.tile::after{
-  content:""; position:absolute; width:12rem; height:12rem; right:-5rem; top:-6rem;
-  border-radius:999px; pointer-events:none;
-  background:radial-gradient(circle,
-    color-mix(in srgb, var(--seal) 26%, transparent), transparent 68%);
 }
 .tile > *{ position:relative }
 .tile__glyph{
@@ -2216,3 +2210,22 @@ button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
   .pf{ grid-template-columns:1fr; gap:1.6rem } .pf__id{ position:static } .pf__av{ width:5rem; height:5rem; font-size:1.8rem }
   .hero{ grid-template-columns:auto 1fr } .hero__act{ grid-column:1/-1; flex-direction:row } .hero__av{ width:4.6rem; height:4.6rem; font-size:1.6rem }
 }
+.psect > .tl__t{ margin-bottom:.85rem; max-width:70ch }
+.pf__main > .tabs{ margin-bottom:1.6rem }
+
+/* ---------- Alleinstehende Profilseite (2026-09-10) ----------
+   /contributors/<name> und /p/<id>: nur das Portfolio, ohne Leiste und ohne
+   Kopfleiste. Eine schmale Zeile mit der Marke und dem Themenumschalter oben,
+   eine Zeile mit den Verweisen unten, dazwischen die Seite in Lesebreite. */
+.solo{ min-height:100dvh; display:flex; flex-direction:column }
+.solo__top{ display:flex; align-items:center; gap:1rem; padding:1.1rem var(--gutter) .4rem; max-width:72rem; width:100%; margin:0 auto }
+.solo__top .brand{ font-size:.92rem } .solo__top .brand__logo{ width:1.8rem; height:1.8rem }
+.solo__top .iconbtn{ margin-left:auto }
+.solo__main{ flex:1; width:100%; max-width:72rem; margin:0 auto; padding:0 var(--gutter) 3rem }
+.solo__main .block{ padding-top:.4rem }
+.solo__foot{ display:flex; flex-wrap:wrap; gap:.4rem 1.2rem; padding:1.2rem var(--gutter) 1.6rem; max-width:72rem; width:100%; margin:0 auto;
+  font-family:var(--font-mono); font-size:.72rem; color:var(--muted); position:relative }
+.solo__foot::before{ content:""; position:absolute; top:0; left:var(--gutter); right:var(--gutter); height:1px;
+  background:linear-gradient(90deg, color-mix(in srgb,var(--seal) 26%,transparent), transparent 82%) }
+.solo__foot a{ color:var(--muted); text-decoration:none } .solo__foot a:hover{ color:var(--seal) }
+.hero__contact{ font-family:var(--font-mono); font-size:var(--step--1) }

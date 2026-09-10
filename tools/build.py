@@ -165,8 +165,8 @@ def rail(active, variant="hub"):
            f'    <a class="brand rail__brand" href="/" aria-label="entrosana, workspace">{MARK}'
            f'<span class="brand__word">entrosana</span></a>',
            '    <div class="rail__rule"></div>', '',
-           item("/", "home", "▤", "Workspace"),
-           item("/projects", "overview", "▦", "Projects"),
+           item("/", "home", """<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3.3" y="4.5" width="17.4" height="15" rx="2.2"/><path d="M3.3 9.3h17.4"/></svg>""", "Workspace"),
+           item("/projects", "overview", """<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3.6" y="3.6" width="7.1" height="7.1" rx="1.7"/><rect x="13.3" y="3.6" width="7.1" height="7.1" rx="1.7"/><rect x="3.6" y="13.3" width="7.1" height="7.1" rx="1.7"/><rect x="13.3" y="13.3" width="7.1" height="7.1" rx="1.7"/></svg>""", "Projects"),
            item("/services", "services",
                 '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" '
                 'stroke="currentColor" stroke-width="1.4" stroke-linecap="round" '
@@ -196,10 +196,10 @@ def rail(active, variant="hub"):
                 '    <nav class="nav__projects" id="projects"></nav>',]
     out += [
             '', '    <div class="rail__group">Record trail</div>',
-            item("/records", "records", "◷", "All records", "", "rec-count"),
-            item("/records?when=today", "today", "◔", "Today", "", "rec-today"),
-            '    <a class="rail__item" href="#" data-act="verify"><span class="rail__glyph">✓</span> Verify chain</a>',
-            '    <a class="rail__item" href="#" data-act="export"><span class="rail__glyph">↧</span> Export trail</a>',
+            item("/records", "records", """<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.3"/><path d="M12 7.3V12l3.1 1.9"/></svg>""", "All records", "", "rec-count"),
+            item("/records?when=today", "today", """<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3.7" y="5.3" width="16.6" height="15" rx="2.2"/><path d="M3.7 9.9h16.6M8.3 3.5v3.2M15.7 3.5v3.2"/><circle cx="12" cy="14.9" r="1.45" fill="currentColor" stroke="none"/></svg>""", "Today", "", "rec-today"),
+            '    <a class="rail__item" href="#" data-act="verify"><span class="rail__glyph"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.3"/><path d="M8.3 12.3l2.6 2.5 4.9-5.3"/></svg></span> Verify chain</a>',
+            '    <a class="rail__item" href="#" data-act="export"><span class="rail__glyph"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10.2"/><path d="M8.3 10.6L12 14.3l3.7-3.7"/><path d="M4.8 16.3v2.1a1.7 1.7 0 0 0 1.7 1.7h11a1.7 1.7 0 0 0 1.7-1.7v-2.1"/></svg></span> Export trail</a>',
             '', '    <div class="rail__foot">', '      <div class="rail__acct">',
             '        <span class="rail__avatar">?</span>', '        <span>',
             '          <span class="rail__acctname">Not signed in</span>',

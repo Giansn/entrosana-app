@@ -119,3 +119,52 @@
     burger.setAttribute("aria-expanded", open ? "true" : "false");
   });
 })();
+
+/* Der Rollhinweis der Leiste (2026-09-10, dritter Durchgang).
+ *
+ * Vorgeschichte: der Systembalken schneidet beide 26-px-Rundungen und setzt
+ * unter Windows Pfeile in die Ecken. Ganz ausblenden verbarg, dass unten noch
+ * etwas liegt. Ein dauerhaft sichtbarer Griff wurde zur senkrechten Linie,
+ * weil die Leiste nur knapp überläuft: bei 773 px Inhalt in 591 px Rahmen
+ * deckt der Griff drei Viertel der Bahn und stösst dabei an die Zähler.
+ *
+ * Ein Verlauf an der Unterkante war der nächste Versuch und ebenfalls falsch:
+ * er hängt am Polster der Leiste, nicht am Kartenrand, und stand als graues
+ * Rechteck mit harten Kanten über «Verify chain».
+ *
+ * Es bleibt der Griff, und den gibt es nur während des Rollens. Im
+ * Ruhezustand steht an der Kante nichts.
+ */
+(function () {
+  var rail = document.querySelector(".rail");
+  if (!rail) return;
+
+  var INSET = 14, MIN = 26;
+  var bar = document.createElement("div");
+  bar.className = "rail__scroll";
+  bar.setAttribute("aria-hidden", "true");
+  bar.appendChild(document.createElement("i"));
+  rail.insertBefore(bar, rail.firstChild);
+  var thumb = bar.firstChild;
+
+  var idle;
+  function draw() {
+    var sh = rail.scrollHeight, ch = rail.clientHeight, max = sh - ch;
+    if (max < 2) { rail.classList.remove("has-scroll"); return; }
+    rail.classList.add("has-scroll");
+    var track = ch - INSET * 2;
+    var h = Math.max(MIN, Math.round(track * ch / sh));
+    thumb.style.height = h + "px";
+    thumb.style.transform = "translateY(" + (INSET + Math.round((track - h) * (rail.scrollTop / max))) + "px)";
+  }
+  function wake() {
+    rail.classList.add("is-scrolling");
+    clearTimeout(idle);
+    idle = setTimeout(function () { rail.classList.remove("is-scrolling"); }, 700);
+  }
+
+  rail.addEventListener("scroll", function () { draw(); wake(); }, { passive: true });
+  addEventListener("resize", draw);
+  if (window.ResizeObserver) new ResizeObserver(draw).observe(rail);
+  draw();
+})();

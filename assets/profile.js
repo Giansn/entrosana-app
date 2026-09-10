@@ -1,42 +1,120 @@
-/* profile.js — /p/<id>: das öffentliche Profil einer Person. Ohne Marke lesbar:
- * Name, Stand, Bild, Organisation, Rolle, eine Zeile, Website, Sprachen, die
- * veröffentlichten Module und die öffentlichen Journaleinträge. */
+/* profile.js — /p/<id>: das öffentliche Profil einer Person, als Portfolio.
+ *
+ * Ohne Marke lesbar. Kopf mit Bild, Name und Einzeiler, darunter Stand,
+ * Beitritt, Ort, Rolle und Sprachen; ein Zahlenband mit dem, was sich belegen
+ * lässt; die Biographie als Prosa; die veröffentlichten Module als
+ * Schaufenster, angereichert aus dem Katalog per Slug; die öffentlichen
+ * Journaleinträge als Zeitleiste. Vorher drei Karten untereinander
+ * (umgebaut 2026-09-10, Wunsch des Eigentümers: «wie eine Portfolio-Übersicht»). */
 (function () {
   "use strict";
   var host = document.getElementById("profile"); if (!host) return;
+  // Zwei Adressen für dieselbe Seite: /p/<id> ist die feste, /contributors/<name>
+  // die lesbare. Wer über die Nummer kommt, landet in der Adresszeile auf dem Namen.
   var id = (location.pathname.match(/^\/p\/(\d{1,12})$/) || [])[1];
-  var WORDS = { collector: "Collector", contributor: "Contributor", reviewer: "Team", owner: "Owner" };
+  var slug = (location.pathname.match(/^\/contributors\/([a-z0-9-]{1,80})$/) || [])[1];
+  var WORDS = { collector: "collector", contributor: "contributor", reviewer: "team", owner: "owner" };
   var ROLES = { teacher: "Teacher", student: "Student", parent: "Parent", "social-worker": "Social worker", developer: "Developer", researcher: "Researcher", other: "Other" };
+  var STATE = { finished: "finished", available: "finished", development: "in development", idea: "an idea", running: "running" };
   var LANGS = window.__languages || [];
   function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
   function langName(c) { for (var i = 0; i < LANGS.length; i++) if (LANGS[i][0] === c) return LANGS[i][2] || LANGS[i][1]; return c; }
-  function when(iso) { return iso ? String(iso).replace("T", " ").slice(0, 16) : ""; }
-  function block(eyebrow, h, sub) { var s = el("section", "block hair"); if (eyebrow) s.appendChild(el("span", "eyebrow", eyebrow)); if (h) s.appendChild(el("h1", "work__h", h)); if (sub) s.appendChild(el("p", "work__sub work__sub--wide", sub)); host.appendChild(s); return s; }
-  if (!id) { block("Profile", "No such profile", "The address needs a number, like /p/2."); return; }
-  fetch("/api/profiles/" + id).then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); }).then(function (r) {
+  function day(iso) { return iso ? String(iso).slice(0, 10) : ""; }
+  // Tage wie auf /me: heute, gestern, dann das Datum.
+  function dayLabel(iso) { var d = day(iso), today = new Date().toISOString().slice(0, 10), yest = new Date(Date.now() - 864e5).toISOString().slice(0, 10); return d === today ? "Today" : d === yest ? "Yesterday" : d.slice(5); }
+  function block(eyebrow, h, sub) { var s = el("section", "block"); if (eyebrow) s.appendChild(el("span", "eyebrow", eyebrow)); if (h) s.appendChild(el("h1", "work__h", h)); if (sub) s.appendChild(el("p", "work__sub work__sub--wide", sub)); host.appendChild(s); return s; }
+  // Der Katalog liefert Bereich, Vorspann, Umfang und Stand zu einem Slug.
+  function catalogue(slug) {
+    var cat = window.__catalogue || {};
+    for (var s in cat) { var list = (cat[s] || {}).list || []; for (var i = 0; i < list.length; i++) if (list[i].slug === slug) return list[i]; }
+    return null;
+  }
+
+  if (!id && !slug) { block("Profile", "No such profile", "The address needs a number, like /p/2, or a name, like /contributors/anna-meier."); return; }
+  fetch(slug ? "/api/profiles/slug/" + slug : "/api/profiles/" + id).then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); }).then(function (r) {
     if (r.s !== 200) { block("Profile", "No public profile here", "Either the number is wrong, or the person has not set a name yet."); return; }
     var p = r.j.profile, pr = p.profile || {};
     document.title = p.name + " | entrosana";
-    var sec = block("Profile", p.name, [ROLES[pr.role] || pr.role, pr.org].filter(Boolean).join(" · ") || null);
-    var card = el("div", "card me"); sec.appendChild(card);
-    var head = el("div", "me__id");
-    var av = el("span", "me__avatar");
-    if (p.avatar) { var img = el("img", "me__avatarimg"); img.src = "/api/avatars/" + p.id + "?v=" + encodeURIComponent(p.avatar); img.alt = ""; av.appendChild(img); } else av.textContent = p.name.trim().charAt(0).toUpperCase();
-    head.appendChild(av);
-    var meta = el("div", "me__meta"); meta.appendChild(el("span", "chip", WORDS[p.standing] || p.standing));
-    if (pr.about) meta.appendChild(el("p", "me__line", pr.about));
-    if (pr.website) { var wl = el("p", "me__line"); var wa = el("a", null, pr.website.replace(/^https:\/\//, "")); wa.href = pr.website; wa.rel = "noopener"; wl.appendChild(wa); meta.appendChild(wl); }
-    if (pr.langs && pr.langs.length) meta.appendChild(el("p", "me__line fine", "Languages: " + pr.langs.map(langName).join(", ")));
-    meta.appendChild(el("p", "me__line fine", "On the Hub since " + p.since + "."));
-    head.appendChild(meta); card.appendChild(head);
-    var sec2 = block("Brought to the Hub", null, null), box = el("div", "card me");
-    if (!p.modules.length) box.appendChild(el("p", "fine", "No published module yet."));
-    else { var ul = el("ul", "me__list"); p.modules.forEach(function (m) { var li = el("li", "me__row"); var a = el("a", "me__t", m.title); a.href = "/modules/" + m.slug; li.appendChild(a); li.appendChild(el("span", "me__n", when(m.published).slice(0, 10))); ul.appendChild(li); }); box.appendChild(ul); }
-    sec2.appendChild(box);
-    var sec3 = block("Journal", null, null), jbox = el("div", "card me");
-    if (!p.journal.length) jbox.appendChild(el("p", "fine", "Nothing public in the journal yet."));
-    else { var jl = el("ul", "me__list journal"); p.journal.forEach(function (e) { var li = el("li", "me__row journal__e"); li.id = "j" + e.id; li.appendChild(el("span", "me__n", when(e.created) + (e.updated ? " · edited" : ""))); li.appendChild(el("p", "journal__t", e.text)); jl.appendChild(li); }); jbox.appendChild(jl); }
-    sec3.appendChild(jbox);
+    if (p.slug) {
+      var canon = "https://entrosana.app/contributors/" + p.slug;
+      if (!slug) { try { history.replaceState(null, "", "/contributors/" + p.slug); } catch (e) {} }
+      var lc = document.querySelector('link[rel="canonical"]') || document.head.appendChild(el("link")); lc.rel = "canonical"; lc.href = canon;
+      var og = document.querySelector('meta[property="og:url"]') || document.head.appendChild(el("meta")); og.setAttribute("property", "og:url"); og.content = canon;
+      var ot = document.querySelector('meta[property="og:title"]') || document.head.appendChild(el("meta")); ot.setAttribute("property", "og:title"); ot.content = p.name + " | entrosana";
+    }
+    var sec = block(null, null, null);
+
+    // Kopf. Der Einzeiler ist die Überschrift; fehlt er, springt die Rolle ein,
+    // und dann steht sie in der Zeile darunter nicht ein zweites Mal.
+    var hero = el("div", "hero"), av = el("div", "hero__av");
+    if (p.avatar) { var img = el("img"); img.src = "/api/avatars/" + p.id + "?v=" + encodeURIComponent(p.avatar); img.alt = ""; av.appendChild(img); }
+    else av.textContent = p.name.trim().charAt(0).toUpperCase();
+    hero.appendChild(av);
+    var mid = el("div"); mid.appendChild(el("h1", "hero__name", p.name));
+    var role = ROLES[pr.role] || pr.role || "";
+    var line = pr.about || [role, pr.org].filter(Boolean).join(" · ");
+    if (line) mid.appendChild(el("p", "hero__line", line));
+    var meta = el("div", "hero__meta");
+    meta.appendChild(el("span", "tag", WORDS[p.standing] || p.standing));
+    meta.appendChild(el("span", null, "on the Hub since " + p.since));
+    if (pr.place) meta.appendChild(el("span", null, pr.place));
+    if (pr.about && role) meta.appendChild(el("span", null, [role, pr.org].filter(Boolean).join(" · ")));
+    if (pr.langs && pr.langs.length) meta.appendChild(el("span", null, pr.langs.map(langName).join(" · ")));
+    mid.appendChild(meta); hero.appendChild(mid);
+    var act = el("div", "hero__act");
+    if (p.contact) { var mw = el("a", "btn", "Write to " + p.name.split(" ")[0]); mw.href = "mailto:" + p.contact; act.appendChild(mw); act.appendChild(el("span", "hero__contact muted", p.contact)); }
+    if (pr.website) { var w = el("a", "btn" + (p.contact ? " btn--ghost" : ""), pr.website.replace(/^https:\/\//, "") + " ↗"); w.href = pr.website; w.rel = "noopener"; act.appendChild(w); }
+    if (!p.contact) { var wr = el("a", "btn btn--ghost", "Write to the Hub"); wr.href = "/request"; act.appendChild(wr); }
+    hero.appendChild(act); sec.appendChild(hero);
+
+    // Zahlenband: nur, was öffentlich belegbar ist. Aufzeichnungen liegen auf
+    // dem Gerät der Person und stehen deshalb nicht hier.
+    var facts = el("div", "facts2");
+    [[String(p.modules.length), p.modules.length === 1 ? "published" : "published"], [p.since, "on the Hub since"],
+     pr.langs && pr.langs.length ? [String(pr.langs.length), pr.langs.length === 1 ? "language" : "languages"] : null,
+     p.journal.length ? [String(p.journal.length), p.journal.length === 1 ? "public entry" : "public entries"] : null
+    ].forEach(function (f) { if (!f) return; var d = el("div", "fact2"); d.appendChild(el("b", null, f[0])); d.appendChild(el("span", null, f[1])); facts.appendChild(d); });
+    sec.appendChild(facts);
+
+    // Biographie als Prosa, mit Zeilenumbrüchen.
+    if (pr.bio) sec.appendChild(el("p", "bio", pr.bio));
+
+    // Schaufenster.
+    var ps = el("div", "psect"), ph = el("div", "psect__h");
+    ph.appendChild(el("h2", null, "Contributions")); ph.appendChild(el("span", null, p.modules.length + " published")); ps.appendChild(ph);
+    ps.appendChild(el("p", "psect__s", "Modules under this name. Each one opens as a lesson you can run."));
+    if (!p.modules.length) ps.appendChild(el("p", "quiet", "No module published under this name yet."));
+    else {
+      var show = el("div", "show");
+      p.modules.forEach(function (m) {
+        var c = catalogue(m.slug) || {};
+        var a = el("a", "card tile piece"); a.href = "/modules/" + m.slug;
+        if (c.area) a.appendChild(el("span", "chip", c.area));
+        a.appendChild(el("p", "piece__t", m.title));
+        a.appendChild(el("p", "piece__l", c.lede || ""));
+        var f = el("div", "piece__f");
+        f.appendChild(el("span", null, c.who ? String(c.who).split(" · ").slice(1).join(" · ") || c.who : "published " + day(m.published)));
+        f.appendChild(el("span", "st", STATE[c.state] || c.state || "published"));
+        a.appendChild(f); show.appendChild(a);
+      });
+      ps.appendChild(show);
+    }
+    sec.appendChild(ps);
+
+    // Journal als Zeitleiste.
+    var js = el("div", "psect"), jh = el("div", "psect__h");
+    jh.appendChild(el("h2", null, "Journal")); jh.appendChild(el("span", null, "public entries")); js.appendChild(jh);
+    if (!p.journal.length) js.appendChild(el("p", "quiet", "Nothing public in the journal yet."));
+    else {
+      var tl = el("div", "tl");
+      p.journal.forEach(function (e) {
+        var d = el("div", "tl__d"); d.id = "j" + e.id;
+        d.appendChild(el("span", "tl__k", dayLabel(e.created) + (e.updated ? " · edited" : "")));
+        d.appendChild(el("p", "tl__t", e.text)); tl.appendChild(d);
+      });
+      js.appendChild(tl);
+    }
+    sec.appendChild(js);
     if (location.hash) { var target = document.getElementById(location.hash.slice(1)); if (target) target.scrollIntoView(); }
   }).catch(function () { block("Profile", "Not reachable", "The Hub's server is not reachable right now."); });
 })();

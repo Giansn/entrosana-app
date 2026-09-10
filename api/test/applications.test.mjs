@@ -7,7 +7,7 @@ import { rolesOf, can } from "../policy.mjs";
 import { publishChecks } from "../contributions.mjs";
 
 test("bewerbung: sammler → offen → freigegeben → contributor; tor und policy folgen", () => {
-  const { db, migrations } = open(":memory:"); assert.equal(migrations.total, 16);
+  const { db, migrations } = open(":memory:"); assert.equal(migrations.total, 19);
   const now = new Date().toISOString();
   const a = db.prepare("INSERT INTO actors(kind,email,name,created) VALUES ('email','c@x.ch','Cara',?)").run(now).lastInsertRowid;
   const team = db.prepare("INSERT INTO actors(kind,email,name,created) VALUES ('email','t@x.ch','Team',?)").run(now).lastInsertRowid;
