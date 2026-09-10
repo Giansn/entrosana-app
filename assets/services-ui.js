@@ -38,7 +38,7 @@
     var ol = el("ol", "measure");
     [["Press «+ Add a service».", ""],
      ["Give it a name.", " That is the only field that is always required; the short description beside it is optional."],
-     ["Choose what kind of check it is.", " The five kinds above; the form asks for the rest depending on which one you pick."],
+     ["Choose how it is checked.", " The five kinds above, named the same in the menu; the form asks for the rest depending on which one you pick."],
      ["Put in the address the Hub should reach.", " A web address for address and MCP, host and port for port and certificate. Heartbeat is the exception, it needs none."],
      ["For a heartbeat, copy the secret web address the Hub shows right after «Add».", " It looks like https://entrosana.app/api/hooks/3f9c… and belongs to this one entry; it appears once, with a ready-made curl line. Paste it into the job or the machine you want to watch, so it calls the address on its schedule, at least once per interval. Lost it? «new address» in the row makes a fresh one and retires the old."],
      ["Pick how often it is checked, and where it belongs.", " Group and place are labels for sorting the list, they change nothing about the check."]].forEach(function (k) {

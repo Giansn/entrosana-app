@@ -102,11 +102,27 @@
     <div class="field">
       <label for="svc-name">Name</label>
       <input id="svc-name" type="text" placeholder="schulserver.local">
-      <span class="help">How you call it. Shown exactly like this in the list.</span>
+      <span class="help">How you call it. Shown exactly like this in the list. The only field that is always required.</span>
+    </div>
+    <div class="field">
+      <label for="svc-kind">How it is checked</label>
+      <select id="svc-kind">
+        <option value="url">address · the Hub opens a web address of yours</option>
+        <option value="webhook">heartbeat · your job calls a secret address the Hub gives you</option>
+        <option value="mcp">MCP · the Hub lists the tools of an MCP server</option>
+        <option value="tcp">port · the Hub checks that host:port answers</option>
+        <option value="tls">certificate · the Hub reads the TLS certificate and its expiry</option>
+      </select>
+    </div>
+    <div class="field" id="svc-target-field">
+      <label for="svc-target">Address</label>
+      <input id="svc-target" type="text" placeholder="https://schulserver.example.org/">
+      <span class="help" id="svc-target-help">The Hub's server opens it and expects an answer below 400. The address stays on the server; only name, category and result are shown, and only to you.</span>
     </div>
     <div class="field">
       <label for="svc-what">What it serves</label>
       <input id="svc-what" type="text" placeholder="file share in the staff room">
+      <span class="help">Optional, one line for the list.</span>
     </div>
     <div class="row2">
       <div class="field">
@@ -118,32 +134,16 @@
         <select id="svc-where"></select>
       </div>
     </div>
-    <div class="row2">
-      <div class="field">
-        <label for="svc-kind">How it is checked</label>
-        <select id="svc-kind">
-          <option value="url">url · the Hub opens an address</option>
-          <option value="mcp">mcp · an MCP server, tools counted</option>
-          <option value="webhook">webhook · it reports itself</option>
-          <option value="tcp">tcp · a port answers</option>
-          <option value="tls">tls · certificate and its expiry</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="svc-interval">How often</label>
-        <select id="svc-interval">
-          <option value="5">every 5 minutes</option>
-          <option value="15">every 15 minutes</option>
-          <option value="60" selected>every hour</option>
-          <option value="240">every 4 hours</option>
-          <option value="1440">once a day</option>
-        </select>
-      </div>
-    </div>
-    <div class="field" id="svc-target-field">
-      <label for="svc-target">Address</label>
-      <input id="svc-target" type="text" placeholder="https://schulserver.example.org/">
-      <span class="help" id="svc-target-help">The Hub's server opens it and expects an answer below 400. The address stays on the server; only name, category and result are shown, and only to you.</span>
+    <div class="field">
+      <label for="svc-interval">How often</label>
+      <select id="svc-interval">
+        <option value="5">every 5 minutes</option>
+        <option value="15">every 15 minutes</option>
+        <option value="60" selected>every hour</option>
+        <option value="240">every 4 hours</option>
+        <option value="1440">once a day</option>
+      </select>
+      <span class="help">Category and place only sort the list; the rhythm is how often the Hub checks, or how often a heartbeat must arrive.</span>
     </div>
     <div class="actions">
       <button class="btn" type="button" data-act="svc-save">Add</button>
