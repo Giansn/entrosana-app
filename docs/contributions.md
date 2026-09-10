@@ -508,4 +508,10 @@ Fassung bis 2026-09-10, die allein im Browser lagen (`entrosana-services:v1`), e
 mit «Move them to my account» (je Eintrag ein `POST /api/me/services`, die gegebene Prüfung bleibt,
 ohne Prüfung wird es ein Lebenszeichen) oder «Discard». Die Erklärung der Seite ist eine Blase am
 (i)-Knopf (Escape, Klick daneben oder × schliessen; am Telefon ein Blatt am unteren Rand).
+Beim Lebenszeichen heisst der Knopf «Add and get the address», die Erklärung bleibt im Dialog stehen
+(nur das Adressfeld verschwindet), und nach dem Anlegen bleibt der Dialog offen und zeigt die geheime
+Adresse `…/api/hooks/<Schlüssel>` mit curl-Zeile und «Copy the address»; sie erscheint nur dieses eine
+Mal, «new address» in der Zeile erzeugt eine neue. Fehlt der Name, sagt der Dialog es in einer Zeile.
+Sieben Spalten brauchen 54rem: darunter scrollt die Gruppe in sich (`main` als Rasterkind mit
+`min-width:0`, sonst wüchse die Spalte mit der Tabelle und die Seite scrollte seitwärts).
 

@@ -143,6 +143,7 @@ p{ margin:0 0 var(--pad-para) }
 
 /* ---------- Gerüst ---------- */
 .app{ display:grid; grid-template-columns:var(--rail) 1fr; min-height:100dvh }
+.app > main{ min-width:0 }   /* Rasterkind: sonst wächst die Spalte mit breiten Tabellen, statt dass sie in sich scrollen (2026-09-10) */
 
 .rail{
   padding:1.35rem 1rem; display:flex; flex-direction:column; gap:.2rem;
@@ -1449,10 +1450,19 @@ html{ scrollbar-gutter:stable }
 
 /* Feste Spalten, sonst misst jede Gruppe ihre Tabelle selbst und die Spalten
    springen von Block zu Block. */
-.grp .tbl{ table-layout:fixed }
-.grp .tbl th:nth-child(1){ width:2.6rem }
-.grp .tbl th:nth-child(2){ width:13rem }
-.grp .tbl th:nth-child(4){ width:13rem }
+/* Sieben Spalten brauchen Platz: unter 54rem scrollt die Gruppe in sich, statt dass Zellen in hohe Zeilen umbrechen (2026-09-10). */
+.grp__body{ overflow-x:auto; overscroll-behavior-x:contain }
+.grp .tbl{ table-layout:fixed; min-width:54rem }
+.grp .tbl td{ vertical-align:top }
+.grp .tbl th:nth-child(1){ width:2.4rem }
+.grp .tbl th:nth-child(2){ width:11.5rem }
+.grp .tbl th:nth-child(4){ width:7.5rem }
+.grp .tbl th:nth-child(5){ width:7.5rem }
+.grp .tbl th:nth-child(6){ width:8.5rem }
+.grp .tbl th:nth-child(7){ width:9.5rem }
+.grp .tbl .svc__p, .grp .tbl .svc__s{ overflow-wrap:anywhere }
+.grp .tbl td.num .rowact{ display:inline-block }
+.field > [hidden]{ display:none !important }
 .grp .tbl th:nth-child(5){ width:7rem }
 .grp .tbl th:nth-child(6){ width:10.5rem }
 .grp .tbl th:nth-child(7){ width:6rem }
@@ -1902,7 +1912,10 @@ button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
 .svc__bubble{ margin:1rem 0 1.2rem; border-left:3px solid var(--seal) }
 .svc__bubble ul{ margin:.4rem 0 .8rem; padding-left:1.1rem }
 .svc__bubble li{ margin:.25rem 0 }
-.svc__hook{ margin:1rem 0; border-left:3px solid var(--seal) }
+.pick.is-hook .pick__box > :not(.svc__hookview){ display:none }
+.svc__hookview .h3{ margin:.2rem 0 .6rem }
+.svc__hookview .watchline{ white-space:pre-wrap; overflow-wrap:anywhere; margin:.8rem 0 }
+.svc__hookview .actions{ margin-top:.9rem }
 .svc__snap{ margin-top:2.2rem; padding-top:1.2rem; border-top:1px solid var(--line) }
 .svc__snap .tbl{ margin-top:.6rem }
 .svc__legacy{ margin:0 0 1.2rem }
@@ -2027,7 +2040,6 @@ button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
 .svc__pop__x:hover{ color:var(--seal); border-color:var(--seal) }
 .svc__pop .svc__bubble{ border:0; padding:0; margin:.7rem 0 0; font-size:.92rem }
 .svc__pop .svc__bubble .measure{ max-width:none }
-.svc__mrow .fine{ white-space:nowrap }
 @media (max-width:759.98px){
   .svc__infowrap{ position:static }
   .svc__pop{ position:fixed; top:auto; left:.6rem; right:.6rem; bottom:.6rem; width:auto; max-height:78vh }
@@ -2084,3 +2096,38 @@ button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
 .rail__end a:hover{ color:var(--seal) }
 .rail__lic{ opacity:.7 }
 @media (max-width:759.98px){ .rail__end{ display:none } }
+
+/* /me mit Kopfband und Reitern (2026-09-10).
+   Vorher zwölf gleichrangige Karten in einer Spalte. Jetzt trägt ein Kopfband
+   die Identität, drei Reiter teilen Profil, Arbeit und Konto, und was nicht
+   rückgängig zu machen ist, steht abgesetzt in der Gefahrenzone. */
+.idband{ display:flex; align-items:center; gap:1.1rem; flex-wrap:wrap; margin:1.2rem 0 1.4rem }
+.idband__av{
+  width:4rem; height:4rem; border-radius:999px; flex:none; display:grid; place-items:center; overflow:hidden;
+  border:1px solid var(--seal); color:var(--seal); background:color-mix(in srgb,var(--seal) 12%,transparent);
+  font-family:var(--font-mono); font-size:1.5rem;
+}
+.idband__n{ font-size:var(--step-2); font-weight:600; letter-spacing:-.02em; margin:0; display:flex; align-items:center; gap:.6rem; flex-wrap:wrap }
+.idband__m{ font-family:var(--font-mono); font-size:var(--step--1); color:var(--muted); margin:.15rem 0 0 }
+.idband__act{ margin-left:auto; display:flex; gap:.5rem; align-items:center }
+.me__pane[hidden]{ display:none }
+.me__pane > .block:first-child{ padding-top:.6rem }
+.me__bio{ white-space:pre-wrap }
+
+.sumrows{ display:grid; gap:0; margin:.4rem 0 .2rem }
+.sumrow{ display:flex; align-items:center; gap:1rem; padding:.8rem .1rem; border-bottom:1px solid var(--line); color:inherit; text-decoration:none }
+.sumrow:last-child{ border-bottom:0 }
+.sumrow:hover .sumrow__t{ color:var(--seal) }
+.sumrow__t{ font-size:.98rem }
+.sumrow__s{ color:var(--muted); font-size:var(--step--1) }
+.sumrow__n{ margin-left:auto; font-family:var(--font-mono); font-size:.8rem; color:var(--muted) }
+.sumrow__go{ font-family:var(--font-mono); font-size:.8rem; color:var(--seal) }
+
+.danger{
+  border:1px solid color-mix(in srgb,var(--warn) 45%,var(--line)); border-radius:var(--radius);
+  background:color-mix(in srgb,var(--warn) 9%,transparent); padding:var(--pad-card); margin:1.6rem 0 2rem;
+}
+.danger .h3{ color:var(--warn) }
+.danger__row{ display:flex; align-items:center; gap:1rem; flex-wrap:wrap; padding:.75rem 0; border-bottom:1px solid color-mix(in srgb,var(--warn) 22%,transparent) }
+.danger__row:last-child{ border-bottom:0 }
+.danger__row p{ margin:0; font-size:.9rem; color:var(--ink-2); flex:1 1 22rem }

@@ -169,7 +169,7 @@
     tr.appendChild(el("td", "svc__n", r.name)); tr.appendChild(el("td", "svc__w", r.what || "")); tr.appendChild(el("td", "svc__p", r.place || ""));
     var c4 = el("td", "svc__p"); c4.appendChild(el("span", "origin origin--own", r.host)); c4.appendChild(document.createElement("br")); c4.appendChild(el("span", "fine", "read " + String(r.read || "").slice(11))); tr.appendChild(c4);   // nur die Uhrzeit; Datum steht in der Zeile über der Liste
     tr.appendChild(el("td", "svc__s num " + (r.state === "ok" ? "ok" : (r.state === "warn" || r.state === "off") ? "warn" : ""), r.status || ""));
-    var c6 = el("td", "num"); c6.appendChild(el("span", "fine", "on the machine")); tr.appendChild(c6);
+    tr.appendChild(el("td", "num"));
     return tr;
   }
 
@@ -208,37 +208,43 @@
     act.appendChild(mv); act.appendChild(drop); box.appendChild(act);
     return box;
   }
-  function showHook(name, url) {
-    var box = el("div", "hint svc__hook");
-    box.appendChild(el("p", "hint__t", "The secret address for «" + name + "»"));
-    box.appendChild(el("p", null, "This address belongs to this entry alone and is shown only now. Paste it into the job or the machine you want to watch and have it call the address on its schedule, at least once per interval; GET or POST both count, and an optional «status» text is kept. The dot stays green while the calls keep coming. If you lose the address, «new address» in the row makes a fresh one."));
-    var pre = el("pre", "watchline", url + "\n\ncurl -fsS " + url + "?status=ok"); box.appendChild(pre);
-    var copy = el("button", "btn btn--ghost", "Copy the address"); copy.type = "button";
-    copy.addEventListener("click", function () { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { copy.textContent = "Copied"; }); });
-    box.appendChild(copy);
-    var close = el("button", "btn btn--quiet", "Done"); close.type = "button"; close.addEventListener("click", function () { box.remove(); }); box.appendChild(close);
-    UI.insertBefore(box, UI.firstChild.nextSibling);
-  }
-
   // ------------------------------------------------------------ Hinzufügen
   var dlg = document.getElementById("svc-add");
   var HELP = { url: "The Hub's server opens it and expects an answer below 400. The address stays on the server; only you see this list.",
                mcp: "Streamable HTTP endpoint of an MCP server, for example https://host/mcp. The Hub sends initialize and tools/list and counts the tools. Servers behind a key show as «needs auth».",
-               webhook: "Nothing to enter here. After «Add» the Hub shows a secret web address that belongs to this entry alone (https://entrosana.app/api/hooks/…), once, with a curl line. Your job or machine calls it on its schedule; if the calls stop for longer than the interval, the dot turns amber, then grey.",
+               webhook: "No address to enter. After «Add» the Hub shows a secret web address for this entry, once, with a ready curl line. It looks like https://entrosana.app/api/hooks/3f9c… Copy it into the job or the machine you want to watch and have it call the address on its schedule, at least once per interval. If the calls stop for longer than the interval, the dot turns amber, then grey. Lost it? «new address» in the row makes a fresh one.",
                tcp: "host:port, for example mail.example.org:993. The Hub checks that the port answers.",
                tls: "A host name, for example example.org. The Hub reads the certificate and warns two weeks before it expires." };
   var PLACEHOLDER = { url: "https://schulserver.example.org/", mcp: "https://tools.example.org/mcp", webhook: "", tcp: "mail.example.org:993", tls: "example.org" };
   function fill(id, values, selected) { var sel = dlg.querySelector(id); sel.textContent = ""; values.forEach(function (v) { var o = document.createElement("option"); o.value = v; o.textContent = v; if (v === selected) o.selected = true; sel.appendChild(o); }); }
   function syncKind() {
-    var k = dlg.querySelector("#svc-kind").value, tf = dlg.querySelector("#svc-target-field");
-    dlg.querySelector("#svc-target-help").textContent = HELP[k]; dlg.querySelector("#svc-target").placeholder = PLACEHOLDER[k];
-    tf.hidden = k === "webhook";
+    var k = dlg.querySelector("#svc-kind").value, tf = dlg.querySelector("#svc-target-field"), inp = dlg.querySelector("#svc-target"), lab = dlg.querySelector("label[for='svc-target']");
+    dlg.querySelector("#svc-target-help").textContent = HELP[k]; inp.placeholder = PLACEHOLDER[k];
+    tf.hidden = false; inp.hidden = lab.hidden = (k === "webhook");   // beim Lebenszeichen bleibt die Erklärung stehen, nur das Adressfeld geht
+    dlg.querySelector("[data-act='svc-save']").textContent = saveLabel();
+  }
+  function saveLabel() { return dlg.querySelector("#svc-kind").value === "webhook" ? "Add and get the address" : "Add"; }
+  function say(text) { var old = dlg.querySelector(".svc__msg"); if (old) old.remove(); var m = el("p", "note note--warn svc__msg", text); dlg.querySelector(".actions").before(m); }
+  // Nach dem Anlegen eines Lebenszeichens bleibt der Dialog offen und zeigt die Adresse dort, wo man gerade hinschaut.
+  function hookView(name, url) {
+    var v = el("div", "svc__hookview");
+    v.appendChild(el("span", "eyebrow", "Added"));
+    v.appendChild(el("p", "h3", "The secret address for «" + name + "»"));
+    v.appendChild(el("p", null, "It belongs to this entry alone and is shown only now. Paste it into the job or the machine you want to watch and have it call the address on its schedule, at least once per interval; GET or POST both count, an optional «status» text is kept. The dot in the list stays green while the calls keep coming. If you lose the address, «new address» in the row makes a fresh one."));
+    var pre = el("pre", "watchline", url + "\n\ncurl -fsS " + url + "?status=ok"); v.appendChild(pre);
+    var act = el("div", "actions");
+    var copy = el("button", "btn", "Copy the address"); copy.type = "button";
+    copy.addEventListener("click", function () { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { copy.textContent = "Copied"; }, function () { copy.textContent = "Select it above and copy"; }); else copy.textContent = "Select it above and copy"; });
+    var done = el("button", "btn btn--ghost", "Done"); done.type = "button"; done.addEventListener("click", function () { dlg.close(); });
+    act.appendChild(copy); act.appendChild(done); v.appendChild(act);
+    return v;
   }
   function openAdd() {
     if (!dlg) return;
     if (!tk) { location.href = "/me"; return; }
     ["#svc-name", "#svc-what", "#svc-target"].forEach(function (id) { dlg.querySelector(id).value = ""; dlg.querySelector(id).closest(".field").className = "field"; });
     var msg = dlg.querySelector(".svc__msg"); if (msg) msg.remove();
+    dlg.classList.remove("is-hook"); var hv = dlg.querySelector(".svc__hookview"); if (hv) hv.remove();
     syncKind(); dlg.showModal();
   }
   if (dlg) {
@@ -248,18 +254,19 @@
     dlg.querySelector("#svc-kind").addEventListener("change", syncKind);
     dlg.querySelector("[data-act='svc-save']").addEventListener("click", function () {
       var name = dlg.querySelector("#svc-name").value.trim(), nf = dlg.querySelector("#svc-name").closest(".field");
-      if (!name) { nf.className = "field is-bad"; return; } nf.className = "field";
+      if (!name) { nf.className = "field is-bad"; say("Give the service a name first; it is the only field that is always required."); dlg.querySelector("#svc-name").focus(); return; } nf.className = "field";
       var kind = dlg.querySelector("#svc-kind").value, target = dlg.querySelector("#svc-target").value.trim();
       var tfld = dlg.querySelector("#svc-target-field");
-      if (kind !== "webhook" && !target) { tfld.className = "field is-bad"; return; } tfld.className = "field";
+      if (kind !== "webhook" && !target) { tfld.className = "field is-bad"; say("Put in the address the Hub should reach."); dlg.querySelector("#svc-target").focus(); return; } tfld.className = "field";
       var old = dlg.querySelector(".svc__msg"); if (old) old.remove();
       var btn = dlg.querySelector("[data-act='svc-save']"); btn.disabled = true; btn.textContent = "Checking…";
       api("/api/me/services", { method: "POST", body: JSON.stringify({ name: name, what: dlg.querySelector("#svc-what").value.trim(), group: dlg.querySelector("#svc-group").value, place: dlg.querySelector("#svc-where").value, check: kind + ":" + target, interval: Number(dlg.querySelector("#svc-interval").value) }) })
         .then(function (r) {
-          btn.disabled = false; btn.textContent = "Add";
-          if (r.s === 200) { dlg.close(); load().then(function () { if (r.j.hook_url) showHook(name, r.j.hook_url); }); }
+          btn.disabled = false; btn.textContent = saveLabel();
+          if (r.s === 200 && r.j.hook_url) { dlg.querySelector(".pick__box").appendChild(hookView(name, r.j.hook_url)); dlg.classList.add("is-hook"); load(); }
+          else if (r.s === 200) { dlg.close(); load(); }
           else { var m = el("p", "note note--warn svc__msg", r.j.error || ("HTTP " + r.s)); dlg.querySelector(".actions").before(m); }
-        }).catch(function () { btn.disabled = false; btn.textContent = "Add"; var m = el("p", "note note--warn svc__msg", "The Hub's server is not reachable right now."); dlg.querySelector(".actions").before(m); });
+        }).catch(function () { btn.disabled = false; btn.textContent = saveLabel(); say("The Hub's server is not reachable right now."); });
     });
     dlg.querySelector("[data-act='svc-cancel']").addEventListener("click", function () { dlg.close(); });
   }
