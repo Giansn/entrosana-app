@@ -6,8 +6,12 @@
 #   4. Dienste neu starten, wenn Code dazukam: api nach bestandenen Tests, app bei serve.mjs/docs-render.mjs,
 #      Konsole nur ohne offene Verbindung.
 # Protokoll als JSON-Zeilen in ~/.sygnif/logs/entrosana-hub-sync.log; die Konsole zeigt es unter /sync.
+# Lebenszeichen (2026-09-10): steht in ~/.config/entrosana-hub-sync.hook die geheime Adresse eines Eintrags
+# «My service reports to the Hub», ruft der Lauf sie am Ende auf; ein gescheiterter Lauf ruft nicht, dann
+# wird der Punkt auf entrosana.app/services nach dem Intervall amber. Die Adresse steht nur dort, nicht im Baum.
 set -uo pipefail
-APP="$HOME/entrosana-app"; LOG="$HOME/.sygnif/logs/entrosana-hub-sync.log"
+APP="$HOME/entrosana-app"; LOG="$HOME/.sygnif/logs/entrosana-hub-sync.log"; HOOK="$HOME/.config/entrosana-hub-sync.hook"
+beat() { [ -s "$HOOK" ] || return 0; curl -fsS -m 10 "$(tr -d '[:space:]' < "$HOOK")?status=$(python3 -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$1")" >/dev/null 2>&1 && log beat true "Lebenszeichen gesendet: $1" || log beat false "Lebenszeichen nicht angekommen"; }
 mkdir -p "$(dirname "$LOG")"; cd "$APP" || exit 2
 now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 log() { printf '{"t":"%s","step":"%s","ok":%s,"text":%s}\n' "$(now)" "$1" "$2" "$(printf '%s' "$3" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()[:600]))')" >> "$LOG"; }
@@ -52,3 +56,4 @@ if [ "$before" != "$after" ]; then
   fi
 fi
 log done true "fertig auf $(git log -1 --format=%h)"
+beat "ok, $(git log -1 --format=%h), $n new"
