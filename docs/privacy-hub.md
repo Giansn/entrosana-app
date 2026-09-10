@@ -31,7 +31,7 @@ sygnif@entrosana.com and are read by people.
 **How long.** A proposal that is never confirmed is deleted after 7 days,
 together with the address that came with it. A confirmed proposal stays until
 it is decided and, if published, for as long as the module is in the
-catalogue. Access keys expire after 30 days, confirmation links after 1 hour.
+catalogue. Access keys expire after 30 days, sign-in links after 20 minutes, confirmation links for proposals after 1 hour.
 The server's request log, which contains your IP address, is kept for 14 days.
 A chain of hashes that records each step (without names or addresses) is kept
 permanently; it is how we prove the history of a module was not rewritten.

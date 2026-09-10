@@ -36,29 +36,29 @@ irreversiblen Handlungen.
 |---|---|---|---|
 | Passwortlos per Mail-Link | WCAG 3.3.8; NIST: Mail als Bestätigung erlaubt | Anmeldung nur per Link, kein Passwort, kein CAPTCHA (Honigtopf) | erfüllt |
 | Token | OWASP: CSPRNG ≥ 128 Bit, einmal, gehasht | 32 Byte aus `randomBytes`, SHA-256 in der Datenbank, `used` nach Gebrauch | erfüllt |
-| Gültigkeit Anmeldelink | OWASP 15 min, Praxis 10 bis 30 | 60 Minuten | teils |
+| Gültigkeit Anmeldelink | OWASP 15 min, Praxis 10 bis 30 | 20 Minuten seit 2026-09-10; Bestätigungen zu Vorschlägen 60 Minuten | erfüllt |
 | Einladungslink | Bestätigung, keine Sitzung | 7 Tage, einmal, legt ein Sammler-Konto an | erfüllt |
 | Sitzung | NIST ≤ 30 Tage | 30 Tage je Gerät, Marke gehasht; SYGNIF 365 Tage als Dienstkonto | erfüllt |
 | Kontoaufzählung | einheitliche Antwort | `POST /api/verify/request` antwortet immer 202 | erfüllt |
 | Drossel | je Adresse und Herkunft | 5/h je Adresse, 5/h je IP, 60 Mails/h gesamt | erfüllt; Schulen hinter einer Adresse sind ein offener Entscheid |
-| Geräte | Liste und «überall abmelden» | Zahl der Geräte sichtbar, Abmelden nur je Gerät | offen |
-| Hinweis bei neuer Anmeldung | Praxis | keiner | offen |
-| Erneute Bestätigung vor Löschung | Praxis, NIST-Sinn | Bestätigungsdialog im Browser | teils |
+| Geräte | Liste und «überall abmelden» | Block «Devices» auf /me: Liste mit Datum, einzeln abmelden, überall sonst, überall inklusive diesem Gerät (2026-09-10) | erfüllt |
+| Hinweis bei neuer Anmeldung | Praxis | Mail an die Adresse des Kontos bei jeder Anmeldung eines bestehenden Kontos, mit Zeit, grober Herkunft und dem Weg zum Abmelden (2026-09-10) | erfüllt |
+| Erneute Bestätigung vor Löschung | Praxis, NIST-Sinn | Löschung und Wechsel der Namensnennung verlangen eine Marke jünger als 15 Minuten; die Seite verschickt auf Knopfdruck den frischen Link (2026-09-10) | erfüllt |
 | Rollen | kleinste Rechte, nachvollziehbar | collector/contributor/reviewer/owner, Vergabe nur auf dem Server, jede Vergabe in der Kette | erfüllt |
 | Vier Augen bei Veröffentlichung | Praxis für Redaktionen | `FOUR_EYES=strict` vorhanden, aus; Annahme und Veröffentlichung in einem Schritt auf Wunsch des Eigentümers | bewusst |
 | Export und Löschung | Art. 25 und 32 DSG, Art. 15/17/20 DSGVO | Selbstbedienung, sofort; Kette behält Zeilen ohne Namen; Module wahlweise unter dem Namen | erfüllt |
-| Löschung des Eigentümers | — | nur nach Entzug der Rollen | bewusst |
+| Löschung des Eigentümers | — | alle Konten löschen sich selbst, auch Prüfende; nur der Eigentümer nicht (2026-09-10) | bewusst |
 | Fristen | benennen und einhalten | unbestätigt 7 d, Marken 30 d, Anfragen 180 d, Einladungen 180 d, Sicherungen ohne Frist | teils |
-| Minderjährige | Urteilsfähigkeit ab etwa 13; DSGVO 16 | Text auf /contribute («bring a teacher or a guardian», «never send us the personal data of children»); keine Regel bei der Registrierung | teils |
+| Minderjährige | Urteilsfähigkeit ab etwa 13; DSGVO 16 | Häkchen bei der Registrierung «13 oder älter, oder Lehrperson/Elternteil für jüngere Lernende», vom Dienst verlangt, nichts gespeichert; Sätze auf /contribute (2026-09-10) | erfüllt |
 | Schulen | Auftragsbearbeitung nur bei Schülerdaten | keine Schülerkonten vorgesehen, kein Profiling, Server in der Schweiz; kein Hinweis «Für Schulen» | teils |
-| Barrierefreiheit der Anmeldung | Labels, Tastatur, Autofill | Labels und Tastatur ja; `autocomplete="email"` am Anmeldefeld zu prüfen | teils |
+| Barrierefreiheit der Anmeldung | Labels, Tastatur, Autofill | Labels, Tastatur, `autocomplete="email"` und `inputmode="email"` am Anmeldefeld | erfüllt |
 | Verhaltensregeln | eine Seite, die man verlinken kann | drei Sätze unter «The rules, short» auf /contribute | teils |
 
-Zwölf Punkte erfüllt oder bewusst so, sechs teils, zwei offen.
+Stand 2026-09-10 nach den Empfehlungen 1 bis 5: siebzehn Punkte erfüllt oder bewusst so, drei teils (Fristen der Sicherungen, Hinweis für Schulen, Seite mit den Regeln), keiner offen.
 
 ## 3. Empfehlungen, gereiht
 
-**Zuerst (klein, je unter einer Stunde).**
+**Zuerst (klein, je unter einer Stunde) — umgesetzt am 2026-09-10.**
 1. Anmeldelink auf 20 Minuten kürzen; der Einladungslink bleibt bei 7 Tagen.
 2. Mail bei jeder Anmeldung eines neuen Geräts an die Adresse des Kontos: Zeit, grobe Herkunft, Weg zum Abmelden.
 3. «Überall abmelden» auf /me, dazu die Liste der Geräte mit Datum und Abmelden je Zeile.

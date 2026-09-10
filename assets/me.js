@@ -115,16 +115,21 @@
     var card = el("div", "card submit"), form = el("form"); form.noValidate = true; card.appendChild(form); sec.appendChild(card);
     var email = el("input"); email.type = "email"; email.autocomplete = "email"; email.inputMode = "email"; email.maxLength = 254; email.required = true;
     var name = el("input"); name.type = "text"; name.autocomplete = "name"; name.maxLength = 120;
-    var fE = field("Your e-mail", email, "We send the link there. Open it on the device you want to use; it works for one hour.");
+    var fE = field("Your e-mail", email, "We send the link there. Open it on the device you want to use; it works for 20 minutes.");
     var fN = field("Your name", name, "Optional now, needed before you contribute.", true);
     form.appendChild(fE); form.appendChild(fN);
+    // Alter (2026-09-10): Urteilsfähigkeit ab etwa 13; jüngere Lernende bringt eine Lehrperson oder ein Elternteil ein. Nichts davon wird gespeichert.
+    var age = el("input"); age.type = "checkbox"; age.id = "age-ok"; var fA = el("div", "field me__age"); var la = el("label", "toggle"); la.htmlFor = "age-ok";
+    la.appendChild(age); la.appendChild(el("span", "toggle__label", "I am 13 or older, or I register on behalf of a younger learner as their teacher or parent.")); fA.appendChild(la);
+    fA.appendChild(el("span", "help", "Required. The Hub stores no age; it only asks.")); form.appendChild(fA);
     var actions = el("div", "actions"), go = el("button", "btn", "Send me the link"); go.type = "submit"; actions.appendChild(go); form.appendChild(actions);
     var out = live(); form.appendChild(out);
     form.addEventListener("submit", function (ev) {
       ev.preventDefault();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) { bad(fE, "An address we can send the link to."); return; }
+      if (!age.checked) { bad(fA, "Tick the box: 13 or older, or registering on behalf of a younger learner."); return; }
       go.disabled = true; note(out, "idle", "Sending…");
-      api("/api/verify/request", { method: "POST", body: JSON.stringify({ email: email.value.trim(), name: name.value.trim(), purpose: "login" }) })
+      api("/api/verify/request", { method: "POST", body: JSON.stringify({ email: email.value.trim(), name: name.value.trim(), purpose: "login", age_ok: true }) })
         .then(function (r) {
           go.disabled = false;
           if (r.s === 202) note(out, "ok", "Sent to " + email.value.trim() + ". Open the link from that mail on this device; it signs you in here.");
@@ -385,6 +390,28 @@
     if (recs.length) { var jl = el("ul", "me__list"); byDay(recs.slice().sort(function (a, b) { return String(b.t).localeCompare(String(a.t)); }).slice(0, 30), function (r) { return r.t; }).forEach(function (g) { dayHead(jl, g); g.items.forEach(function (r) { var li = el("li", "me__row"); li.appendChild(el("span", "me__n", timeOf(r.t))); li.appendChild(el("span", "me__t", r.text)); if (r.project) li.appendChild(el("span", "me__next", r.project)); jl.appendChild(li); }); }); jbox.appendChild(jl); }
     secJ.appendChild(jbox);
 
+    // Geräte (2026-09-10): jede Anmeldung ist ein Gerät; einzeln oder überall abmelden.
+    var secDev = block("Devices", null, null), dvb = el("div", "card me");
+    dvb.appendChild(el("p", "me__line", "Every sign-in link opens a 30-day session on one device. You get a mail whenever a new device signs in."));
+    var dvl = el("div"); dvb.appendChild(dvl); dvl.appendChild(el("p", "fine", "Loading…"));
+    var dva = el("div", "actions"); var dvAll = el("button", "btn btn--ghost", "Sign out everywhere else"); dvAll.type = "button"; var dvEvery = el("button", "btn btn--quiet", "Sign out everywhere, this device too"); dvEvery.type = "button"; var dvMsg = el("span", "fine", "");
+    dva.appendChild(dvAll); dva.appendChild(dvEvery); dva.appendChild(dvMsg); dvb.appendChild(dva);
+    function paintDevices() {
+      api("/api/me/devices").then(function (r) {
+        dvl.textContent = ""; var items = (r.j.items || []);
+        items.forEach(function (d) {
+          var row = el("p", "me__line"); row.appendChild(document.createTextNode("Signed in " + String(d.created).replace("T", " ").slice(0, 16) + (d.last_used ? " · last used " + String(d.last_used).replace("T", " ").slice(0, 16) : "") + " · until " + String(d.expires).slice(0, 10) + (d.current ? " · this device" : "") + " "));
+          if (!d.current) { var b = el("button", "btn btn--quiet", "Sign out"); b.type = "button"; b.addEventListener("click", function () { api("/api/me/devices/" + d.id, { method: "DELETE" }).then(paintDevices); }); row.appendChild(b); }
+          dvl.appendChild(row);
+        });
+        dvAll.hidden = items.length < 2;
+      }).catch(function () { dvl.textContent = ""; });
+    }
+    dvAll.addEventListener("click", function () { api("/api/me/devices", { method: "DELETE" }).then(function (r) { dvMsg.textContent = r.s === 200 ? (r.j.removed + " signed out.") : (r.j.error || "failed"); paintDevices(); }); });
+    dvEvery.addEventListener("click", function () { if (!confirm("Sign out on every device, including this one?")) return; api("/api/me/devices?all=1", { method: "DELETE" }).then(function () { try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} location.href = "/me"; }); });
+    paintDevices();
+    secDev.appendChild(dvb);
+
     var sec3 = block("Your data", null, null), dbox = el("div", "card me");
     dbox.appendChild(el("p", "fine", "Download everything the Hub holds about you, or erase it. Erasing removes your address and name; published modules stay only where you asked them to."));
     var da = el("div", "actions");
@@ -397,6 +424,7 @@
       });
     });
     var er = el("a", "btn btn--danger", "Erase my data"); er.href = "/contribute/status";
+    if (me.standing === "owner") { er = el("span", "fine", "The owner account cannot erase itself; hand ownership over first. Every other account, reviewers included, erases itself here."); }
     var so = el("button", "btn btn--quiet", "Sign out on this device"); so.type = "button";
     so.addEventListener("click", function () {
       var done = function () { dropToken(); paintRail(); signedOut({ kind: "ok", text: "Signed out on this device. Other devices stay signed in." }); };

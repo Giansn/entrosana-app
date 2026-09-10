@@ -40,7 +40,7 @@
       lab.appendChild(el("span", "toggle__label", cb.checked ? "the module stays under my name" : "the module goes with it"));
       cb.addEventListener("change", function () {
         api("/api/contributions/" + c.id, { method: "PATCH", headers: Object.assign({ "Content-Type": "application/json" }, headers()), body: JSON.stringify({ attribution: cb.checked ? "keep" : "remove" }) })
-          .then(function (r) { lab.lastChild.textContent = r.s === 200 ? (cb.checked ? "the module stays under my name" : "the module goes with it") : "not saved (" + r.s + ")"; })
+          .then(function (r) { if (r.s === 409 && r.j.fresh_required) { lab.lastChild.textContent = "needs a fresh sign-in"; cb.checked = !cb.checked; fresh(lab.parentNode, "Changing the attribution needs a fresh sign-in."); return; } lab.lastChild.textContent = r.s === 200 ? (cb.checked ? "the module stays under my name" : "the module goes with it") : "not saved (" + r.s + ")"; })
           .catch(function () { lab.lastChild.textContent = "not saved, server unreachable"; });
       });
       ar.appendChild(lab); card.appendChild(ar);
@@ -85,9 +85,26 @@
 
   // Alles löschen, was der Hub über diese Adresse hat. Veröffentlichte Module
   // bleiben nur mit ausdrücklicher Wahl stehen.
+  // Frische Anmeldung (2026-09-10): Löschen und Namensnennung verlangen eine Marke, die jünger als 15 Minuten ist.
+  function fresh(box, why) {
+    var old = box.querySelector(".fresh"); if (old) old.remove();
+    var n = el("div", "fresh"); n.appendChild(el("p", "note note--warn", why + " We mail you a new link; open it on this device, then come back and try again."));
+    var b = el("button", "btn btn--ghost", "Send me a fresh link"); b.type = "button";
+    b.addEventListener("click", function () {
+      b.disabled = true;
+      api("/api/me", { headers: headers() }).then(function (m) {
+        var mail = m.j && m.j.email; if (!mail) { b.textContent = "Sign in first"; return; }
+        return api("/api/verify/request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: mail, purpose: "login", age_ok: true }) })
+          .then(function (r) { b.textContent = r.s === 202 ? "Sent to " + mail : "Not sent (" + r.s + ")"; });
+      }).catch(function () { b.textContent = "Not reachable"; });
+    });
+    n.appendChild(b); box.appendChild(n);
+  }
   function erase(sec, items) {
     var box = el("div", "plan"); box.style.marginTop = "1.4rem";
     box.appendChild(el("span", "tag", "your data"));
+    var tk0 = null; try { tk0 = JSON.parse(localStorage.getItem(TOKEN_KEY) || "null"); } catch (e) {}
+    if (tk0 && tk0.standing === "owner") { box.appendChild(el("p", "note note--idle", "The owner account cannot erase itself. Hand ownership over first; every other account erases itself here.")); sec.appendChild(box); return; }
     var pub = items.filter(function (c) { return c.status === "published"; });
     box.appendChild(el("p", null, "Erase everything the Hub holds about this address: your contributions, the confirmation records, this device's access. " +
       (pub.length ? "For published modules you decide now whether each one stays in the catalogue under your name." : "")));
@@ -117,6 +134,7 @@
           if (r.s === 200) { try { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem("entrosana-app:submissions"); } catch (e) {}
             host.textContent = ""; var d = block("Erased", "Your data is gone.", null);
             d.appendChild(el("p", "note note--ok", r.j.kept + " module(s) kept under your name, " + r.j.unpublished + " taken out of the catalogue, " + r.j.deleted + " contribution(s) deleted.")); }
+          else if (r.s === 409 && r.j.fresh_required) fresh(box, "Erasing needs a fresh sign-in.");
           else box.appendChild(el("p", "note note--warn", "Not erased (" + r.s + "): " + (r.j.error || ""))); })
         .catch(function () { offline(sec); });
     });

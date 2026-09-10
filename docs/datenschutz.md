@@ -66,7 +66,7 @@ Gianluca Kühne, Mühlestrasse 42, 3123 Belp, Switzerland. Reach us at
 info@entrosana.com or 077 529 73 01. This statement
 covers entrosana.com, entrosana.app and the mailboxes info@ and sygnif@. It
 follows the Swiss Data Protection Act (DSG) and, for people in the EU or EEA,
-the GDPR. Last changed 9 September 2026.
+the GDPR. Last changed 10 September 2026.
 
 **The short version.** We collect as little as the service needs. No advertising,
 no analytics, no tracking, no third-party content on our pages. Most of what you
@@ -116,7 +116,7 @@ contribute, because contributions are published under it.
 
 Purpose: to know whom we are talking to, to publish under your name, to decide on
 applications and proposals. Unconfirmed addresses are deleted after 7 days.
-Sign-in links expire after one hour. Under /me you can change your profile,
+Sign-in links expire after 20 minutes, confirmation links for proposals after one hour. When a device signs in to an existing account, the account's address gets a mail with time and coarse origin; under «Devices» on /me every session can be ended, singly or all at once. Erasing your data or changing the attribution of a module needs a sign-in link younger than 15 minutes. Accounts are for people of 13 and older; younger learners take part through a teacher or a parent, who holds the account. Under /me you can change your profile,
 download everything we hold (JSON), sign out of a device, and erase your account.
 Erasing removes address, profile and applications; published modules remain only
 where you chose that they should.
@@ -232,7 +232,7 @@ We change this statement when the service changes and note the date at the top.
 Mühlestrasse 42, 3123 Belp, Schweiz, erreichbar unter info@entrosana.com oder
 077 529 73 01. Diese Erklärung gilt für entrosana.com, entrosana.app und die
 Postfächer info@ und sygnif@. Sie folgt dem Schweizer Datenschutzgesetz (DSG)
-und, für Personen im EU/EWR-Raum, der DSGVO. Stand 9. September 2026.
+und, für Personen im EU/EWR-Raum, der DSGVO. Stand 10. September 2026.
 
 **Kurz.** Wir erheben so wenig, wie der Dienst braucht. Keine Werbung, keine
 Analyse, kein Tracking, keine fremden Inhalte auf unseren Seiten. Das meiste,
@@ -288,7 +288,7 @@ veröffentlicht werden.
 
 Zweck: zu wissen, mit wem wir sprechen; unter Ihrem Namen zu veröffentlichen;
 über Bewerbungen und Vorschläge zu entscheiden. Unbestätigte Adressen werden nach
-7 Tagen gelöscht, Anmeldeverweise verfallen nach einer Stunde. Unter /me ändern
+7 Tagen gelöscht, Anmeldeverweise verfallen nach 20 Minuten, Bestätigungsverweise zu Vorschlägen nach einer Stunde. Meldet sich ein Gerät bei einem bestehenden Konto an, erhält die Adresse des Kontos eine Mail mit Zeit und grober Herkunft; unter «Devices» auf /me lässt sich jede Sitzung einzeln oder auf einmal beenden. Das Löschen der eigenen Daten und der Wechsel der Namensnennung eines Moduls verlangen einen Anmeldeverweis, der jünger als 15 Minuten ist. Konten sind für Personen ab 13 Jahren; jüngere Lernende nehmen über eine Lehrperson oder ein Elternteil teil, die das Konto führen. Unter /me ändern
 Sie Ihr Profil, laden alles herunter, was wir halten (JSON), melden ein Gerät ab
 und löschen Ihr Konto. Das Löschen entfernt Adresse, Profil und Bewerbungen;
 veröffentlichte Module bleiben nur, wo Sie es so gewählt haben.

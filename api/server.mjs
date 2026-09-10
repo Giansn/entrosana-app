@@ -136,15 +136,16 @@ async function startVerification(email, name, purpose) {
     return { ok: false, code: 429, err: "mail cap" };
   }
   const token = newToken(), now = new Date();
-  db.prepare("INSERT INTO verifications(email, token_hash, created, expires) VALUES (?,?,?,?)")
-    .run(email, sha(token), now.toISOString(), new Date(now.getTime() + 3600e3).toISOString());
   const login = purpose === "login";
+  // 2026-09-10 (OWASP): Anmeldelinks 20 Minuten; Bestätigungen zu Vorschlägen bleiben eine Stunde, die Person liest sie später.
+  db.prepare("INSERT INTO verifications(email, token_hash, created, expires) VALUES (?,?,?,?)")
+    .run(email, sha(token), now.toISOString(), new Date(now.getTime() + (login ? 20 * 60e3 : 3600e3)).toISOString());
   const link = `${PUBLIC}${login ? "/me" : "/contribute/status"}?verify=${token}`;
   const what = purpose === "contribution" ? "entered a contribution to the entrosana Hub under this address"
              : login ? "asked to sign in to the entrosana Hub with this address" : "entered this address on entrosana.app";
   const r = await mail(email, purpose === "contribution" ? "entrosana Hub: confirm your contribution" : login ? "entrosana Hub: your sign-in link" : "entrosana Hub: confirm your address",
     `Hello${name ? " " + name : ""},\n\nsomeone (probably you) ${what}.\n` +
-    `Open this link within one hour${login ? " on the device you want to use" : ""} to ${login ? "sign in" : "confirm it"}:\n\n${link}\n\nIf that was not you, ignore this mail; nothing happens.\n\nentrosana`);
+    `Open this link within ${login ? "20 minutes on the device you want to use" : "one hour"} to ${login ? "sign in" : "confirm it"}:\n\n${link}\n\nIf that was not you, ignore this mail; nothing happens.\n\nentrosana`);
   auditAppend(db, { kind: "verify.request", actor_id: null, resource: "email:" + sha(email).slice(0, 12),
     text: r.ok ? `verification mail sent (${purpose})` : "verification mail failed: " + (r.err || r.code) });
   return r;
@@ -158,6 +159,7 @@ routes.set("POST /api/verify/request", async (ctx) => {
   const name = String(body.name || "").trim().slice(0, 120);
   const purpose = body.purpose === "login" ? "login" : "address";
   if (!EMAIL.test(email) || email.length > 254) throw new HttpError(400, "bad email");
+  if (purpose === "login" && body.age_ok !== true) throw new HttpError(400, "confirm that you are 13 or older, or register on behalf of a younger learner");   // 2026-09-10; nichts davon wird gespeichert
   if (limited("ip:" + ctx.ip) || limited("email:" + email)) throw new HttpError(429, "too many requests");
   const r = await startVerification(email, name, purpose);
   if (!r.ok) throw new HttpError(502, "mail failed");
@@ -173,10 +175,11 @@ routes.set("GET /api/verify", (ctx) => {
   const nowIso = new Date().toISOString();
   if (!row || row.used || row.expires <= nowIso) throw new HttpError(410, "link invalid or expired");
   db.exec("BEGIN IMMEDIATE");
-  let actor;
+  let actor, existed = false;
   try {
     db.prepare("UPDATE verifications SET used = ? WHERE id = ?").run(nowIso, row.id);
     actor = db.prepare("SELECT * FROM actors WHERE email = ?").get(row.email);
+    existed = !!actor;
     if (!actor) {
       const id = db.prepare("INSERT INTO actors(kind, email, created) VALUES ('email', ?, ?)").run(row.email, nowIso).lastInsertRowid;
       actor = db.prepare("SELECT * FROM actors WHERE id = ?").get(id);
@@ -203,6 +206,15 @@ routes.set("GET /api/verify", (ctx) => {
       .then(r => auditAppend(db, { kind: "review.mail", actor_id: null, resource: "contribution:" + c.id, text: r.ok ? "inbox notified of confirmed contribution" : "inbox mail failed: " + (r.err || r.code) }));
   }
   const t = issueToken(db, actor.id);
+  // Hinweis (2026-09-10): ein bestehendes Konto erfährt jede neue Anmeldung per Mail, mit dem Weg zum Abmelden.
+  if (existed && actor.email && !limited("mail:global", MAIL_CAP)) {
+    const origin = String(ctx.ip || "").replace(/^(\d+\.\d+)\.\d+\.\d+$/, "$1.x.x");
+    mail(actor.email, "entrosana Hub: a new device signed in to your account",
+      `Hello${actor.name ? " " + actor.name : ""},\n\na device just signed in to your entrosana Hub account with a link sent to this address.\n\n` +
+      `When: ${nowIso.slice(0, 16).replace("T", " ")} UTC\nFrom: ${origin || "unknown"}\n\n` +
+      `If that was you, nothing to do. If not, open ${PUBLIC}/me, press «Sign out everywhere» under Devices, and request a fresh link.\n\nentrosana`)
+      .then(r => auditAppend(db, { kind: "signin.mail", actor_id: actor.id, resource: "actor:" + actor.id, text: r.ok ? "sign-in notice sent" : "sign-in notice failed: " + (r.err || r.code) }));
+  }
   const roles = rolesOf(db, actor.id);
   const a = withRoles(db, actor);
   send(ctx.res, 200, { ok: true, token: t.token, expires: t.expires, confirmed: pending.length, actor: { id: actor.id, email: actor.email, name: actor.name, created: actor.created, roles: [...roles], standing: standingOf(roles) } });
@@ -313,6 +325,7 @@ patterns.push([/^\/api\/contributions\/(\d{1,12})$/, {
     // Ohne Zielzustand: die einreichende Person ändert ihre Wahl zur Namensnennung.
     if (body.status === undefined && body.attribution !== undefined) {
       if (!ctx.actor || ctx.actor.id !== c.actor_id) throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+      if (tokenAgeMs(ctx) > FRESH_MS) { send(ctx.res, 409, { error: "fresh sign-in required: open a new link from your mail on this device, then change it", fresh_required: true }); return; }
       const a = body.attribution === "keep" ? "keep" : "remove";
       db.prepare("UPDATE contributions SET attribution = ? WHERE id = ?").run(a, c.id);
       auditAppend(db, { kind: "attribution", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: "attribution set to " + a });
@@ -656,6 +669,38 @@ routes.set("PATCH /api/me", async (ctx) => {
 });
 
 // Abmelden: nur die vorgelegte Marke wird gelöscht, andere Geräte bleiben angemeldet.
+// ── Geräte (2026-09-10): jede Marke ist ein Gerät; Liste, einzeln abmelden, überall abmelden.
+const bearerHash = (ctx) => { const a = String(ctx.req.headers["authorization"] || ""); return a.startsWith("Bearer ") ? sha(a.slice(7).trim()) : null; };
+function tokenAgeMs(ctx) {
+  const h = bearerHash(ctx); if (!h) return Infinity;
+  const r = db.prepare("SELECT created FROM actor_tokens WHERE token_hash = ?").get(h);
+  return r ? Date.now() - Date.parse(r.created) : Infinity;
+}
+const FRESH_MS = 15 * 60e3;
+routes.set("GET /api/me/devices", (ctx) => {
+  if (!ctx.actor || ctx.actor.kind !== "email") throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+  const h = bearerHash(ctx), now = new Date().toISOString();
+  const items = db.prepare("SELECT id, token_hash, created, expires, last_used FROM actor_tokens WHERE actor_id = ? AND expires > ? ORDER BY created DESC").all(ctx.actor.id, now)
+    .map(r => ({ id: r.id, created: r.created, expires: r.expires, last_used: r.last_used, current: r.token_hash === h }));
+  send(ctx.res, 200, { items });
+});
+routes.set("DELETE /api/me/devices", (ctx) => {
+  if (!ctx.actor || ctx.actor.kind !== "email") throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+  const h = bearerHash(ctx), all = ctx.query.get("all") === "1";
+  const n = all ? db.prepare("DELETE FROM actor_tokens WHERE actor_id = ?").run(ctx.actor.id).changes
+                : db.prepare("DELETE FROM actor_tokens WHERE actor_id = ? AND token_hash != ?").run(ctx.actor.id, h).changes;
+  auditAppend(db, { kind: "signout.all", actor_id: ctx.actor.id, resource: "actor:" + ctx.actor.id, text: `${n} device(s) signed out${all ? " including this one" : ""}` });
+  send(ctx.res, 200, { ok: true, removed: n });
+});
+patterns.push([/^\/api\/me\/devices\/(\d{1,12})$/, {
+  DELETE: (ctx, [id]) => {
+    if (!ctx.actor || ctx.actor.kind !== "email") throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+    const n = db.prepare("DELETE FROM actor_tokens WHERE id = ? AND actor_id = ?").run(Number(id), ctx.actor.id).changes;
+    if (!n) throw new HttpError(404, "device not found");
+    auditAppend(db, { kind: "signout.device", actor_id: ctx.actor.id, resource: "actor:" + ctx.actor.id, text: "one device signed out" });
+    send(ctx.res, 200, { ok: true });
+  },
+}]);
 routes.set("DELETE /api/me/token", (ctx) => {
   if (!ctx.actor) throw new HttpError(401, "no actor");
   const m = /^Bearer\s+(\S+)$/i.exec(ctx.req.headers.authorization || "");
@@ -827,7 +872,8 @@ routes.set("GET /api/me/export", (ctx) => {
 routes.set("DELETE /api/me", async (ctx) => {
   if (!ctx.actor) throw new HttpError(401, "no actor");
   if (ctx.actor.kind !== "email") throw new HttpError(409, "only e-mail actors can erase themselves");
-  if (ctx.actor.roles.has("owner") || ctx.actor.roles.has("reviewer")) throw new HttpError(409, "revoke the roles first");
+  if (tokenAgeMs(ctx) > FRESH_MS) { send(ctx.res, 409, { error: "fresh sign-in required: open a new link from your mail on this device, then erase", fresh_required: true }); return; }
+  if (ctx.actor.roles.has("owner")) throw new HttpError(409, "the owner account cannot erase itself; hand ownership over first");   // 2026-09-10: alle anderen Konten, auch Prüfende, löschen sich selbst
   const body = await readJson(ctx.req).catch(() => ({}));
   const keepIds = new Set(Array.isArray(body.keep) ? body.keep.map(Number) : []);
   const removeIds = new Set(Array.isArray(body.remove) ? body.remove.map(Number) : []);
