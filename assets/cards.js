@@ -34,6 +34,16 @@
   var META = null, metaWaiters = [];
   fetch("/api/modules/meta").then(function (r) { return r.json(); }).then(function (j) { META = j.items || {}; metaWaiters.forEach(function (f) { f(META); }); }).catch(function () { META = {}; metaWaiters.forEach(function (f) { f(META); }); });
   function withMeta(f) { if (META) f(META); else metaWaiters.push(f); }
+  // Eigene Module (2026-09-10): wer eingetragen ist oder zum Team gehört, sieht «edit ›» an der Karte.
+  var MINE = null, mineWaiters = [];
+  (function () {
+    var tk = null; try { var raw = JSON.parse(localStorage.getItem("entrosana-app:token") || "null"); tk = raw && raw.expires > new Date().toISOString() ? raw : null; } catch (e) {}
+    if (!tk) { MINE = {}; return; }
+    fetch("/api/me/modules", { headers: { Authorization: "Bearer " + tk.token } }).then(function (r) { return r.ok ? r.json() : { items: [] }; })
+      .then(function (j) { MINE = {}; (j.items || []).forEach(function (m) { MINE[m.slug] = true; }); mineWaiters.forEach(function (f) { f(MINE); }); })
+      .catch(function () { MINE = {}; mineWaiters.forEach(function (f) { f(MINE); }); });
+  })();
+  function withMine(f) { if (MINE) f(MINE); else mineWaiters.push(f); }
 
   // Ein Modul mit seiner Kontaktzeile: die Karte bleibt ein einziger Link; die Zeile darunter
   // trägt die Profile der Beitragenden, das Datum, die Dateien und den Weg, mitzuwirken.
@@ -66,9 +76,14 @@
       var mail = document.createElement("a"); mail.href = "mailto:sygnif@entrosana.com?subject=" + encodeURIComponent("Contribution to " + (e.title || e.slug)); mail.textContent = "sygnif@entrosana.com"; c.appendChild(mail);
       c.appendChild(document.createTextNode(" · "));
       var tel = document.createElement("a"); tel.href = "tel:+41775297301"; tel.textContent = "077 529 73 01"; c.appendChild(tel);
+      if (MINE && MINE[e.slug]) {
+        c.appendChild(document.createTextNode(" · "));
+        var ed = document.createElement("a"); ed.className = "mcard__edit"; ed.href = "/me/modules#" + e.slug; ed.textContent = "edit ›"; c.appendChild(ed);
+      }
     }
     paintContact(null);
     withMeta(paintContact);
+    withMine(function () { paintContact(META); });
     wrap.appendChild(c);
     return wrap;
   }

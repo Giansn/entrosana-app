@@ -286,6 +286,27 @@
 
     // Plan → Begleiten → Reflektieren (Vorbild LearningView): Aufgaben, Dokumente, Journal.
     var projs = deviceProjects(), recs = deviceRecords();
+    // Eigene Module (2026-09-10): die Module, die das Konto bearbeiten darf, mit Stand, Punkten und dem Weg zum Bearbeiten.
+    if (me.standing !== "collector") {
+      var secM = block("Your modules", null, null), mbx = el("div", "card me");
+      var mlist = el("div"); mbx.appendChild(mlist); mlist.appendChild(el("p", "fine", "Loading…"));
+      var mact = el("div", "actions"); var mbtn = el("a", "btn btn--ghost", "Edit your modules"); mbtn.href = "/me/modules"; mact.appendChild(mbtn); mbx.appendChild(mact);
+      api("/api/me/modules").then(function (r) {
+        mlist.textContent = "";
+        var items = r.s === 200 ? (r.j.items || []) : [];
+        if (r.s === 200 && r.j.team) mlist.appendChild(el("p", "fine", "As team you may edit every module of the catalogue."));
+        if (!items.length) { var np = el("p", "me__line"); np.appendChild(document.createTextNode("No published module under your name yet. ")); var npa = el("a", null, "Propose a track"); npa.href = "/contribute/submit"; np.appendChild(npa); np.appendChild(document.createTextNode(" to start one.")); mlist.appendChild(np); return; }
+        var STATE = { finished: "finished", available: "finished", development: "still in development", idea: "only an idea", running: "running" };
+        items.forEach(function (m) {
+          var row = el("p", "me__line"); var a = el("a", null, m.title); a.href = m.url; row.appendChild(a);
+          row.appendChild(document.createTextNode(" · " + (STATE[m.state] || m.state || "") + (m.area ? " · " + m.area : "") + " · " + (m.points === 1 ? "1 point" : m.points + " points") + " · "));
+          var ed = el("a", null, "edit ›"); ed.href = "/me/modules#" + m.slug; row.appendChild(ed);
+          mlist.appendChild(row);
+        });
+      }).catch(function () { mlist.textContent = ""; });
+      secM.appendChild(mbx);
+    }
+
     // Einladen (2026-09-09): jedes Konto lädt per Adresse ein; die Mail trägt den Anmeldelink unter dem eigenen Namen.
     var secI = block("Invite", null, null), ibx = el("div", "card me");
     ibx.appendChild(el("p", "me__line", "Bring a colleague, a parent, another teacher. They get a mail under your name with a link that registers them as a collector, no password. Contributing is approved by the team as always."));

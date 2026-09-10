@@ -1915,3 +1915,6 @@ button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
 .tabs__b.is-on .tabs__n{ color:var(--seal); border-color:color-mix(in srgb, var(--seal) 40%, var(--line)) }
 @media (max-width:760px){ .tabs--areas{ overflow-x:auto; flex-wrap:nowrap; scrollbar-width:none; padding-bottom:.2rem } .tabs--areas .tabs__b{ flex:none; min-height:2.6rem } }
 
+/* «edit ›» an der Karte (2026-09-10) */
+.mcard__edit{ font-weight:600 }
+
