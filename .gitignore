@@ -5,3 +5,6 @@ __pycache__/
 *.bak
 *.bak-*
 api/db/*.sqlite*
+# Dateien der Konten (2026-09-10): Daten neben der Datenbank, nicht Quelle;
+# gesichert je Datei verschlüsselt durch tools/hub-files-backup.sh
+api/db/files/
