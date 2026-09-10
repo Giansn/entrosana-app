@@ -789,6 +789,9 @@ def dash():
         "<td><a href='/checklists'>öffnen</a></td><td></td><td></td></tr></table>"
         "<h2>Beiträge, Bewerbungen, Konten, Anfragen</h2>"
         + _beitraege_kurz() +
+        "<h2>Abgleich</h2>"
+        + (lambda r: f"<table><tr><td><b>Stündlich mit GitHub</b><br><span class='mono'>zuletzt {html.escape(str(r.get('t', ''))[:16].replace('T', ' ')) + ' UTC · ' + html.escape(str(r.get('text', ''))) if r else 'noch kein Lauf'}</span></td>"
+                     "<td><a href='/sync'>öffnen</a></td><td></td><td></td></tr></table>")(sync_last()) +
         "<h2>Gestaltung</h2>"
         "<table><tr><td><b>Design controls</b><br><span class='mono'>Farbe &middot; Raster &middot; Schriftgrösse</span></td>"
         "<td class='mono'>assets/app.css</td>"
@@ -1550,6 +1553,54 @@ def docs_save(data):
     return {"ok": True, "backup": b}
 
 
+SYNC_LOG = HOME / ".sygnif" / "logs" / "entrosana-hub-sync.log"
+
+
+def sync_rows(limit=40):
+    """Die letzten Zeilen des Abgleichs (tools/hub-sync.sh), jüngste zuerst."""
+    if not SYNC_LOG.exists():
+        return []
+    rows = []
+    for line in SYNC_LOG.read_text(encoding="utf-8").splitlines()[-limit:]:
+        try:
+            rows.append(json.loads(line))
+        except Exception:
+            continue
+    return list(reversed(rows))
+
+
+def sync_last():
+    for r in sync_rows(60):
+        if r.get("step") == "done":
+            return r
+    return None
+
+
+def sync_page():
+    timer = subprocess.run(["systemctl", "--user", "list-timers", "entrosana-hub-sync.timer", "--no-pager"], capture_output=True, text=True).stdout.splitlines()
+    naechster = html.escape(timer[1].split("  ")[0].strip()) if len(timer) > 1 else "unbekannt"
+    rows = "".join(f"<tr><td class='mono'>{html.escape(str(r.get('t', ''))[:19].replace('T', ' '))}</td><td class='mono'>{html.escape(str(r.get('step', '')))}</td>"
+                   f"<td class='{'ok' if r.get('ok') else 'err'}'>{'ok' if r.get('ok') else 'Fehler'}</td><td>{html.escape(str(r.get('text', '')))}</td></tr>" for r in sync_rows())
+    body = ("<p><a href='/'>&larr; Übersicht</a></p><h1>Abgleich</h1>"
+            "<p class='note'>Jede Stunde läuft <span class='mono'>tools/hub-sync.sh</span>: Texte aus dieser Konsole (Seiten, Katalog, Checklisten, Docs) werden eingecheckt, "
+            "das Neueste kommt von GitHub, eigene Commits gehen hoch, und Dienste starten neu, wenn Code dazukam (api nach bestandenen Tests, app bei serve.mjs, "
+            "die Konsole nur ohne offene Verbindung). Was andere Sitzungen ungespeichert im Baum haben, bleibt liegen (Autostash).</p>"
+            f"<p class='mono'>Nächster Lauf: {naechster}</p>"
+            "<p><button class='btn' id='run'>Jetzt abgleichen</button> <span class='mono' id='out'></span></p>"
+            "<script>document.getElementById('run').addEventListener('click',async function(){var o=document.getElementById('out');o.textContent='läuft…';"
+            "try{var r=await fetch('/api/sync',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});var j=await r.json();"
+            "o.textContent=j.ok?'gestartet, Seite lädt gleich neu':('Fehler: '+j.error);if(j.ok)setTimeout(function(){location.reload();},6000);}catch(e){o.textContent='Fehler: '+e;}});</script>"
+            + (f"<table><tr><th>wann (UTC)</th><th>Schritt</th><th></th><th>Text</th></tr>{rows}</table>" if rows else "<p class='mono'>noch kein Lauf</p>"))
+    return page("Abgleich", body)
+
+
+def sync_start():
+    r = subprocess.run(["systemctl", "--user", "start", "--no-block", "entrosana-hub-sync.service"], capture_output=True, text=True)
+    if r.returncode != 0:
+        raise ValueError(r.stderr.strip() or "start fehlgeschlagen")
+    return {"ok": True}
+
+
 def _mb(n):
     n = int(n or 0)
     return f"{n / 1048576:.1f} MB" if n >= 1048576 else (f"{n / 1024:.0f} kB" if n >= 1024 else f"{n} B")
@@ -1700,6 +1751,9 @@ class H(BaseHTTPRequestHandler):
         if u.path == "/docs":
             self._send(200, page("Docs", "<p><a href='/'>&larr; Übersicht</a></p><h1>Docs</h1>" + docs_rows()))
             return
+        if u.path == "/sync":
+            self._send(200, sync_page())
+            return
         m = re.match(r"^/docs/([a-z-]+\.md)$", u.path)
         if m and any(m.group(1) == n for n, _, _ in DOCS):
             self._send(200, docs_editor(m.group(1)))
@@ -1732,7 +1786,9 @@ class H(BaseHTTPRequestHandler):
             self._json({"ok": False, "error": f"unlesbar: {e}"}, 400)
             return
         try:
-            if u.path == "/api/docs":
+            if u.path == "/api/sync":
+                self._json(sync_start())
+            elif u.path == "/api/docs":
                 self._json(docs_save(data))
             elif u.path == "/api/page":
                 name = data.get("name", "")

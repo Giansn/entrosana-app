@@ -752,3 +752,14 @@ weil ihre Katalogkarten sie über `seed` zählen.
 entfernt den alten Startvorschlag `contribute/003`, wenn keine Karte bewegt oder abgehakt wurde, und lässt ihn
 sonst stehen. Der Dialog «New project» zeigt die Abschnitte tools, modules, hub; die Konsole bearbeitet die
 drei unter /checklists wie die anderen.
+
+**Nachtrag 2026-09-10, stündlicher Abgleich.** `tools/hub-sync.sh` läuft über `entrosana-hub-sync.timer`
+(stündlich, bis fünf Minuten Streuung, nachgeholt nach Schlaf): checkt die Dateien ein, die die Konsole
+schreibt (`*.html`, `assets/catalogue.js`, `assets/seeds.js`, `assets/catalogue-sizes.js`, `docs-site/*.md`)
+als «texte: abgleich …», holt `origin/master` mit `pull --rebase --autostash` (offene Arbeit anderer Sitzungen
+bleibt liegen; ein Konflikt bricht ab und steht im Protokoll), lädt eigene Commits hoch und startet neu, was
+Code bekam: api nach bestandenen Tests, app bei serve.mjs oder docs-render.mjs, die Konsole nur ohne offene
+Verbindung auf :8396. Läuft nur auf master. Protokoll `~/.sygnif/logs/entrosana-hub-sync.log` (JSON-Zeilen),
+in der Konsole unter /sync mit «Jetzt abgleichen» (`systemctl --user start --no-block`). Nicht auf x1
+eingerichtet, weil dort Zweige gewechselt werden.
+
