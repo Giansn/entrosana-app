@@ -6,6 +6,7 @@
 // bloss abgesichert. Neue Seite heisst: neuer Eintrag in ROUTES.
 import { createServer } from "node:http";
 import { readFileSync, statSync } from "node:fs";
+import { PAGES as DOCS_PAGES, docsPage } from "./docs-render.mjs";
 import { createHash } from "node:crypto";
 import vm from "node:vm";
 import { join, dirname } from "node:path";
@@ -19,6 +20,7 @@ const HOST = process.env.HOST || "127.0.0.1";
 // eigene, leere Kopie aller Daten an. Lokale Zugriffe (127.0.0.1, Proben)
 // tragen einen anderen Host und bleiben unberührt.
 const CANON = "entrosana.app";
+const DOCS_HOST = process.env.DOCS_HOST || "docs." + CANON;   // docs.entrosana.app (2026-09-10): Markdown aus docs-site/, gerendert in docs-render.mjs
 // Der einzige Schalter für die Sichtbarkeit in Suchmaschinen. Solange er false
 // ist, geht auf jeder Seite X-Robots-Tag: noindex raus; die Seiten selbst
 // tragen dazu nichts, damit es nur eine Stelle gibt. Auf true setzen, sobald
@@ -181,6 +183,32 @@ function normalize(url) {
   return path.length > 1 && path.endsWith("/") ? path.slice(0, -1) : path;
 }
 
+// docs.entrosana.app (2026-09-10): dieselbe Hülle, dieselben Assets, Text aus docs-site/<seite>.md. Unbekannte Pfade
+// liefern die erste Seite mit 404, wie beim Hub. Gehalten, bis Quelle, Hülle, Glyphen oder app.css sich ändern.
+const docsCache = new Map();
+function serveDocs(req, res, path, proto) {
+  const key = path === "/" ? "getting-started" : path.replace(/^\/+|\/+$/g, "");
+  const known = DOCS_PAGES.some(([k]) => k === key);
+  const page = known ? key : "getting-started";
+  const shellPath = join(ROOT, "docs-site", "shell.html"), mdPath = join(ROOT, "docs-site", page + ".md"), glyphPath = join(ROOT, "docs-site", "glyphs.json");
+  const stamp = [shellPath, mdPath, glyphPath].map((f) => statSync(f).mtimeMs).join(":") + ":" + (assetTag("app.css") || "") + (assetTag("theme.js") || "");
+  let e = docsCache.get(page);
+  if (!e || e.stamp !== stamp) {
+    const html = version(docsPage(ROOT, page, readFileSync(shellPath, "utf8"), JSON.parse(readFileSync(glyphPath, "utf8"))));
+    const body = Buffer.from(html, "utf8");
+    e = { stamp, body, etag: `W/"${createHash("sha1").update(body).digest("base64url").slice(0, 16)}"` };
+    docsCache.set(page, e);
+  }
+  const status = known ? 200 : 404;
+  if (status === 200 && req.headers["if-none-match"] === e.etag) { res.writeHead(304, { ETag: e.etag, "Cache-Control": "no-cache" }).end(); return; }
+  const headers = { "Content-Type": HTML, "Content-Length": e.body.length, "Cache-Control": "no-cache", "ETag": e.etag,
+    "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "Content-Security-Policy": CSP };
+  if (!INDEXABLE) headers["X-Robots-Tag"] = "noindex, nofollow";
+  if (proto === "https") headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
+  res.writeHead(status, headers);
+  res.end(req.method === "HEAD" ? undefined : e.body);
+}
+
 createServer((req, res) => {
   try {
   if (req.method !== "GET" && req.method !== "HEAD") {
@@ -203,6 +231,7 @@ createServer((req, res) => {
   }
 
   const path = normalize(req.url);
+  if (host === DOCS_HOST && !path.startsWith("/assets/") && path !== "/robots.txt") { serveDocs(req, res, path, proto); return; }
 
   // robots.txt und sitemap.xml entstehen aus SITEMAP und INDEXABLE, damit sie
   // nicht getrennt gepflegt werden müssen und nie etwas anderes behaupten als

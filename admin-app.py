@@ -771,6 +771,9 @@ def dash():
         "Attribute bleiben unberührt. Zeilenumbruch: <span class='mono'>&lt;br&gt;</span> ist erlaubt; "
         "andere spitze Klammern werden abgelehnt.</p>"
         f"<table>{zeilen}</table>"
+        "<h2>Docs</h2>"
+        "<p class='note'>docs.entrosana.app: vier Seiten aus <span class='mono'>docs-site/*.md</span>, gerendert von serve.mjs; Änderungen sind sofort live.</p>"
+        + docs_rows() +
         "<h2>Katalog</h2>"
         "<p class='note'>Die Karten für Tools und Modules aus <span class='mono'>assets/catalogue.js</span>. "
         "Diese Texte erscheinen auf der Übersicht und auf der Detailseite des Eintrags.</p>"
@@ -1490,6 +1493,57 @@ def checklist_save(key, data):
     return {"ok": True, "backup": bak.split("/")[-1], "pages": n, "commit": sha}
 
 
+DOCS_DIR = APP / "docs-site"
+DOCS = [("getting-started.md", "Getting started", "https://docs.entrosana.app/"),
+        ("contribute.md", "Contribute", "https://docs.entrosana.app/contribute"),
+        ("services.md", "Services", "https://docs.entrosana.app/services"),
+        ("api.md", "API", "https://docs.entrosana.app/api")]
+
+
+def docs_rows():
+    rows = ""
+    for name, label, url in DOCS:
+        p = DOCS_DIR / name
+        n = len(p.read_text(encoding="utf-8").splitlines()) if p.exists() else 0
+        rows += (f"<tr><td><b>{html.escape(label)}</b><br><span class='mono'>docs-site/{name}</span></td><td class='mono'>{n} Zeilen</td>"
+                 f"<td><a href='/docs/{name}'>bearbeiten</a></td><td><a href='{url}' target='_blank' rel='noopener'>ansehen</a></td></tr>")
+    return f"<table>{rows}</table>"
+
+
+def docs_editor(name, msg="", err=""):
+    """Markdown-Quelle einer Docs-Seite. Speichern legt eine Kopie ab; serve.mjs rendert beim nächsten Aufruf neu."""
+    label = next((l for n, l, _ in DOCS if n == name), name)
+    url = next((u for n, _, u in DOCS if n == name), "")
+    text = (DOCS_DIR / name).read_text(encoding="utf-8")
+    body = (f"<p><a href='/'>&larr; Übersicht</a> · <a href='/docs'>Docs</a></p><h1>Docs · {html.escape(label)}</h1>"
+            f"<p class='note'>Markdown, wie in <span class='mono'>docs-site/{html.escape(name)}</span>. Erste Überschrift (#) ist der Titel, der erste Absatz die Unterzeile; "
+            "## gliedert und erscheint in «On this page». Erlaubt: Listen (eine Unterebene), ``` Zäune, | Tabellen |, > Zitate, **fett**, *kursiv*, `Code`, [Verweise](https://…). "
+            f"Live unter <a href='{url}' target='_blank' rel='noopener'>{html.escape(url)}</a>, ohne Neustart.</p>"
+            f"<textarea id='md' spellcheck='false' style='width:100%;min-height:62vh;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9rem;line-height:1.45;box-sizing:border-box'>{html.escape(text)}</textarea>"
+            "<p><button class='btn' id='save'>Speichern</button> <span class='mono' id='out'></span></p>"
+            "<script>document.getElementById('save').addEventListener('click',async function(){var o=document.getElementById('out');o.textContent='…';"
+            "try{var r=await fetch('/api/docs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:" + json.dumps(name) + ",text:document.getElementById('md').value})});"
+            "var j=await r.json();o.textContent=j.ok?('gespeichert · Kopie '+j.backup):('Fehler: '+j.error);}catch(e){o.textContent='Fehler: '+e;}});</script>")
+    return page("Docs · " + label, body)
+
+
+def docs_save(data):
+    name = str(data.get("name", ""))
+    if not any(name == n for n, _, _ in DOCS):
+        raise ValueError("unbekannte Seite")
+    text = str(data.get("text", "")).replace("\r\n", "\n")
+    if len(text) > 200000:
+        raise ValueError("zu lang")
+    if not text.lstrip().startswith("# "):
+        raise ValueError("die erste Zeile muss die Überschrift sein (# Titel)")
+    p = DOCS_DIR / name
+    if p.read_text(encoding="utf-8") == text:
+        return {"ok": True, "backup": "keine Änderung"}
+    b = backup(p)
+    p.write_text(text if text.endswith("\n") else text + "\n", encoding="utf-8")
+    return {"ok": True, "backup": b}
+
+
 def accounts_list():
     code, j = api_call("GET", "/api/actors")
     if code != 200:
@@ -1631,6 +1685,13 @@ class H(BaseHTTPRequestHandler):
         if u.path == "/services":
             self._send(200, services_list())
             return
+        if u.path == "/docs":
+            self._send(200, page("Docs", "<p><a href='/'>&larr; Übersicht</a></p><h1>Docs</h1>" + docs_rows()))
+            return
+        m = re.match(r"^/docs/([a-z-]+\.md)$", u.path)
+        if m and any(m.group(1) == n for n, _, _ in DOCS):
+            self._send(200, docs_editor(m.group(1)))
+            return
         if u.path == "/checklists":
             self._send(200, checklists_list())
             return
@@ -1659,7 +1720,9 @@ class H(BaseHTTPRequestHandler):
             self._json({"ok": False, "error": f"unlesbar: {e}"}, 400)
             return
         try:
-            if u.path == "/api/page":
+            if u.path == "/api/docs":
+                self._json(docs_save(data))
+            elif u.path == "/api/page":
                 name = data.get("name", "")
                 if not any(name == p for p, _, _ in PAGES):
                     raise ValueError("unbekannte Seite")

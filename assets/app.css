@@ -2229,3 +2229,31 @@ button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
   background:linear-gradient(90deg, color-mix(in srgb,var(--seal) 26%,transparent), transparent 82%) }
 .solo__foot a{ color:var(--muted); text-decoration:none } .solo__foot a:hover{ color:var(--seal) }
 .hero__contact{ font-family:var(--font-mono); font-size:var(--step--1) }
+
+/* docs.entrosana.app (2026-09-10): Prosa aus Markdown, gleiche Hülle wie der Hub. */
+.doc{ max-width:70ch; color:var(--ink-2); line-height:1.6 }
+.doc h2{ font-size:var(--step-1); color:var(--ink); letter-spacing:-.015em; margin:2rem 0 .6rem }
+.doc h3{ font-size:1.05rem; color:var(--ink); margin:1.5rem 0 .4rem }
+.doc p{ margin:0 0 .95rem }
+.doc ul, .doc ol{ margin:0 0 1.1rem; padding-left:1.35rem }
+.doc li{ margin:.35rem 0 }
+.doc li ul{ margin:.3rem 0 0 }
+.doc b{ color:var(--ink) }
+.doc a{ color:var(--seal) }
+.doc code{ font-family:var(--font-mono); font-size:.86em; color:var(--seal); background:var(--field-bg); padding:.05em .35em; border-radius:3px; overflow-wrap:anywhere }
+.doc pre{ font-family:var(--font-mono); font-size:.8rem; line-height:1.5; color:var(--ink); background:var(--field-bg); border:1px solid var(--line); border-radius:var(--radius); padding:.7rem .85rem; margin:.4rem 0 1.15rem; overflow-x:auto }
+.doc pre code{ background:none; padding:0; color:inherit; font-size:inherit }
+.doc__scroll{ overflow-x:auto; margin:.4rem 0 1.2rem }
+.doc table{ width:100%; min-width:32rem; border-collapse:collapse; font-size:.92rem }
+.doc th, .doc td{ text-align:left; padding:.5em .65em; border-bottom:1px solid var(--line); vertical-align:top }
+.doc th{ color:var(--muted); font-weight:500; font-size:.76rem; letter-spacing:.06em; text-transform:uppercase }
+.doc td:first-child{ white-space:nowrap }
+.doc td:first-child code{ white-space:normal }
+.doc blockquote{ margin:0 0 1rem; padding:.6rem 1rem; border-left:2px solid var(--seal) }
+.doc hr{ border:0; border-top:1px solid var(--line); margin:1.6rem 0 }
+.doc__toc{ display:flex; flex-wrap:wrap; align-items:center; gap:.35rem .9rem; margin:0 0 1.4rem; font-size:.9rem }
+.doc__toc .eyebrow{ margin:0 }
+.doc__toc a{ color:var(--ink-2); text-decoration:none; border-bottom:1px solid var(--line) }
+.doc__toc a:hover{ color:var(--seal); border-color:var(--seal) }
+@media (max-width:759.98px){ .doc td:first-child{ white-space:normal } }
+

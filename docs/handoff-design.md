@@ -725,3 +725,17 @@ Zähler in der Leiste liest `entrosana-svc-own:v1` und `entrosana-svc-machine:v1
 /services ablegt. Die Erklärung der Seite ist eine Blase am (i)-Knopf (`.svc__pop`), am Telefon ein
 Blatt am unteren Rand; der Text zum Lebenszeichen nennt die Adresse `/api/hooks/…`, wann sie
 erscheint und was damit zu tun ist.
+
+**Nachtrag 2026-09-10, docs.entrosana.app.** Vier Seiten in Markdown unter `docs-site/` (getting-started,
+contribute, services, api), Hülle `docs-site/shell.html` (aus dem Rail der App gebaut, Glyphen in
+`docs-site/glyphs.json`), gerendert von `docs-render.mjs` (eigene kleine Teilmenge: Überschriften,
+Absätze, Listen mit einer Unterebene, Zäune, Tabellen, Zitate, fett, kursiv, Code, Verweise; keine
+Abhängigkeit). `serve.mjs` weicht auf `DOCS_HOST` (Standard `docs.entrosana.app`) ab: Seiten aus
+`docs-site/`, Assets wie die App, unbekannte Pfade 404 mit der ersten Seite, gleiche CSP und noindex-Regel;
+gehalten bis Quelle, Hülle, Glyphen oder app.css sich ändern (Prüfung je Anfrage über mtime). Prosa-Stile
+`.doc`, Inhaltszeile `.doc__toc`. Konsole :8396: `/docs` und `/docs/<seite>.md` bearbeiten die Quelle,
+Kopie in `~/entrosana-app-backups`, live ohne Neustart. Tunnel: `docs.entrosana.app → 127.0.0.1:4322`
+in `~/.cloudflared/config.yml`. DNS: das Tunnel-Zertifikat gilt nur für die Zone entrosana.com; `cloudflared
+tunnel route dns` legte deshalb `docs.entrosana.app.entrosana.com` an (zu löschen). Der richtige Eintrag,
+CNAME `docs` → `69e77bd9-70aa-4d0e-b8ea-16eacc25cb3a.cfargotunnel.com` (proxied) in der Zone entrosana.app,
+braucht das Dashboard oder ein `cloudflared tunnel login` für diese Zone.
