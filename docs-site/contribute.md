@@ -16,7 +16,7 @@ The full text is one page: [guidelines](https://entrosana.app/guidelines).
 1. Open [the proposal form](https://entrosana.app/contribute/submit).
 2. Fill in your name, your e-mail address, a title, the area (social, nature-based, technical or other), a summary, and the files or links that belong to it.
 3. If you are not signed in, a confirmation link goes to your address. The proposal counts once you open it.
-4. You get a status page for the proposal. The team reads it, may ask by mail, and decides: published, not yet, or no, always with the reason. Admit and publish is one step, so a published module appears in the catalogue at once.
+4. You get a status page for the proposal. The team reads it, may ask by mail, and decides: not yet, or no, always with the reason. Publishing is the owner's step alone; no module enters the catalogue without it. Admit and publish is one step for the owner, so a published module appears in the catalogue at once.
 
 Every step is a line in the record trail.
 

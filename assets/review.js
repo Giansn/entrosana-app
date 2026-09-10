@@ -97,9 +97,13 @@
         out.appendChild(el("p", "note " + (fails.length ? "note--warn" : "note--ok"), fails.length ? "The gate is closed: " + fails.join("; ") : "All checks pass: name, standing, trail, area, title, proposal, file links."));
         if (fails.some(function (x) { return /not approved as contributor/.test(x); })) { var ap = el("p", "fine"); ap.appendChild(document.createTextNode("The person is a collector. Approve them under ")); var apa = el("a", null, "Applications"); apa.href = "/review?tab=applications"; ap.appendChild(apa); ap.appendChild(document.createTextNode(" if they applied.")); out.appendChild(ap); }
       }
-      if (NEXT[c.status]) {
+      // Veröffentlichen und Zurücknehmen sind seit 2026-09-10 allein Sache des Eigentümers; Prüfende sehen diese Wege nicht.
+      var isOwner = tk.standing === "owner";
+      var steps = (NEXT[c.status] || []).filter(function (o) { return isOwner || (o[0] !== "published" && c.status !== "published"); });
+      if (!isOwner && NEXT[c.status] && steps.length < NEXT[c.status].length) out.appendChild(el("p", "fine", "Publishing, and taking a module back, is the owner's step. You can admit, hold or reject."));
+      if (steps.length) {
         out.appendChild(el("span", "eyebrow", "Decide"));
-        var form = el("div", "rev__form"), sel = el("select"); NEXT[c.status].forEach(function (o) { var op = el("option", null, o[1]); op.value = o[0]; sel.appendChild(op); });
+        var form = el("div", "rev__form"), sel = el("select"); steps.forEach(function (o) { var op = el("option", null, o[1]); op.value = o[0]; sel.appendChild(op); });
         var reason = el("textarea"); reason.placeholder = "Reason, at least three characters; it goes to the person by mail."; reason.rows = 4;
         var btn = el("button", "btn", "Decide"); btn.type = "button"; var msg = el("p", "fine", "");
         btn.addEventListener("click", function () {

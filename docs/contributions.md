@@ -84,7 +84,7 @@ Alles, was nicht aufgeführt ist, ist verweigert.
 | Beitrag lesen | nein | ja | ja | ja |
 | zurückziehen | nein | ja, nur offen | nein | ja |
 | entscheiden, mit Begründung | nein | nein | ja | ja |
-| durch das Tor veröffentlichen, zurücknehmen | nein | nein | ja | ja |
+| durch das Tor veröffentlichen, zurücknehmen | nein | nein | nein | ja (seit 2026-09-10 allein der Eigentümer; die Konsole :8396 handelt mit seinem Dienstkonto) |
 | Namensnennung wählen | nein | ja, eigene | nein | ja |
 | eigene Daten löschen | nein | ja | nein | nein |
 | Rolle vergeben | nein | nein | nein | ja |

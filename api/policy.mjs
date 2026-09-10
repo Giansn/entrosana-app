@@ -4,7 +4,7 @@ export const ACTIONS = ["submit", "read", "withdraw", "decide", "publish", "gran
 export const OPEN = new Set(["received", "confirmed", "reviewing"]);
 
 const BY_ROLE = {
-  reviewer: new Set(["submit", "read", "decide", "publish", "decide-application"]),
+  reviewer: new Set(["submit", "read", "decide", "decide-application"]),   // 2026-09-10: veröffentlichen und zurücknehmen nur der Eigentümer
   owner:    new Set(["submit", "read", "withdraw", "decide", "publish", "grant", "decide-application"]),
 };
 

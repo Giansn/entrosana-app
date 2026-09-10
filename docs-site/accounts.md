@@ -8,8 +8,8 @@ One account per person, tied to an e-mail address, without a password. This page
 |---|---|---|
 | collector | everyone who registers | a workspace, a profile, invitations, points, reports, a list of services |
 | contributor | granted by the team after an application | proposing modules under your name, editing your published modules |
-| reviewer | the team | reading proposals and applications, deciding, publishing, taking modules back |
-| owner | the person running the Hub | everything, plus the machine's own services in the services list |
+| reviewer | the team | reading proposals and applications, admitting, holding or rejecting them |
+| owner | the person running the Hub | publishing and taking modules back, granting roles, and everything above, plus the machine's own services in the services list |
 
 Roles are granted only on the server, by the owner; there is no button for it. To become a contributor, open your account page and apply with a short text. The team decides, and you get a mail with the reason.
 
