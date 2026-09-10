@@ -1,5 +1,6 @@
 // journal.mjs — Journaleinträge und das öffentliche Profil. Reine Funktionen
 // über der Datenbank; Fehler tragen einen HTTP-Status (wie applications.mjs).
+import { publicFiles } from "./files.mjs";
 import { append } from "./audit.mjs";
 import { rolesOf } from "./policy.mjs";
 import { standingOf } from "./applications.mjs";
@@ -64,6 +65,7 @@ export function publicProfile(db, id) {
   const modules = db.prepare("SELECT title, slug, published FROM contributions WHERE actor_id = ? AND status = 'published' AND slug IS NOT NULL ORDER BY published DESC").all(a.id);
   return { id: a.id, name: a.name, slug: slugOf(db, a), standing: standingOf(roles), since: String(a.created).slice(0, 10), avatar: a.avatar ? (a.avatar_updated || "1") : null,
     contact: a.contact_email || "",
+    files: publicFiles(db, a.id),
     profile: { org: a.org || "", role: a.role || "", about: a.about || "", bio: a.bio || "", place: a.place || "", website: a.website || "", langs: a.langs ? String(a.langs).split(",").filter(Boolean) : [] },
     modules, journal: listJournal(db, a.id, true).map(e => ({ id: e.id, text: e.text, created: e.created, updated: e.updated })) };
 }

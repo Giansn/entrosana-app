@@ -21,6 +21,9 @@ import { exportActor, dormantSweep } from "./maintenance.mjs";
 import { standingOf, currentApplication, openApplication, listApplications, decideApplication } from "./applications.mjs";
 import { LANG_CODES, MAX_LANGS } from "./languages.mjs";
 import { listJournal, addEntry, updateEntry, deleteEntry, publicProfile, publicProfileBySlug, slugOf, searchPublic } from "./journal.mjs";
+import { QUOTA, MAX_FILE, checkUpload, safeName, pathFor, usedBytes, listFiles, fileRow, receive, removeFile, removeAll, fmt } from "./files.mjs";
+import { createReadStream } from "node:fs";
+import { dirname as pathDirname } from "node:path";
 import { KINDS as SVC_KINDS, GROUPS as SVC_GROUPS, PLACES as SVC_PLACES, INTERVALS as SVC_INTERVALS, MAX_PER_ACTOR as SVC_MAX, parseCheck, guardTarget, runCheck, heartbeatState } from "./services.mjs";
 import { serviceToken, ensureServiceActor, resolveActor, issueToken, withRoles, newToken, sha } from "./auth.mjs";
 
@@ -42,6 +45,8 @@ const FOUR_EYES = process.env.FOUR_EYES === "strict";   // strict: veröffentlic
 
 mkdirSync(dirname(LOG), { recursive: true });
 const { db, migrations } = open(DB_PATH);
+// Dateien der Konten liegen neben der Datenbank: api/db/files/<konto>/ (2026-09-10).
+const FILES_ROOT = DB_PATH === ":memory:" ? "/tmp/entrosana-files" : pathDirname(DB_PATH);
 const TOKEN = serviceToken();
 ensureServiceActor(db, auditAppend);
 
@@ -856,6 +861,65 @@ patterns.push([/^\/api\/me\/journal\/(\d{1,12})$/, {
 patterns.push([/^\/api\/profiles\/(\d{1,12})$/, {
   GET: (ctx, [id]) => { const p = publicProfile(db, id); if (!p) throw new HttpError(404, "no public profile"); send(ctx.res, 200, { ok: true, profile: p }); },
 }]);
+// Dateien je Konto (2026-09-10): Liste, Hochladen als roher Strom, Umschalten,
+// Löschen, Ausliefern. 400 MB je Konto, 50 MB je Datei, Zulassung per Endung;
+// alles in files.mjs gezählt, hier nur Anbindung.
+patterns.push([/^\/api\/me\/files$/, {
+  GET: (ctx) => { if (!ctx.actor) throw new HttpError(401, "no actor");
+    send(ctx.res, 200, { ok: true, items: listFiles(db, ctx.actor.id), used: usedBytes(db, ctx.actor.id), quota: QUOTA, max_file: MAX_FILE, where: "on the Hub's own server in Switzerland" }); },
+  PUT: async (ctx) => {
+    if (!ctx.actor) throw new HttpError(401, "no actor");
+    if (limited("files:" + ctx.actor.id, 60)) throw new HttpError(429, "too many uploads this hour");
+    const name = safeName(decodeURIComponent(String(ctx.req.headers["x-file-name"] || "")));
+    const size = Number(ctx.req.headers["content-length"] || 0);
+    const count = db.prepare("SELECT COUNT(*) AS n FROM files WHERE actor_id = ?").get(ctx.actor.id).n;
+    const chk = checkUpload({ name, size, used: usedBytes(db, ctx.actor.id), count });
+    if (!chk.ok) { ctx.req.resume(); throw new HttpError(chk.status, chk.error); }
+    const now = new Date().toISOString();
+    const id = db.prepare("INSERT INTO files(actor_id, name, ext, type, size, sha256, public, created) VALUES (?,?,?,?,?,?,?,?)")
+      .run(ctx.actor.id, chk.name, chk.ext, chk.type, size, "", String(ctx.req.headers["x-public"] || "") === "1" ? 1 : 0, now).lastInsertRowid;
+    const row = { id, actor_id: ctx.actor.id, ext: chk.ext };
+    try {
+      const got = await receive(ctx.req, pathFor(FILES_ROOT, row), MAX_FILE);
+      if (got.size !== size) { removeFile(db, FILES_ROOT, row); throw new HttpError(400, "content-length did not match the bytes received"); }
+      db.prepare("UPDATE files SET size = ?, sha256 = ? WHERE id = ?").run(got.size, got.sha256, id);
+    } catch (e) { db.prepare("DELETE FROM files WHERE id = ?").run(id); throw e.status ? new HttpError(e.status, e.message) : e; }
+    const item = listFiles(db, ctx.actor.id).find(f => f.id === Number(id));
+    send(ctx.res, 201, { ok: true, item, used: usedBytes(db, ctx.actor.id), quota: QUOTA });
+  },
+}]);
+patterns.push([/^\/api\/me\/files\/(\d{1,12})$/, {
+  PATCH: async (ctx, [id]) => {
+    if (!ctx.actor) throw new HttpError(401, "no actor");
+    const row = fileRow(db, ctx.actor.id, id); if (!row) throw new HttpError(404, "no such file");
+    const body = await readJson(ctx.req); const sets = [], vals = [];
+    if (body.public !== undefined) { sets.push("public = ?"); vals.push(body.public ? 1 : 0); }
+    if (body.name !== undefined) { const n = safeName(body.name); if (!n || !n.toLowerCase().endsWith("." + row.ext)) throw new HttpError(400, "the name must keep its ending ." + row.ext); sets.push("name = ?"); vals.push(n); }
+    if (sets.length) db.prepare("UPDATE files SET " + sets.join(", ") + " WHERE id = ?").run(...vals, row.id);
+    send(ctx.res, 200, { ok: true, item: listFiles(db, ctx.actor.id).find(f => f.id === row.id) });
+  },
+  DELETE: (ctx, [id]) => {
+    if (!ctx.actor) throw new HttpError(401, "no actor");
+    const row = fileRow(db, ctx.actor.id, id); if (!row) throw new HttpError(404, "no such file");
+    removeFile(db, FILES_ROOT, row); send(ctx.res, 200, { ok: true, deleted: row.id, used: usedBytes(db, ctx.actor.id), quota: QUOTA });
+  },
+}]);
+// Ausliefern: öffentliche Dateien für alle, private nur für das Konto und das Team.
+// Immer als Anhang, immer nosniff, Typ aus der Zulassungsliste und nie aus dem Upload.
+patterns.push([/^\/api\/files\/(\d{1,12})\/(\d{1,12})\/([^/]{1,200})$/, {
+  GET: (ctx, [actorId, id]) => {
+    const row = fileRow(db, Number(actorId), id);
+    const mine = ctx.actor && (ctx.actor.id === Number(actorId) || isTeam(ctx.actor));
+    if (!row || (!row.public && !mine)) throw new HttpError(404, "no such file");
+    const path = pathFor(FILES_ROOT, row);
+    const fname = row.name.replace(/["\r\n]/g, "");
+    ctx.res.writeHead(200, { "Content-Type": row.type, "Content-Length": row.size, "X-Content-Type-Options": "nosniff",
+      "Content-Disposition": "attachment; filename=\"" + fname.replace(/[^\x20-\x7e]/g, "_") + "\"; filename*=UTF-8''" + encodeURIComponent(fname),
+      "Cache-Control": row.public ? "public, max-age=300" : "private, no-store", "Referrer-Policy": "no-referrer" });
+    if (ctx.req.method === "HEAD") return ctx.res.end();
+    createReadStream(path).on("error", () => { try { ctx.res.destroy(); } catch {} }).pipe(ctx.res);
+  },
+}]);
 // /contributors/<name>: dieselbe Antwort, aufgelöst über den aus dem Namen gerechneten Slug.
 patterns.push([/^\/api\/profiles\/slug\/([a-z0-9-]{1,80})$/, {
   GET: (ctx, [slug]) => { const p = publicProfileBySlug(db, slug); if (!p) throw new HttpError(404, "no public profile"); send(ctx.res, 200, { ok: true, profile: p }); },
@@ -930,6 +994,7 @@ function eraseActor(actor, keepIds = new Set(), removeIds = new Set(), why = "pe
     db.prepare("DELETE FROM services WHERE actor_id = ?").run(actor.id);              // eigene Dienste gehen mit
     if (actor.email) db.prepare("UPDATE invites SET email = '(erased)' WHERE email = ?").run(actor.email);   // erhaltene: Adresse weg
     // Name bleibt nur, wenn ein Modul unter ihm stehen bleibt; die Adresse geht immer.
+    removeAll(db, FILES_ROOT, actor.id);   // Dateien des Kontos, Zeilen und Ordner (2026-09-10)
     db.prepare("UPDATE actors SET email = NULL, name = ?, org_id = NULL, org = NULL, role = NULL, about = NULL, bio = NULL, place = NULL, contact_email = NULL, website = NULL, langs = NULL, avatar = NULL, avatar_type = NULL, avatar_updated = NULL WHERE id = ?").run(kept ? actor.name : "(erased)", actor.id);
     db.exec("COMMIT");
   } catch (e) { db.exec("ROLLBACK"); throw e; }
