@@ -40,20 +40,22 @@ export function deleteEntry(db, actor, id) {
 // sondern aus dem Namen gerechnet; bei zwei gleichen Namen trägt der spätere
 // die Nummer hinten. Ändert sich der Name, ändert sich die Adresse — /p/<id>
 // bleibt darum als feste Adresse bestehen und leitet weiter.
+// Wörter mit Unterstrich, gianluca_kuehne (Wunsch des Eigentümers, 2026-09-10);
+// Adressen von früher mit Bindestrich finden weiterhin, siehe publicProfileBySlug.
 export function slugify(name) {
   return String(name || "").toLowerCase()
     .replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
     .normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
+    .replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 80);
 }
 export function slugOf(db, actor) {
   const base = slugify(actor.name); if (!base) return null;
   const earlier = db.prepare("SELECT id, name FROM actors WHERE kind = 'email' AND email IS NOT NULL AND name IS NOT NULL AND id < ?").all(actor.id)
     .some(a => slugify(a.name) === base);
-  return earlier ? base + "-" + actor.id : base;
+  return earlier ? base + "_" + actor.id : base;
 }
 export function publicProfileBySlug(db, slug) {
-  slug = String(slug || "").toLowerCase();
+  slug = String(slug || "").toLowerCase().replace(/-/g, "_");
   const rows = db.prepare("SELECT id, name FROM actors WHERE kind = 'email' AND email IS NOT NULL AND name IS NOT NULL").all();
   const hit = rows.find(a => slugOf(db, a) === slug);
   return hit ? publicProfile(db, hit.id) : null;

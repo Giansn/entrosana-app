@@ -253,7 +253,7 @@ createServer((req, res) => {
     return;
   }
 
-  const route = ROUTES.get(path) || DERIVED.get(path) || ((/^\/p\/\d{1,12}$/.test(path) || /^\/contributors\/[a-z0-9-]{1,80}$/.test(path)) ? PROFILE : undefined);
+  const route = ROUTES.get(path) || DERIVED.get(path) || ((/^\/p\/\d{1,12}$/.test(path) || /^\/contributors\/[a-z0-9_-]{1,80}$/.test(path)) ? PROFILE : undefined);
   // Unbekannte Pfade liefern die Startseite mit 404, damit nichts vorgetäuscht wird.
   const entry = cache.get((route ?? ROUTES.get("/")).file);
   const status = route ? 200 : 404;

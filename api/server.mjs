@@ -923,7 +923,7 @@ patterns.push([/^\/api\/files\/(\d{1,12})\/(\d{1,12})\/([^/]{1,200})$/, {
   },
 }]);
 // /contributors/<name>: dieselbe Antwort, aufgelöst über den aus dem Namen gerechneten Slug.
-patterns.push([/^\/api\/profiles\/slug\/([a-z0-9-]{1,80})$/, {
+patterns.push([/^\/api\/profiles\/slug\/([a-z0-9_-]{1,80})$/, {
   GET: (ctx, [slug]) => { const p = publicProfileBySlug(db, slug); if (!p) throw new HttpError(404, "no public profile"); send(ctx.res, 200, { ok: true, profile: p }); },
 }]);
 routes.set("GET /api/search", (ctx) => {

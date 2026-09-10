@@ -12,7 +12,7 @@
   // Zwei Adressen für dieselbe Seite: /p/<id> ist die feste, /contributors/<name>
   // die lesbare. Wer über die Nummer kommt, landet in der Adresszeile auf dem Namen.
   var id = (location.pathname.match(/^\/p\/(\d{1,12})$/) || [])[1];
-  var slug = (location.pathname.match(/^\/contributors\/([a-z0-9-]{1,80})$/) || [])[1];
+  var slug = (location.pathname.match(/^\/contributors\/([a-z0-9_-]{1,80})$/) || [])[1];
   var WORDS = { collector: "collector", contributor: "contributor", reviewer: "team", owner: "owner" };
   var ROLES = { teacher: "Teacher", student: "Student", parent: "Parent", "social-worker": "Social worker", developer: "Developer", researcher: "Researcher", other: "Other" };
   var STATE = { finished: "finished", available: "finished", development: "in development", idea: "an idea", running: "running" };
@@ -30,14 +30,15 @@
     return null;
   }
 
-  if (!id && !slug) { block("Profile", "No such profile", "The address needs a number, like /p/2, or a name, like /contributors/anna-meier."); return; }
+  if (!id && !slug) { block("Profile", "No such profile", "The address needs a number, like /p/2, or a name, like /contributors/anna_meier."); return; }
   fetch(slug ? "/api/profiles/slug/" + slug : "/api/profiles/" + id).then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); }).then(function (r) {
     if (r.s !== 200) { block("Profile", "No public profile here", "Either the number is wrong, or the person has not set a name yet."); return; }
     var p = r.j.profile, pr = p.profile || {};
     document.title = p.name + " | entrosana";
     if (p.slug) {
       var canon = "https://entrosana.app/contributors/" + p.slug;
-      if (!slug) { try { history.replaceState(null, "", "/contributors/" + p.slug); } catch (e) {} }
+      // /p/<id> und Adressen von früher mit Bindestrich zeigen die gültige Form in der Adresszeile
+      if (slug !== p.slug) { try { history.replaceState(null, "", "/contributors/" + p.slug); } catch (e) {} }
       var lc = document.querySelector('link[rel="canonical"]') || document.head.appendChild(el("link")); lc.rel = "canonical"; lc.href = canon;
       var og = document.querySelector('meta[property="og:url"]') || document.head.appendChild(el("meta")); og.setAttribute("property", "og:url"); og.content = canon;
       var ot = document.querySelector('meta[property="og:title"]') || document.head.appendChild(el("meta")); ot.setAttribute("property", "og:title"); ot.content = p.name + " | entrosana";
