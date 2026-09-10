@@ -763,3 +763,16 @@ Verbindung auf :8396. Läuft nur auf master. Protokoll `~/.sygnif/logs/entrosana
 in der Konsole unter /sync mit «Jetzt abgleichen» (`systemctl --user start --no-block`). Nicht auf x1
 eingerichtet, weil dort Zweige gewechselt werden.
 
+
+**Nachtrag 2026-09-10, atrium.entrosana.com.** Zweiter Markdown-Host in `serve.mjs` (`ATRIUM_HOST`): «/» ist die
+Landung aus `atrium-site/index.md` (Atrium als kommendes Forum des Hubs), `/docs` und `/docs/<seite>` sind die
+Docs in Entwicklung aus `docs-dev/` (Kopie von `docs-site/`, Hülle `atrium-site/shell.html` mit Hinweiszeile).
+`docs-render.mjs` hat dafür `sitePage(root, key, shell, glyphs, opts)` mit `dir`, `pages`, `navPages`, `base`,
+`extra`; `docsPage()` bleibt als Kurzform für docs.entrosana.app. Konsole :8396 unter /docs: je Seite live und
+dev bearbeiten, «dev → live übernehmen» und «live → dev holen» (`/api/docs/promote`, `/api/docs/pull`, mit
+Sicherung), Anzeige «gleich / dev weicht ab». Tunnel-Ingress `atrium.entrosana.com → 127.0.0.1:4322` gesetzt.
+DNS: `~/.cloudflared/cert.pem` wurde am 2026-09-10 18:05 für die Zone entrosana.app erneuert; `cloudflared tunnel
+route dns` legt Hostnamen darum in der .app-Zone an und erzeugte den Streuner `atrium.entrosana.com.entrosana.app`
+(löschen). Der richtige Eintrag ist CNAME `atrium` → `69e77bd9-70aa-4d0e-b8ea-16eacc25cb3a.cfargotunnel.com`
+(proxied) in der Zone entrosana.com: Dashboard, oder `cloudflared tunnel login` mit Wahl der .com-Zone und dann der
+Befehl. Das Forum selbst ist nicht gebaut; die Landung sagt das.

@@ -776,7 +776,8 @@ def dash():
         "andere spitze Klammern werden abgelehnt.</p>"
         f"<table>{zeilen}</table>"
         "<h2>Docs</h2>"
-        "<p class='note'>docs.entrosana.app: vier Seiten aus <span class='mono'>docs-site/*.md</span>, gerendert von serve.mjs; Änderungen sind sofort live.</p>"
+        "<p class='note'>docs.entrosana.app aus <span class='mono'>docs-site/*.md</span>, die Entwicklungskopie auf atrium.entrosana.com/docs aus <span class='mono'>docs-dev/*.md</span>; "
+        "gerendert von serve.mjs, Änderungen sind sofort da. «dev → live übernehmen» kopiert eine Seite mit Sicherung.</p>"
         + docs_rows() +
         "<h2>Katalog</h2>"
         "<p class='note'>Die Karten für Tools und Modules aus <span class='mono'>assets/catalogue.js</span>. "
@@ -1509,29 +1510,59 @@ DOCS = [("getting-started.md", "Getting started", "https://docs.entrosana.app/")
         ("privacy.md", "Privacy", "https://docs.entrosana.app/privacy")]
 
 
+DOCS_DEV = APP / "docs-dev"   # Entwicklungskopie, live auf atrium.entrosana.com/docs (2026-09-10)
+
+
 def docs_rows():
     rows = ""
     for name, label, url in DOCS:
-        p = DOCS_DIR / name
-        n = len(p.read_text(encoding="utf-8").splitlines()) if p.exists() else 0
-        rows += (f"<tr><td><b>{html.escape(label)}</b><br><span class='mono'>docs-site/{name}</span></td><td class='mono'>{n} Zeilen</td>"
-                 f"<td><a href='/docs/{name}'>bearbeiten</a></td><td><a href='{url}' target='_blank' rel='noopener'>ansehen</a></td></tr>")
-    return f"<table>{rows}</table>"
+        p, d = DOCS_DIR / name, DOCS_DEV / name
+        live = p.read_text(encoding="utf-8") if p.exists() else ""
+        dev = d.read_text(encoding="utf-8") if d.exists() else ""
+        gleich = live == dev
+        devurl = "https://atrium.entrosana.com/docs" + ("" if name == "getting-started.md" else "/" + name[:-3])
+        rows += (f"<tr><td><b>{html.escape(label)}</b><br><span class='mono'>docs-site/{name} · docs-dev/{name}</span></td>"
+                 f"<td class='mono'>live {len(live.splitlines())} Z · dev {len(dev.splitlines())} Z<br><span class='{'ok' if gleich else 'err'}'>{'gleich' if gleich else 'dev weicht ab'}</span></td>"
+                 f"<td><a href='/docs/{name}'>live bearbeiten</a><br><a href='/docs/dev/{name}'>dev bearbeiten</a></td>"
+                 f"<td><a href='{url}' target='_blank' rel='noopener'>live ansehen</a><br><a href='{devurl}' target='_blank' rel='noopener'>dev ansehen</a>"
+                 + ("" if gleich else f"<br><a class='act' href='#' data-promote='{name}'>dev → live übernehmen</a><br><a class='act' href='#' data-pull='{name}'>live → dev holen</a>") + "</td></tr>")
+    js = ("<script>document.querySelectorAll('[data-promote],[data-pull]').forEach(function(a){a.addEventListener('click',async function(e){e.preventDefault();"
+          "var name=a.dataset.promote||a.dataset.pull, op=a.dataset.promote?'promote':'pull';if(!confirm((op==='promote'?'dev → live: ':'live → dev: ')+name+'?'))return;"
+          "var r=await fetch('/api/docs/'+op,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name})});var j=await r.json();"
+          "if(j.ok)location.reload();else alert('Fehler: '+j.error);});});</script>")
+    return f"<table>{rows}</table>" + js
 
 
-def docs_editor(name, msg="", err=""):
-    """Markdown-Quelle einer Docs-Seite. Speichern legt eine Kopie ab; serve.mjs rendert beim nächsten Aufruf neu."""
+def docs_copy(data, direction):
+    name = str(data.get("name", ""))
+    if not any(name == n for n, _, _ in DOCS):
+        raise ValueError("unbekannte Seite")
+    src, dst = (DOCS_DEV / name, DOCS_DIR / name) if direction == "promote" else (DOCS_DIR / name, DOCS_DEV / name)
+    if not src.exists():
+        raise ValueError("Quelle fehlt")
+    if dst.exists() and dst.read_text(encoding="utf-8") == src.read_text(encoding="utf-8"):
+        return {"ok": True, "backup": "keine Änderung"}
+    b = backup(dst) if dst.exists() else None
+    dst.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+    return {"ok": True, "backup": b}
+
+
+def docs_editor(name, msg="", err="", where="live"):
+    """Markdown-Quelle einer Docs-Seite, live (docs-site) oder dev (docs-dev). Speichern legt eine Kopie ab; serve.mjs rendert beim nächsten Aufruf neu."""
     label = next((l for n, l, _ in DOCS if n == name), name)
     url = next((u for n, _, u in DOCS if n == name), "")
-    text = (DOCS_DIR / name).read_text(encoding="utf-8")
-    body = (f"<p><a href='/'>&larr; Übersicht</a> · <a href='/docs'>Docs</a></p><h1>Docs · {html.escape(label)}</h1>"
+    if where == "dev":
+        url = "https://atrium.entrosana.com/docs" + ("" if name == "getting-started.md" else "/" + name[:-3])
+    base = DOCS_DEV if where == "dev" else DOCS_DIR
+    text = (base / name).read_text(encoding="utf-8") if (base / name).exists() else ""
+    body = (f"<p><a href='/'>&larr; Übersicht</a> · <a href='/docs'>Docs</a></p><h1>Docs {'in Entwicklung' if where == 'dev' else 'live'} · {html.escape(label)}</h1>"
             f"<p class='note'>Markdown, wie in <span class='mono'>docs-site/{html.escape(name)}</span>. Erste Überschrift (#) ist der Titel, der erste Absatz die Unterzeile; "
             "## gliedert und erscheint in «On this page». Erlaubt: Listen (eine Unterebene), ``` Zäune, | Tabellen |, > Zitate, **fett**, *kursiv*, `Code`, [Verweise](https://…). "
             f"Live unter <a href='{url}' target='_blank' rel='noopener'>{html.escape(url)}</a>, ohne Neustart.</p>"
             f"<textarea id='md' spellcheck='false' style='width:100%;min-height:62vh;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9rem;line-height:1.45;box-sizing:border-box'>{html.escape(text)}</textarea>"
             "<p><button class='btn' id='save'>Speichern</button> <span class='mono' id='out'></span></p>"
             "<script>document.getElementById('save').addEventListener('click',async function(){var o=document.getElementById('out');o.textContent='…';"
-            "try{var r=await fetch('/api/docs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:" + json.dumps(name) + ",text:document.getElementById('md').value})});"
+            "try{var r=await fetch('/api/docs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:" + json.dumps(name) + ",where:" + json.dumps(where) + ",text:document.getElementById('md').value})});"
             "var j=await r.json();o.textContent=j.ok?('gespeichert · Kopie '+j.backup):('Fehler: '+j.error);}catch(e){o.textContent='Fehler: '+e;}});</script>")
     return page("Docs · " + label, body)
 
@@ -1545,10 +1576,10 @@ def docs_save(data):
         raise ValueError("zu lang")
     if not text.lstrip().startswith("# "):
         raise ValueError("die erste Zeile muss die Überschrift sein (# Titel)")
-    p = DOCS_DIR / name
-    if p.read_text(encoding="utf-8") == text:
+    p = (DOCS_DEV if data.get("where") == "dev" else DOCS_DIR) / name
+    if p.exists() and p.read_text(encoding="utf-8") == text:
         return {"ok": True, "backup": "keine Änderung"}
-    b = backup(p)
+    b = backup(p) if p.exists() else None
     p.write_text(text if text.endswith("\n") else text + "\n", encoding="utf-8")
     return {"ok": True, "backup": b}
 
@@ -1754,9 +1785,9 @@ class H(BaseHTTPRequestHandler):
         if u.path == "/sync":
             self._send(200, sync_page())
             return
-        m = re.match(r"^/docs/([a-z-]+\.md)$", u.path)
-        if m and any(m.group(1) == n for n, _, _ in DOCS):
-            self._send(200, docs_editor(m.group(1)))
+        m = re.match(r"^/docs/(dev/)?([a-z-]+\.md)$", u.path)
+        if m and any(m.group(2) == n for n, _, _ in DOCS):
+            self._send(200, docs_editor(m.group(2), where="dev" if m.group(1) else "live"))
             return
         if u.path == "/checklists":
             self._send(200, checklists_list())
@@ -1788,6 +1819,8 @@ class H(BaseHTTPRequestHandler):
         try:
             if u.path == "/api/sync":
                 self._json(sync_start())
+            elif u.path in ("/api/docs/promote", "/api/docs/pull"):
+                self._json(docs_copy(data, u.path.rsplit("/", 1)[1]))
             elif u.path == "/api/docs":
                 self._json(docs_save(data))
             elif u.path == "/api/page":

@@ -72,13 +72,23 @@ export function render(md) {
   return { title, lede, toc, html: out.join("\n") };
 }
 
-// Ein Rail-Eintrag wie in den App-Seiten: Glyphe aus docs-site/glyphs.json, dann der Name als Text.
-export function docsPage(root, key, shell, glyphs) {
-  const page = PAGES.find(([k]) => k === key) || PAGES[0];
-  const r = render(readFileSync(join(root, "docs-site", page[0] + ".md"), "utf8"));
-  const nav = PAGES.map(([k, label]) => `    <a class="rail__item${k === page[0] ? " is-active" : ""}" href="/${k === "getting-started" ? "" : k}"${k === page[0] ? ' aria-current="page"' : ""}>${glyphs[k] || ""} ${esc(label)}</a>`).join("\n");
+// Eine Seite eines Markdown-Hosts (docs.entrosana.app, atrium.entrosana.com): Rail-Einträge wie in der App,
+// Glyphe aus glyphs.json, dann der Name als Text. opts: dir (Ordner der .md), pages (Schlüssel/Namen), base
+// (Pfadpräfix der Verweise, "" oder "/docs"), host (für canonical), crumb (erstes Wort der Brotkrume),
+// extra (zusätzliche Rail-Einträge vor den Seiten: [{href, label, glyph, active}]).
+export function sitePage(root, key, shell, glyphs, opts) {
+  const pages = opts.pages || PAGES, dir = opts.dir || "docs-site", base = opts.base || "";
+  const page = pages.find(([k]) => k === key) || pages[0];
+  const r = render(readFileSync(join(root, dir, page[0] + ".md"), "utf8"));
+  const nav = opts.navPages || pages, first = nav[0][0];   // navPages: die Einträge im Rail, wenn sie nicht die Inhaltsseiten sind (Landung des Atriums)
+  const hrefOf = (k) => (k === first ? (base || "/") : base + "/" + k);
+  const cur = opts.extraActive ? null : page[0];
+  const items = (opts.extra || []).map((x) => `    <a class="rail__item${x.active ? " is-active" : ""}" href="${x.href}"${x.active ? ' aria-current="page"' : ""}>${x.glyph || ""} ${esc(x.label)}</a>`)
+    .concat(nav.map(([k, label]) => `    <a class="rail__item${k === cur ? " is-active" : ""}" href="${hrefOf(k)}"${k === cur ? ' aria-current="page"' : ""}>${glyphs[k] || ""} ${esc(label)}</a>`));
   const toc = r.toc.length ? `        <nav class="doc__toc" aria-label="On this page"><span class="eyebrow">On this page</span>${r.toc.map((t) => `<a href="#${t.id}">${esc(t.text)}</a>`).join("")}</nav>` : "";
-  const desc = r.lede.replace(/`/g, "").replace(/\*\*?/g, "").replace(/\[([^\]]+)\]\([^)]*\)/g, "$1");   // für <meta>: ohne Auszeichnung
-  return shell.replace(/\{\{title\}\}/g, esc(r.title || page[1])).replace(/\{\{desc\}\}/g, esc(desc)).replace("{{lede}}", inline(r.lede)).replace(/\{\{path\}\}/g, page[0] === "getting-started" ? "/" : "/" + page[0])
-              .replace("{{crumb}}", esc(page[1])).replace("{{nav}}", nav).replace("{{toc}}", toc).replace("{{content}}", r.html);
+  const desc = r.lede.replace(/`/g, "").replace(/\*\*?/g, "").replace(/\[([^\]]+)\]\([^)]*\)/g, "$1");
+  const path = opts.extraActive ? (opts.path || "/") : hrefOf(page[0]);
+  return shell.replace(/\{\{title\}\}/g, esc(r.title || page[1])).replace(/\{\{desc\}\}/g, esc(desc)).replace("{{lede}}", inline(r.lede)).replace(/\{\{path\}\}/g, path)
+              .replace("{{crumb}}", esc(page[1])).replace("{{nav}}", items.join("\n")).replace("{{toc}}", toc).replace("{{content}}", r.html);
 }
+export function docsPage(root, key, shell, glyphs) { return sitePage(root, key, shell, glyphs, { dir: "docs-site", pages: PAGES, base: "" }); }
