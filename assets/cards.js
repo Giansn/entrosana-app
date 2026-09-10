@@ -157,6 +157,9 @@
     return a;
   }
 
+  // Die Modulkarte ist die eine Form für Module, auch auf der Contributors-Seite (2026-09-10).
+  window.__moduleCard = card;
+
   // Einleitung eines Gebiets: der Eintrag der Spur «onrequest» beschreibt, was das Gebiet umfasst.
   function paintIntro(box) {
     var area = box.getAttribute("data-area-intro"), data = cat.modules;

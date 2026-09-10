@@ -85,17 +85,14 @@
     ps.appendChild(el("p", "psect__s", "Modules under this name. Each one opens as a lesson you can run."));
     if (!p.modules.length) ps.appendChild(el("p", "quiet", "No module published under this name yet."));
     else {
-      var show = el("div", "show");
+      // Dieselbe Karte wie auf /modules: cards.js zeichnet sie, der Katalog liefert
+      // den Eintrag per Slug. Fehlt er dort, bleibt eine karge Karte aus dem, was
+      // die API weiss (Titel, Slug, Datum).
+      var show = el("div", "cards");
       p.modules.forEach(function (m) {
-        var c = catalogue(m.slug) || {};
-        var a = el("a", "card tile piece"); a.href = "/modules/" + m.slug;
-        if (c.area) a.appendChild(el("span", "chip", c.area));
-        a.appendChild(el("p", "piece__t", m.title));
-        a.appendChild(el("p", "piece__l", c.lede || ""));
-        var f = el("div", "piece__f");
-        f.appendChild(el("span", null, c.who ? String(c.who).split(" · ").slice(1).join(" · ") || c.who : "published " + day(m.published)));
-        f.appendChild(el("span", "st", STATE[c.state] || c.state || "published"));
-        a.appendChild(f); show.appendChild(a);
+        var c = catalogue(m.slug) || { slug: m.slug, title: m.title, lede: "", track: "", meta: "published " + day(m.published) };
+        if (window.__moduleCard) show.appendChild(window.__moduleCard("modules", c));
+        else { var a = el("a", "mcard"); a.href = "/modules/" + m.slug; a.appendChild(el("p", "mcard__t", m.title)); show.appendChild(a); }
       });
       ps.appendChild(show);
     }
