@@ -726,8 +726,8 @@ Zähler in der Leiste liest `entrosana-svc-own:v1` und `entrosana-svc-machine:v1
 Blatt am unteren Rand; der Text zum Lebenszeichen nennt die Adresse `/api/hooks/…`, wann sie
 erscheint und was damit zu tun ist.
 
-**Nachtrag 2026-09-10, docs.entrosana.app.** Vier Seiten in Markdown unter `docs-site/` (getting-started,
-contribute, services, api), Hülle `docs-site/shell.html` (aus dem Rail der App gebaut, Glyphen in
+**Nachtrag 2026-09-10, docs.entrosana.app.** Sechs Seiten in Markdown unter `docs-site/` (getting-started,
+accounts, contribute, services, api, privacy; die Reihenfolge steht in `PAGES` in docs-render.mjs), Hülle `docs-site/shell.html` (aus dem Rail der App gebaut, Glyphen in
 `docs-site/glyphs.json`), gerendert von `docs-render.mjs` (eigene kleine Teilmenge: Überschriften,
 Absätze, Listen mit einer Unterebene, Zäune, Tabellen, Zitate, fett, kursiv, Code, Verweise; keine
 Abhängigkeit). `serve.mjs` weicht auf `DOCS_HOST` (Standard `docs.entrosana.app`) ab: Seiten aus

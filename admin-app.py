@@ -1495,9 +1495,11 @@ def checklist_save(key, data):
 
 DOCS_DIR = APP / "docs-site"
 DOCS = [("getting-started.md", "Getting started", "https://docs.entrosana.app/"),
+        ("accounts.md", "Accounts", "https://docs.entrosana.app/accounts"),
         ("contribute.md", "Contribute", "https://docs.entrosana.app/contribute"),
         ("services.md", "Services", "https://docs.entrosana.app/services"),
-        ("api.md", "API", "https://docs.entrosana.app/api")]
+        ("api.md", "API", "https://docs.entrosana.app/api"),
+        ("privacy.md", "Privacy", "https://docs.entrosana.app/privacy")]
 
 
 def docs_rows():

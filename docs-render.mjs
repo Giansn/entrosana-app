@@ -7,9 +7,11 @@ import { join } from "node:path";
 
 export const PAGES = [
   ["getting-started", "Getting started"],
+  ["accounts", "Accounts"],
   ["contribute", "Contribute"],
   ["services", "Services"],
   ["api", "API"],
+  ["privacy", "Privacy"],
 ];
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
