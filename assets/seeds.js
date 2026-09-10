@@ -6,9 +6,141 @@
    (info@entrosana.com oder das Formular auf entrosana.app/request).
 
    Abschnitt «hub» (2026-09-10): die drei Vorhaben des Hubs selbst, die jedes Brett
-   einmal vorgeschlagen bekommt (app.js ensureStarter).
+   einmal vorgeschlagen bekommt (app.js ensureStarter); steht zuerst, damit der Dialog
+   «New project» sie zuerst zeigt. Die Karten auf /contribute zeigen seit 2026-09-10 hub/001–003.
    Ohne diesen Schritt bleibt eine Checkliste eine Übung. */
 window.__seeds = {
+ "hub/001": {
+  "section": "hub",
+  "title": "Docs in plain language, in several languages",
+  "who": "docs.entrosana.app: six pages, first plain English, then German, French and Italian",
+  "steps": [
+   {
+    "t": "Read the six pages as a newcomer",
+    "n": "Getting started, Accounts, Contribute, Services, API, Privacy.",
+    "i": "Open docs.entrosana.app and read each page once, fast. Note every sentence you had to read twice and every word a teacher would not know. One note per page on this card."
+   },
+   {
+    "t": "Rewrite the hard sentences in plain English",
+    "n": "One idea per sentence; a gloss for every term.",
+    "i": "Edit the Markdown in the console under Docs. The change is live at once. Keep the facts; the privacy page must keep matching the statement on entrosana.com."
+   },
+   {
+    "t": "Decide the languages and the order",
+    "n": "German (Swiss orthography) first, then French and Italian.",
+    "i": "Decide who reviews each language and whether the English page stays the source of truth. Write the decision into the journal on entrosana.app/me."
+   },
+   {
+    "t": "Translate Getting started and Accounts into German",
+    "n": "The two pages every newcomer reads.",
+    "i": "Keep the headings, so the «On this page» line works. Swiss orthography: ss instead of the Eszett, umlauts as they are."
+   },
+   {
+    "t": "Translate Contribute, Services, API and Privacy",
+    "n": "Privacy must match entrosana.com/privacy/de where it states a rule.",
+    "i": "The API page keeps its calls and field names in English; only the prose changes."
+   },
+   {
+    "t": "Add the language switch to the docs",
+    "n": "One folder per language, a switch in the rail.",
+    "i": "docs-site/de/… next to the English files; the renderer takes the language from the path; the rail gets a line with the languages. Ask for it on entrosana.app/request as kind «service» if you do not build it yourself."
+   },
+   {
+    "t": "Have a native reader check each language",
+    "n": "A teacher or a learner reads one page aloud.",
+    "i": "What makes the reader stumble gets changed, not explained."
+   },
+   {
+    "t": "Publish and tell the Hub",
+    "n": "Link the languages from the rail footer; a journal entry on /me.",
+    "i": "Mark the journal entry public, so contributors see it on your profile."
+   }
+  ]
+ },
+ "hub/002": {
+  "section": "hub",
+  "title": "Translate the website text",
+  "who": "entrosana.com: Home, Service, Hub, Modules, Contribute, Imprint, Privacy",
+  "steps": [
+   {
+    "t": "List the pages and their word counts",
+    "n": "Seven pages; the site console shows every text.",
+    "i": "Home, Service, Hub, Modules, Contribute, Imprint, Privacy (English; German privacy exists). Note the word count per page on this card; it sets the order of work."
+   },
+   {
+    "t": "Fix the English source first",
+    "n": "A sentence that is unclear in English is unclear in every language.",
+    "i": "Read each page aloud; shorten what does not survive it. The site's text editor keeps the markup; only text between tags changes."
+   },
+   {
+    "t": "Choose the languages and the order",
+    "n": "German (Swiss) first, then French and Italian.",
+    "i": "Decide whether entrosana.com stays English-first with language pages, or becomes German-first. Write it into the journal."
+   },
+   {
+    "t": "Translate Home and Service",
+    "n": "The two pages every visitor sees.",
+    "i": "Keep the number of text blocks; the editor refuses saves that change the structure. Terms used in the Hub (collector, contributor, module, track) get one German equivalent each and keep it."
+   },
+   {
+    "t": "Translate Hub, Modules and Contribute",
+    "n": "Same terms as on entrosana.app; the Contribute button links to entrosana.app/contribute.",
+    "i": "Where the page names a Hub feature, use the word the Hub shows in its interface until the Hub is translated too."
+   },
+   {
+    "t": "Privacy and Imprint",
+    "n": "The German privacy page exists at /privacy/de/; align its wording with the Hub docs.",
+    "i": "Legal wording stays as in the statement; a translation promises nothing new."
+   },
+   {
+    "t": "Set up the language pages in WordPress",
+    "n": "Child pages per language, hreflang links, a switch in the header.",
+    "i": "Page ids and the publishing route are in the console notes; the text API refuses structural changes, the eval-file route does not."
+   },
+   {
+    "t": "Review with a native reader and publish",
+    "n": "One page read aloud per language before it goes live.",
+    "i": "Publish language by language; note the date in the privacy statement if its wording changed."
+   }
+  ]
+ },
+ "hub/003": {
+  "section": "hub",
+  "title": "Work out the requests",
+  "who": "the request inbox: module, track, tool, service, report, contribute, other",
+  "steps": [
+   {
+    "t": "Open the requests in the console",
+    "n": "The console lists every open request with kind, sender and text.",
+    "i": "Requests older than 180 days are purged automatically; what is still there deserves an answer."
+   },
+   {
+    "t": "Sort them",
+    "n": "Answer now · needs a decision · belongs to a module's contributors · spam.",
+    "i": "Write the sort into the card note; the console has a «handled» mark per request."
+   },
+   {
+    "t": "Answer the quick ones",
+    "n": "From info@entrosana.com within a week; mark handled.",
+    "i": "A request for a tool or a service that exists gets the link; one that does not gets a plain no with the reason, or a date."
+   },
+   {
+    "t": "Turn module and track requests into proposals",
+    "n": "Ask the sender to file it on entrosana.app/contribute/submit, or file it with consent under their name.",
+    "i": "A proposal is published under a name; the sender must agree to that in writing."
+   },
+   {
+    "t": "Forward reports to the module's contributors",
+    "n": "Reports arrive at sygnif@; the module page names the contributors.",
+    "i": "Decide with the contributors, answer the reporter, note the decision in the record trail through the console."
+   },
+   {
+    "t": "Keep the list at zero every Friday",
+    "n": "A recurring check; new requests wait at most a week.",
+    "i": "Set a due date on this card each week, or make it a journal habit."
+   }
+  ]
+ },
  "tools/000": {
   "section": "tools",
   "title": "Set up an auditable back-office",
@@ -204,137 +336,6 @@ window.__seeds = {
    {
     "t": "Ask entrosana for the material",
     "n": "info@entrosana.com — say the age group and how long you have. It comes back as something you can repeat without us."
-   }
-  ]
- },
- "hub/001": {
-  "section": "hub",
-  "title": "Docs in plain language, in several languages",
-  "who": "docs.entrosana.app: six pages, first plain English, then German, French and Italian",
-  "steps": [
-   {
-    "t": "Read the six pages as a newcomer",
-    "n": "Getting started, Accounts, Contribute, Services, API, Privacy.",
-    "i": "Open docs.entrosana.app and read each page once, fast. Note every sentence you had to read twice and every word a teacher would not know. One note per page on this card."
-   },
-   {
-    "t": "Rewrite the hard sentences in plain English",
-    "n": "One idea per sentence; a gloss for every term.",
-    "i": "Edit the Markdown in the console under Docs. The change is live at once. Keep the facts; the privacy page must keep matching the statement on entrosana.com."
-   },
-   {
-    "t": "Decide the languages and the order",
-    "n": "German (Swiss orthography) first, then French and Italian.",
-    "i": "Decide who reviews each language and whether the English page stays the source of truth. Write the decision into the journal on entrosana.app/me."
-   },
-   {
-    "t": "Translate Getting started and Accounts into German",
-    "n": "The two pages every newcomer reads.",
-    "i": "Keep the headings, so the «On this page» line works. Swiss orthography: ss instead of the Eszett, umlauts as they are."
-   },
-   {
-    "t": "Translate Contribute, Services, API and Privacy",
-    "n": "Privacy must match entrosana.com/privacy/de where it states a rule.",
-    "i": "The API page keeps its calls and field names in English; only the prose changes."
-   },
-   {
-    "t": "Add the language switch to the docs",
-    "n": "One folder per language, a switch in the rail.",
-    "i": "docs-site/de/… next to the English files; the renderer takes the language from the path; the rail gets a line with the languages. Ask for it on entrosana.app/request as kind «service» if you do not build it yourself."
-   },
-   {
-    "t": "Have a native reader check each language",
-    "n": "A teacher or a learner reads one page aloud.",
-    "i": "What makes the reader stumble gets changed, not explained."
-   },
-   {
-    "t": "Publish and tell the Hub",
-    "n": "Link the languages from the rail footer; a journal entry on /me.",
-    "i": "Mark the journal entry public, so contributors see it on your profile."
-   }
-  ]
- },
- "hub/002": {
-  "section": "hub",
-  "title": "Translate the website text",
-  "who": "entrosana.com: Home, Service, Hub, Modules, Contribute, Imprint, Privacy",
-  "steps": [
-   {
-    "t": "List the pages and their word counts",
-    "n": "Seven pages; the site console shows every text.",
-    "i": "Home, Service, Hub, Modules, Contribute, Imprint, Privacy (English; German privacy exists). Note the word count per page on this card; it sets the order of work."
-   },
-   {
-    "t": "Fix the English source first",
-    "n": "A sentence that is unclear in English is unclear in every language.",
-    "i": "Read each page aloud; shorten what does not survive it. The site's text editor keeps the markup; only text between tags changes."
-   },
-   {
-    "t": "Choose the languages and the order",
-    "n": "German (Swiss) first, then French and Italian.",
-    "i": "Decide whether entrosana.com stays English-first with language pages, or becomes German-first. Write it into the journal."
-   },
-   {
-    "t": "Translate Home and Service",
-    "n": "The two pages every visitor sees.",
-    "i": "Keep the number of text blocks; the editor refuses saves that change the structure. Terms used in the Hub (collector, contributor, module, track) get one German equivalent each and keep it."
-   },
-   {
-    "t": "Translate Hub, Modules and Contribute",
-    "n": "Same terms as on entrosana.app; the Contribute button links to entrosana.app/contribute.",
-    "i": "Where the page names a Hub feature, use the word the Hub shows in its interface until the Hub is translated too."
-   },
-   {
-    "t": "Privacy and Imprint",
-    "n": "The German privacy page exists at /privacy/de/; align its wording with the Hub docs.",
-    "i": "Legal wording stays as in the statement; a translation promises nothing new."
-   },
-   {
-    "t": "Set up the language pages in WordPress",
-    "n": "Child pages per language, hreflang links, a switch in the header.",
-    "i": "Page ids and the publishing route are in the console notes; the text API refuses structural changes, the eval-file route does not."
-   },
-   {
-    "t": "Review with a native reader and publish",
-    "n": "One page read aloud per language before it goes live.",
-    "i": "Publish language by language; note the date in the privacy statement if its wording changed."
-   }
-  ]
- },
- "hub/003": {
-  "section": "hub",
-  "title": "Work out the requests",
-  "who": "the request inbox: module, track, tool, service, report, contribute, other",
-  "steps": [
-   {
-    "t": "Open the requests in the console",
-    "n": "The console lists every open request with kind, sender and text.",
-    "i": "Requests older than 180 days are purged automatically; what is still there deserves an answer."
-   },
-   {
-    "t": "Sort them",
-    "n": "Answer now · needs a decision · belongs to a module's contributors · spam.",
-    "i": "Write the sort into the card note; the console has a «handled» mark per request."
-   },
-   {
-    "t": "Answer the quick ones",
-    "n": "From info@entrosana.com within a week; mark handled.",
-    "i": "A request for a tool or a service that exists gets the link; one that does not gets a plain no with the reason, or a date."
-   },
-   {
-    "t": "Turn module and track requests into proposals",
-    "n": "Ask the sender to file it on entrosana.app/contribute/submit, or file it with consent under their name.",
-    "i": "A proposal is published under a name; the sender must agree to that in writing."
-   },
-   {
-    "t": "Forward reports to the module's contributors",
-    "n": "Reports arrive at sygnif@; the module page names the contributors.",
-    "i": "Decide with the contributors, answer the reporter, note the decision in the record trail through the console."
-   },
-   {
-    "t": "Keep the list at zero every Friday",
-    "n": "A recurring check; new requests wait at most a week.",
-    "i": "Set a due date on this card each week, or make it a journal habit."
    }
   ]
  }

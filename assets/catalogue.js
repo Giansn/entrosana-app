@@ -261,48 +261,48 @@ window.__catalogue = {
    {"id":"start", "name":"Checklists", "short":"checklist"}
   ],
   "list": [
-   {
-    "slug":"propose-a-track",
-    "seed":"contribute/000",
-    "track":"start",
-    "title":"Propose a track",
-    "lede":"Something you want to build or teach, described well enough to be answered.",
-    "meta":"",
-    "about":"A track is a subject the Hub does not cover yet, brought by someone who can cover it. The proposal is short on purpose: what it is, who it is for, what exists already, and what you need from us.",
-    "facts":[
-     ["Who it is for","Anyone with a subject and a group in mind"],
-     ["What it leaves","A sealed record of the proposal and the answer"],
-     ["Where it goes","info@entrosana.com, or entrosana.com/request-access"]
-    ]
-   },
-   {
-    "slug":"review-someones-work",
-    "seed":"contribute/001",
-    "track":"start",
-    "title":"Review someone else's work",
-    "lede":"Read it against what it claims, and name the case that breaks it.",
-    "meta":"",
-    "about":"The most useful contribution to this project is a careful reader. A review that names one broken case is worth more than an approval, and it counts as a contribution in its own right.",
-    "facts":[
-     ["Who it is for","Anyone, no account needed"],
-     ["What it leaves","Your copy of the review, sealed as you write it"],
-     ["Where it goes","To the author, and to us if the Hub asked for it"]
-    ]
-   },
-   {
-    "slug":"ask-for-runway",
-    "seed":"contribute/002",
-    "track":"start",
-    "title":"Ask for runway",
-    "lede":"Work that needs time, machines, or a person who knows the subject.",
-    "meta":"",
-    "about":"Runway follows review, not the other way round: show what already got read, say what the work needs and for how long, and name what happens if the answer is no.",
-    "facts":[
-     ["Who it is for","Contributors with something already reviewed"],
-     ["What it leaves","A written request with its trail attached"],
-     ["Where it goes","info@entrosana.com"]
-    ]
-   }
+    {
+     "slug":"docs-in-plain-language",
+     "seed":"hub/001",
+     "track":"start",
+     "title":"Docs in plain language, in several languages",
+     "lede":"Six pages at docs.entrosana.app, first in plain English, then in German, French and Italian.",
+     "meta":"",
+     "about":"The docs explain the Hub to people who have never seen it. Every sentence that needs a second read is a sentence to rewrite, and every language a teacher reads in is a language the docs should speak. The checklist goes from reading as a newcomer to a published language switch.",
+     "facts":[
+      ["Who it is for", "Anyone who reads and writes plainly, in one of the languages"],
+      ["What it leaves", "Rewritten pages in the docs, one language at a time"],
+      ["Where it goes", "docs.entrosana.app, edited in the console; questions to info@entrosana.com"]
+     ]
+    },
+    {
+     "slug":"translate-the-website",
+     "seed":"hub/002",
+     "track":"start",
+     "title":"Translate the website text",
+     "lede":"Seven pages of entrosana.com, from a clear English source into German, French and Italian.",
+     "meta":"",
+     "about":"The website is the door to the Hub, and it opens only in English. The checklist fixes the source first, keeps the terms the Hub uses, and sets up language pages a visitor can switch between.",
+     "facts":[
+      ["Who it is for", "Translators who know schools and can keep a term stable"],
+      ["What it leaves", "Language pages on entrosana.com with the same structure as the English ones"],
+      ["Where it goes", "entrosana.com, edited in the site console; questions to info@entrosana.com"]
+     ]
+    },
+    {
+     "slug":"work-out-the-requests",
+     "seed":"hub/003",
+     "track":"start",
+     "title":"Work out the requests",
+     "lede":"Every request that reached the Hub gets an answer, a decision or a proposal.",
+     "meta":"",
+     "about":"Requests arrive through the form on the Hub and wait in the console: for a module, a track, a tool, a service, a report or a contribution. The checklist sorts them, answers the quick ones within a week, turns the good ones into proposals and keeps the list at zero.",
+     "facts":[
+      ["Who it is for", "The team, and anyone who answers mail for the Hub"],
+      ["What it leaves", "Answered requests, marked handled, and proposals where one belonged"],
+      ["Where it goes", "The Hub console; answers from info@entrosana.com"]
+     ]
+    }
   ]
  }
 };
