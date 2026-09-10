@@ -83,8 +83,8 @@ const ROUTES = new Map([
   ["/assets/search.js",   { file: "assets/search.js",   type: JS }],
   ["/assets/submit.js",   { file: "assets/submit.js",   type: JS }],
   ["/assets/mark.svg",    { file: "assets/mark.svg",    type: "image/svg+xml" }],
-  ["/assets/fonts/kavivanar-latin.woff2",     { file: "assets/fonts/kavivanar-latin.woff2",     type: "font/woff2" }],
-  ["/assets/fonts/kavivanar-latin-ext.woff2", { file: "assets/fonts/kavivanar-latin-ext.woff2", type: "font/woff2" }],
+  ["/assets/fonts/glegoo-latin.woff2",     { file: "assets/fonts/glegoo-latin.woff2",     type: "font/woff2" }],
+  ["/assets/fonts/glegoo-latin-ext.woff2", { file: "assets/fonts/glegoo-latin-ext.woff2", type: "font/woff2" }],
   // Vorschaubild für geteilte Links. Wird nicht von der Seite geladen, sondern
   // von fremden Diensten geholt, deshalb greift die CSP hier nicht.
   ["/assets/share-1200x630.png", { file: "assets/share-1200x630.png", type: "image/png" }],
