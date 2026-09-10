@@ -22,7 +22,7 @@
   // Die Erklärung: für Besucher ohne Konto und für Konten ohne Eintrag dieselbe.
   function bubble(signedIn) {
     var h = el("div", "hint svc__bubble");
-    h.appendChild(el("p", "hint__t", signedIn ? "Your list is empty. Here is what it is for." : "What this page is"));
+    h.appendChild(el("p", "hint__t", "What this page is for"));
     h.appendChild(el("p", null, "A list of things that must be up for your work: a school server, a file share in the staff room, an MCP server your assistant talks to, a nightly backup job. The Hub watches them and shows a dot per service: green when it answers, amber when something is off, grey when nothing has been heard yet."));
     var ul = el("ul", "measure");
     [["address", "the Hub's server opens a web address and expects an answer."],
@@ -31,8 +31,53 @@
      ["certificate", "it reads the TLS certificate and warns two weeks before it expires."],
      ["heartbeat", "for anything the Hub cannot reach, inside your network or a cron job: the service calls a secret address of its own, and the dot stays green as long as it keeps calling."]].forEach(function (k) { var li = el("li"); li.appendChild(el("b", null, k[0] + " — ")); li.appendChild(document.createTextNode(k[1])); ul.appendChild(li); });
     h.appendChild(ul);
-    h.appendChild(el("p", null, signedIn ? "Addresses stay on the server; the list is yours and nobody else sees it. Add the first one below." : "The list belongs to your account and nobody else sees it. Sign in or register to keep one; it takes one mail."));
+
+    // Wie man einen anlegt. Die Schritte folgen den Feldern des Dialogs, damit
+    // hier nichts steht, was dort nicht verlangt wird.
+    h.appendChild(el("p", "hint__t", "How to add one"));
+    var ol = el("ol", "measure");
+    [["Press «+ Add a service».", ""],
+     ["Give it a name.", " That is the only field that is always required; the short description beside it is optional."],
+     ["Choose what kind of check it is.", " The five kinds above; the form asks for the rest depending on which one you pick."],
+     ["Put in the address the Hub should reach.", " A web address for address and MCP, host and port for port and certificate. Heartbeat is the exception, it needs none."],
+     ["For heartbeat, take the secret address the Hub hands back.", " Your job or your machine calls it on a schedule, and the dot stays green as long as the calls keep coming."],
+     ["Pick how often it is checked, and where it belongs.", " Group and place are labels for sorting the list, they change nothing about the check."]].forEach(function (k) {
+      var li = el("li"); li.appendChild(el("b", null, k[0]));
+      if (k[1]) li.appendChild(document.createTextNode(k[1]));
+      ol.appendChild(li);
+    });
+    h.appendChild(ol);
+
+    h.appendChild(el("p", null, signedIn ? "Addresses stay on the server; the list is yours and nobody else sees it." : "The list belongs to your account and nobody else sees it. Sign in or register to keep one; it takes one mail."));
     return h;
+  }
+
+  // Der Erklärtext war als Block die halbe Seite lang und stand jedes Mal da,
+  // auch wenn man ihn längst gelesen hatte. Jetzt liegt er hinter einem Knopf
+  // neben «Add a service» und ist damit auch dann erreichbar, wenn die Liste
+  // schon gefüllt ist (vorher gab es ihn dort gar nicht).
+  function infoPanel(signedIn) {
+    var wrap = el("div", "svc__info"); wrap.id = "svc-info"; wrap.hidden = true;
+    wrap.appendChild(bubble(signedIn));
+    return wrap;
+  }
+  function infoBtn(panel) {
+    var b = el("button", "iconbtn iconbtn--info"); b.type = "button";
+    b.title = "What this page is for";
+    b.setAttribute("aria-label", "What this page is for");
+    b.setAttribute("aria-controls", "svc-info");
+    b.setAttribute("aria-expanded", "false");
+    b.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" ' +
+      'stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/>' +
+      '<path d="M12 11.4v4.8"/><circle cx="12" cy="8.1" r=".95" fill="currentColor" stroke="none"/></svg>';
+    b.addEventListener("click", function () {
+      var open = panel.hidden;
+      panel.hidden = !open;
+      b.setAttribute("aria-expanded", String(open));
+      b.classList.toggle("is-on", open);
+      if (open) panel.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    });
+    return b;
   }
 
   function ledFor(state) { return el("span", "led led--" + (state === "ok" ? "ok" : state === "warn" ? "warn" : state === "off" ? "off" : "wait")); }
@@ -43,6 +88,7 @@
     if (!tk) {
       UI.appendChild(bubble(false));
       var act = el("div", "actions"); var a1 = el("a", "btn", "Sign in or register"); a1.href = "/me"; act.appendChild(a1); UI.appendChild(act);
+      var lg = legacyItems(); if (lg.length) UI.appendChild(el("p", "note note--idle", lg.length + (lg.length === 1 ? " entry" : " entries") + " from the earlier version of this page are still in this browser; sign in and they can be moved to your account."));
       paintSnapshot(false);
       return;
     }
@@ -55,9 +101,27 @@
       if (nWait) { var q = el("span", "note note--idle"); q.appendChild(el("span", "led led--wait")); q.appendChild(document.createTextNode(nWait + " waiting")); bar.appendChild(q); }
     }
     var add = el("button", "btn", "+ Add a service"); add.type = "button"; add.addEventListener("click", openAdd); bar.appendChild(add);
-    UI.appendChild(bar);
-    var sc = document.getElementById("svc-count"); if (sc) sc.textContent = items.length || "";
-    if (!items.length) { UI.appendChild(bubble(true)); paintSnapshot(true); return; }
+    var info = infoPanel(true); bar.appendChild(infoBtn(info));
+    UI.appendChild(bar); UI.appendChild(info);
+    var snap = snapFor(), nSnap = snap ? snap.services.length : 0;
+    if (nSnap) {   // die Maschine zählt mit, damit die Zeile zur Tabelle unten passt
+      var sn = el("span", "note note--idle"); sn.appendChild(el("span", "led led--wait")); sn.appendChild(document.createTextNode(nSnap + " on the Hub's machine")); bar.insertBefore(sn, add);
+    }
+    try { localStorage.setItem("entrosana-svc-own:v1", String(items.length)); } catch (e) {}   // für den Zähler in der Leiste auf den anderen Seiten
+    var sc = document.getElementById("svc-count"); if (sc) sc.textContent = (items.length + nSnap) || "";
+    var legacy = legacyItems();
+    if (legacy.length) UI.appendChild(legacyBox(legacy));
+    if (!items.length) {
+      var none = el("div", "hint");
+      if (nSnap) {
+        none.appendChild(el("p", "hint__t", "Nothing in your own list yet; " + nSnap + " services are running on the Hub's machine."));
+        none.appendChild(el("p", null, "The table below is read from " + snap.host + " every ten minutes by the snapshot script; those rows belong to the machine, not to your account, and get no check of their own. Use «+ Add a service» for anything you want the Hub to watch for you" + (legacy.length ? ", or move the entries from the earlier page above" : "") + "."));
+      } else {
+        none.appendChild(el("p", "hint__t", "Your list is empty."));
+        none.appendChild(el("p", null, legacy.length ? "The entries from the earlier version of this page are above; move them to your account or add a new one." : "Add the first service above. The button beside it says what the Hub can watch."));
+      }
+      UI.appendChild(none); paintSnapshot(true); return;
+    }
 
     var order = [], byGroup = {};
     items.forEach(function (r) { if (!byGroup[r.group]) { byGroup[r.group] = []; order.push(r.group); } byGroup[r.group].push(r); });
@@ -91,11 +155,47 @@
   }
 
   // Schnappschuss der eigenen Maschine: nur für das Team.
+  function snapFor() {
+    var s = window.__services;
+    return s && s.services && tk && (tk.standing === "owner" || tk.standing === "reviewer") ? s : null;
+  }
+  // Einträge aus der Fassung bis 2026-09-10 (entrosana-services:v1): lagen nur im Browser, der Server kannte sie nie.
+  var K_LEGACY = "entrosana-services:v1";
+  function legacyItems() { var o = read(K_LEGACY, null); return o && o.items && o.items.length ? o.items.filter(function (i) { return i && i.name; }) : []; }
+  function legacyBox(list) {
+    var box = el("div", "hint svc__legacy");
+    box.appendChild(el("p", "hint__t", list.length + (list.length === 1 ? " entry" : " entries") + " from the earlier version of this page, still in this browser"));
+    box.appendChild(el("p", null, "They were kept in the browser only, so the server never saw them and no other device shows them. Move them to your account and the Hub starts checking them the way you set; an entry without a check becomes a heartbeat, which you can replace afterwards."));
+    var ul = el("ul", "measure");
+    list.forEach(function (i) { var li = el("li"); li.appendChild(el("b", null, i.name)); li.appendChild(document.createTextNode((i.what ? " · " + i.what : "") + (i.where ? " · " + i.where : "") + " · " + (i.check && /^[a-z]+:/.test(i.check) ? i.check.split(":")[0] : "no check, becomes heartbeat"))); ul.appendChild(li); });
+    box.appendChild(ul);
+    var act = el("div", "actions");
+    var mv = el("button", "btn", "Move them to my account"); mv.type = "button";
+    mv.addEventListener("click", function () {
+      mv.disabled = true; mv.textContent = "Moving…";
+      var left = [], failed = [];
+      (function next(k) {
+        if (k >= list.length) {
+          write(K_LEGACY, left.length ? { items: left } : null); if (!left.length) { try { localStorage.removeItem(K_LEGACY); } catch (e) {} }
+          load().then(function () { if (failed.length) { var m = el("p", "note note--warn", failed.join(" · ")); UI.insertBefore(m, UI.firstChild.nextSibling); } });
+          return;
+        }
+        var i = list[k], check = i.check && /^[a-z]+:/.test(i.check) ? i.check : "webhook:";
+        api("/api/me/services", { method: "POST", body: JSON.stringify({ name: i.name, what: i.what && i.what !== "no description" ? i.what : "", group: i.group || "Public", place: i.where || "via tunnel", check: check, interval: 60 }) })
+          .then(function (r) { if (r.s !== 200) { left.push(i); failed.push("«" + i.name + "»: " + (r.j.error || "HTTP " + r.s)); } next(k + 1); })
+          .catch(function () { left.push(i); failed.push("«" + i.name + "»: server not reachable"); next(k + 1); });
+      })(0);
+    });
+    var drop = el("button", "btn btn--quiet", "Discard them"); drop.type = "button";
+    drop.addEventListener("click", function () { if (!confirm("Discard the " + list.length + " entries from the earlier page? They exist nowhere else.")) return; try { localStorage.removeItem(K_LEGACY); } catch (e) {} paint(); });
+    act.appendChild(mv); act.appendChild(drop); box.appendChild(act);
+    return box;
+  }
   function paintSnapshot(signedIn) {
-    var snap = window.__services; if (!snap || !tk || !(tk.standing === "owner" || tk.standing === "reviewer")) return;
+    var snap = snapFor(); if (!snap) return;
     var sec = el("div", "svc__snap");
     sec.appendChild(el("span", "eyebrow", "The Hub's own machine"));
-    sec.appendChild(el("p", "fine", snap.host + " · read " + snap.read + " · " + snap.services.length + " services · from tools/services-snapshot.sh, team only"));
+    sec.appendChild(el("p", "fine", snap.host + " · read " + snap.read + " · " + snap.services.length + " services · read from the machine by tools/services-snapshot.sh every ten minutes, team only; not entries of your account"));
     var tbl = el("table", "tbl"); tbl.innerHTML = "<thead><tr><th></th><th>service</th><th>what it serves</th><th>where</th><th class='num'>state</th></tr></thead>";
     var tb = el("tbody"), group = null;
     snap.services.forEach(function (s) {

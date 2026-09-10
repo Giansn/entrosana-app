@@ -497,3 +497,13 @@ je Stunde, 600 Lebenszeichen je Adresse und Stunde. Zielschutz: private Adressen
 zum Sprungbrett. Adressen bleiben auf dem Server; der Export enthält die eigenen Dienste, die Löschung nimmt sie mit.
 Der Schnappschuss der eigenen Maschine (`tools/services-snapshot.sh`) steht nur noch dem Team unter der Liste.
 
+**Was schon da ist, zählt (2026-09-10).** Die Seite unterscheidet drei Bestände: die eigene Liste des
+Kontos (Tabelle `services`), den Schnappschuss der Maschine (`assets/services.js` aus
+`tools/services-snapshot.sh`, alle zehn Minuten, nur Team) und Einträge aus der Fassung bis
+2026-09-10, die allein im Browser lagen (`entrosana-services:v1`). Der Leerzustand sagt bei leerer
+eigener Liste, wie viele Dienste die Maschine gerade fährt, statt «Your list is empty» über eine
+volle Tabelle zu schreiben; die Leiste zählt eigene und Maschine zusammen. Alte Browser-Einträge
+erscheinen als Kasten mit «Move them to my account» (je Eintrag ein `POST /api/me/services`, die
+gegebene Prüfung `url:`/`tcp:`/… bleibt, ohne Prüfung wird es ein Lebenszeichen) oder «Discard».
+Abgemeldet weist eine Zeile darauf hin, dass solche Einträge im Browser liegen.
+
