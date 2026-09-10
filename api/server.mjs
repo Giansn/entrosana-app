@@ -17,7 +17,7 @@ import { append as auditAppend, verify as auditVerify } from "./audit.mjs";
 import { can, rolesOf } from "./policy.mjs";
 import { validate as validateContribution, actionFor, verifyTrail, publishChecks } from "./contributions.mjs";
 import { appendEntry, removeEntry, updateEntry as updateCatalogueEntry, entryFor, readCatalogue } from "./publish.mjs";
-import { exportActor } from "./maintenance.mjs";
+import { exportActor, dormantSweep } from "./maintenance.mjs";
 import { standingOf, currentApplication, openApplication, listApplications, decideApplication } from "./applications.mjs";
 import { LANG_CODES, MAX_LANGS } from "./languages.mjs";
 import { listJournal, addEntry, updateEntry, deleteEntry, publicProfile, searchPublic } from "./journal.mjs";
@@ -643,6 +643,17 @@ async function svcTick() {
   } catch (e) { console.error("service check failed:", e.message); }
 }
 setTimeout(() => { svcTick(); setInterval(svcTick, 60e3); }, 20e3);
+// Ruhende Konten (2026-09-10): alle 6 Stunden nachsehen; Hinweis per Mail, Löschung wie die Selbstlöschung.
+function dormantTick() {
+  try {
+    const r = dormantSweep(db, new Date(), (a) => limited("mail:global", MAIL_CAP) ? Promise.resolve({ ok: false }) : mail(a.email, "entrosana Hub: your account has been quiet for two years",
+      `Hello${a.name ? " " + a.name : ""},\n\nyour entrosana Hub account has not signed in for 24 months. If you want to keep it, sign in once within the next three months: ${PUBLIC}/me\n\n` +
+      `Without a sign-in the account is erased after that, the way a self-erasure works: address, name and profile go, published modules stay under your name only where you said so.\n\nentrosana`),
+      (a) => eraseActor(a, new Set(), new Set(), "dormant account erased after 27 months without a sign-in"));
+    if (r.noticed || r.erased) console.log("dormant sweep:", JSON.stringify(r));
+  } catch (e) { console.error("dormant sweep failed:", e.message); }
+}
+setTimeout(() => { dormantTick(); setInterval(dormantTick, 6 * 3600e3); }, 90e3);
 
 function lift(fn) { try { return fn(); } catch (e) { if (e && e.status) throw new HttpError(e.status, e.message); throw e; } }
 
@@ -869,15 +880,9 @@ routes.set("GET /api/me/export", (ctx) => {
 // es so gewählt hat (attribution keep, oder im Aufruf ausdrücklich keep: [ids]);
 // sonst gehen sie aus dem Katalog. Alles andere wird entfernt, die Kettenzeilen
 // bleiben ohne Personendaten stehen.
-routes.set("DELETE /api/me", async (ctx) => {
-  if (!ctx.actor) throw new HttpError(401, "no actor");
-  if (ctx.actor.kind !== "email") throw new HttpError(409, "only e-mail actors can erase themselves");
-  if (tokenAgeMs(ctx) > FRESH_MS) { send(ctx.res, 409, { error: "fresh sign-in required: open a new link from your mail on this device, then erase", fresh_required: true }); return; }
-  if (ctx.actor.roles.has("owner")) throw new HttpError(409, "the owner account cannot erase itself; hand ownership over first");   // 2026-09-10: alle anderen Konten, auch Prüfende, löschen sich selbst
-  const body = await readJson(ctx.req).catch(() => ({}));
-  const keepIds = new Set(Array.isArray(body.keep) ? body.keep.map(Number) : []);
-  const removeIds = new Set(Array.isArray(body.remove) ? body.remove.map(Number) : []);
-  const mine = db.prepare("SELECT * FROM contributions WHERE actor_id = ?").all(ctx.actor.id);
+// Löschung eines Kontos (2026-09-10 als Funktion): Selbstlöschung und ruhende Konten gehen denselben Weg.
+function eraseActor(actor, keepIds = new Set(), removeIds = new Set(), why = "personal data erased") {
+  const mine = db.prepare("SELECT * FROM contributions WHERE actor_id = ?").all(actor.id);
   let kept = 0, unpublished = 0, deleted = 0;
   db.exec("BEGIN IMMEDIATE");
   try {
@@ -887,21 +892,32 @@ routes.set("DELETE /api/me", async (ctx) => {
       if (c.status === "published" && c.slug) { try { removeEntry("modules", c.slug); unpublished++; } catch {} }
       db.prepare("DELETE FROM contributions WHERE id = ?").run(c.id); deleted++;
     }
-    db.prepare("DELETE FROM actor_tokens WHERE actor_id = ?").run(ctx.actor.id);
-    db.prepare("DELETE FROM verifications WHERE email = ?").run(ctx.actor.email);
-    db.prepare("DELETE FROM roles WHERE actor_id = ?").run(ctx.actor.id);
-    db.prepare("DELETE FROM applications WHERE actor_id = ?").run(ctx.actor.id);          // Bewerbungstexte gehen mit
-    db.prepare("DELETE FROM journal WHERE actor_id = ?").run(ctx.actor.id);                // Journal geht mit
-    if (ctx.actor.email) db.prepare("DELETE FROM requests WHERE email = ?").run(ctx.actor.email);   // Anfragen unter derselben Adresse
-    db.prepare("DELETE FROM invites WHERE inviter_id = ?").run(ctx.actor.id);              // eigene Einladungen gehen mit
-    db.prepare("DELETE FROM services WHERE actor_id = ?").run(ctx.actor.id);              // eigene Dienste gehen mit
-    if (ctx.actor.email) db.prepare("UPDATE invites SET email = '(erased)' WHERE email = ?").run(ctx.actor.email);   // erhaltene: Adresse weg
+    db.prepare("DELETE FROM actor_tokens WHERE actor_id = ?").run(actor.id);
+    db.prepare("DELETE FROM verifications WHERE email = ?").run(actor.email);
+    db.prepare("DELETE FROM roles WHERE actor_id = ?").run(actor.id);
+    db.prepare("DELETE FROM applications WHERE actor_id = ?").run(actor.id);          // Bewerbungstexte gehen mit
+    db.prepare("DELETE FROM journal WHERE actor_id = ?").run(actor.id);                // Journal geht mit
+    if (actor.email) db.prepare("DELETE FROM requests WHERE email = ?").run(actor.email);   // Anfragen unter derselben Adresse
+    db.prepare("DELETE FROM invites WHERE inviter_id = ?").run(actor.id);              // eigene Einladungen gehen mit
+    db.prepare("DELETE FROM services WHERE actor_id = ?").run(actor.id);              // eigene Dienste gehen mit
+    if (actor.email) db.prepare("UPDATE invites SET email = '(erased)' WHERE email = ?").run(actor.email);   // erhaltene: Adresse weg
     // Name bleibt nur, wenn ein Modul unter ihm stehen bleibt; die Adresse geht immer.
-    db.prepare("UPDATE actors SET email = NULL, name = ?, org_id = NULL, org = NULL, role = NULL, about = NULL, website = NULL, langs = NULL, avatar = NULL, avatar_type = NULL, avatar_updated = NULL WHERE id = ?").run(kept ? ctx.actor.name : "(erased)", ctx.actor.id);
+    db.prepare("UPDATE actors SET email = NULL, name = ?, org_id = NULL, org = NULL, role = NULL, about = NULL, website = NULL, langs = NULL, avatar = NULL, avatar_type = NULL, avatar_updated = NULL WHERE id = ?").run(kept ? actor.name : "(erased)", actor.id);
     db.exec("COMMIT");
   } catch (e) { db.exec("ROLLBACK"); throw e; }
-  auditAppend(db, { kind: "erase", actor_id: ctx.actor.id, resource: "actor:" + ctx.actor.id, text: `personal data erased; ${kept} module(s) kept under the name, ${unpublished} unpublished, ${deleted} contribution(s) deleted` });
-  send(ctx.res, 200, { ok: true, kept, unpublished, deleted });
+  auditAppend(db, { kind: "erase", actor_id: actor.id, resource: "actor:" + actor.id, text: `${why}; ${kept} module(s) kept under the name, ${unpublished} unpublished, ${deleted} contribution(s) deleted` });
+  return { kept, unpublished, deleted };
+}
+routes.set("DELETE /api/me", async (ctx) => {
+  if (!ctx.actor) throw new HttpError(401, "no actor");
+  if (ctx.actor.kind !== "email") throw new HttpError(409, "only e-mail actors can erase themselves");
+  if (tokenAgeMs(ctx) > FRESH_MS) { send(ctx.res, 409, { error: "fresh sign-in required: open a new link from your mail on this device, then erase", fresh_required: true }); return; }
+  if (ctx.actor.roles.has("owner")) throw new HttpError(409, "the owner account cannot erase itself; hand ownership over first");   // 2026-09-10: alle anderen Konten, auch Prüfende, löschen sich selbst
+  const body = await readJson(ctx.req).catch(() => ({}));
+  const keepIds = new Set(Array.isArray(body.keep) ? body.keep.map(Number) : []);
+  const removeIds = new Set(Array.isArray(body.remove) ? body.remove.map(Number) : []);
+  const r = eraseActor(ctx.actor, keepIds, removeIds);
+  send(ctx.res, 200, { ok: true, kept: r.kept, unpublished: r.unpublished, deleted: r.deleted });
 });
 
 const METHODS = new Set(["GET", "HEAD", "POST", "PATCH", "DELETE"]);

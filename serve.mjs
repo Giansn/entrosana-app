@@ -50,6 +50,7 @@ const ROUTES = new Map([
   // Stand eines Beitrags und Einreichen (Phase 4). Nicht in der Sitemap.
   ["/contribute/status",               { file: "status.html", type: HTML }],
   ["/me",                              { file: "me.html", type: HTML }],
+  ["/guidelines",                      { file: "guidelines.html", type: HTML }],   // Regeln in einer Seite (2026-09-10)
   ["/review",                          { file: "review.html", type: HTML }],   // Team: Schlange, Entscheide, Bewerbungen
   ["/me/modules",                      { file: "module.html", type: HTML }],   // Beitragende: eigene Module bearbeiten
   ["/request",                         { file: "request.html", type: HTML }],

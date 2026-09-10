@@ -48,13 +48,13 @@ irreversiblen Handlungen.
 | Vier Augen bei Veröffentlichung | Praxis für Redaktionen | `FOUR_EYES=strict` vorhanden, aus; Annahme und Veröffentlichung in einem Schritt auf Wunsch des Eigentümers | bewusst |
 | Export und Löschung | Art. 25 und 32 DSG, Art. 15/17/20 DSGVO | Selbstbedienung, sofort; Kette behält Zeilen ohne Namen; Module wahlweise unter dem Namen | erfüllt |
 | Löschung des Eigentümers | — | alle Konten löschen sich selbst, auch Prüfende; nur der Eigentümer nicht (2026-09-10) | bewusst |
-| Fristen | benennen und einhalten | unbestätigt 7 d, Marken 30 d, Anfragen 180 d, Einladungen 180 d, Sicherungen ohne Frist | teils |
+| Fristen | benennen und einhalten | unbestätigt 7 d, Marken 30 d, Anfragen 180 d, Einladungen 180 d, Sicherungen ohne Frist (Vorschlag unter 3, Entscheid offen); ruhende Konten 24 + 3 Monate seit 2026-09-10 | teils |
 | Minderjährige | Urteilsfähigkeit ab etwa 13; DSGVO 16 | Häkchen bei der Registrierung «13 oder älter, oder Lehrperson/Elternteil für jüngere Lernende», vom Dienst verlangt, nichts gespeichert; Sätze auf /contribute (2026-09-10) | erfüllt |
-| Schulen | Auftragsbearbeitung nur bei Schülerdaten | keine Schülerkonten vorgesehen, kein Profiling, Server in der Schweiz; kein Hinweis «Für Schulen» | teils |
+| Schulen | Auftragsbearbeitung nur bei Schülerdaten | keine Schülerkonten vorgesehen, kein Profiling, Server in der Schweiz; Hinweis «Für Schulen» auf /contribute, /guidelines und in der Datenschutzerklärung (EN und DE) seit 2026-09-10; Bearbeitungsverzeichnis auf Anfrage an info@ | erfüllt |
 | Barrierefreiheit der Anmeldung | Labels, Tastatur, Autofill | Labels, Tastatur, `autocomplete="email"` und `inputmode="email"` am Anmeldefeld | erfüllt |
-| Verhaltensregeln | eine Seite, die man verlinken kann | drei Sätze unter «The rules, short» auf /contribute | teils |
+| Verhaltensregeln | eine Seite, die man verlinken kann | Seite /guidelines seit 2026-09-10, verlinkt von /contribute, der Registrierung und dem Konsolen-Editor | erfüllt |
 
-Stand 2026-09-10 nach den Empfehlungen 1 bis 5: siebzehn Punkte erfüllt oder bewusst so, drei teils (Fristen der Sicherungen, Hinweis für Schulen, Seite mit den Regeln), keiner offen.
+Stand 2026-09-10 nach den Empfehlungen 1 bis 10: neunzehn Punkte erfüllt oder bewusst so, einer teils (Frist der Sicherungen, Entscheid des Eigentümers), keiner offen.
 
 ## 3. Empfehlungen, gereiht
 
@@ -65,12 +65,12 @@ Stand 2026-09-10 nach den Empfehlungen 1 bis 5: siebzehn Punkte erfüllt oder be
 4. Vor der Löschung einen frischen Link verlangen statt nur des Dialogs; gleiches vor dem Wechsel der Namensnennung.
 5. Bei der Registrierung ein Satz mit Häkchen: «Ich bin 13 oder älter; jüngere Lernende bringt eine Lehrperson oder ein Elternteil ein.»
 
-**Dann (mittel).**
-6. Seite /guidelines mit den Regeln in einem Text (Entwurf unter 4), verlinkt von /contribute, /me und der Registrierung.
-7. Absatz «Für Schulen» auf /contribute oder in der Datenschutzerklärung: keine Schülerkonten, keine Schülerdaten, Bearbeitungsverzeichnis auf Anfrage.
-8. Ruhende Konten: nach 24 Monaten ohne Anmeldung ein Hinweis, nach weiteren 3 Monaten Löschung wie die Selbstlöschung; steht dann in der Erklärung.
-9. Frist für Sicherungen festlegen (offener Entscheid seit 2026-09-09).
-10. Zweiter Eigentümer oder Wiederherstellungsweg für das Eigentümerkonto, falls das Postfach verloren geht.
+**Dann (mittel) — 6 bis 8 und 10 umgesetzt am 2026-09-10, 9 als Vorschlag vorgelegt.**
+6. Seite /guidelines mit den Regeln in einem Text (Entwurf unter 4), verlinkt von /contribute und der Registrierung; in der Konsole :8396 unter /page/guidelines.html editierbar.
+7. Absatz «Für Schulen» auf /contribute, auf /guidelines und in der Datenschutzerklärung (Abschnitt 11, EN und DE): keine Schülerkonten, keine Schülerdaten, Bearbeitungsverzeichnis auf Anfrage.
+8. Ruhende Konten: nach 24 Monaten ohne Anmeldung ein Hinweis, nach weiteren 3 Monaten Löschung wie die Selbstlöschung (`dormantSweep` in `api/maintenance.mjs`, Spalte `dormant_notice`, alle sechs Stunden im Dienst, Kette `dormant.notice` und `dormant.erase`; Team-Konten ausgenommen); steht in Abschnitt 3 der Erklärung.
+9. Frist für Sicherungen festlegen (offener Entscheid seit 2026-09-09). Befund: `backup.sh` behält je Ort die 14 jüngsten Nachtkopien (Server, zweite Platte, Nextcloud), nur die Kopie bei R2 wird nie ausgedünnt; die Erklärung sagt «ohne feste Frist». Vorschlag: 14 Tage täglich an allen Orten, dazu je Monat eine Kopie ein Jahr lang auf der zweiten Platte und bei R2; dann Abschnitt 8 der Erklärung anpassen.
+10. Zweiter Eigentümer oder Wiederherstellungsweg für das Eigentümerkonto, falls das Postfach verloren geht: dokumentiert in `docs/restore.md`, Abschnitt 6 (zweiter Eigentümer per `grant`, Anmeldeverweis direkt aus der Datenbank, Marke per `admin.mjs token`, Lage der Schlüssel ausserhalb des Baums).
 
 **Später.**
 11. Passkeys als zweiter, phishing-resistenter Weg für Team-Konten (NIST für privilegierte Rollen).

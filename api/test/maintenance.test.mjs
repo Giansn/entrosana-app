@@ -49,3 +49,29 @@ test("export: nur eigenes, mit kettenzeilen zu den eigenen beiträgen", () => {
   assert.equal(ex.audit.length, 1); assert.equal(ex.actor.email, "me@x.ch");
   db.close();
 });
+
+test("ruhende konten: hinweis nach 24 monaten, loeschung nach 27, team ausgenommen, rueckkehr loescht den hinweis", async () => {
+  const { dormantSweep } = await import("../maintenance.mjs");
+  const { db } = open(":memory:");
+  const ins = db.prepare("INSERT INTO actors(kind,email,name,created) VALUES ('email',?,?,?)");
+  const T0 = new Date("2024-01-01T00:00:00.000Z");
+  const quiet = ins.run("quiet@x.ch", "Q", T0.toISOString()).lastInsertRowid;          // seit 2024 nichts
+  const active = ins.run("active@x.ch", "A", T0.toISOString()).lastInsertRowid;        // Marke jüngst benutzt
+  const team = ins.run("team@x.ch", "T", T0.toISOString()).lastInsertRowid;            // Prüfende: ausgenommen
+  db.prepare("INSERT INTO roles(actor_id, role, granted) VALUES (?, 'reviewer', ?)").run(team, T0.toISOString());
+  db.prepare("INSERT INTO actor_tokens(actor_id, token_hash, created, expires, last_used) VALUES (?,?,?,?,?)").run(active, "ta", T0.toISOString(), "2027-01-01T00:00:00.000Z", "2026-08-01T00:00:00.000Z");
+  const mails = [], erased = [];
+  const at = (iso) => dormantSweep(db, new Date(iso), a => { mails.push(a.email); return Promise.resolve({ ok: true }); }, a => { erased.push(a.email); db.prepare("UPDATE actors SET email = NULL WHERE id = ?").run(a.id); });   // wie eraseActor: Adresse weg
+  assert.deepEqual(at("2026-01-01T00:00:00.000Z"), { noticed: 1, erased: 0, cleared: 0 });   // 24 Monate: Hinweis an quiet
+  assert.deepEqual(mails, ["quiet@x.ch"]);
+  assert.deepEqual(at("2026-02-01T00:00:00.000Z"), { noticed: 0, erased: 0, cleared: 0 });   // Frist läuft
+  assert.deepEqual(at("2026-04-10T00:00:00.000Z"), { noticed: 0, erased: 1, cleared: 0 });   // 92 Tage nach dem Hinweis: Löschung
+  assert.deepEqual(erased, ["quiet@x.ch"]);
+  // Rückkehr: ein anderes stilles Konto meldet sich nach dem Hinweis wieder
+  const back = ins.run("back@x.ch", "B", T0.toISOString()).lastInsertRowid;
+  assert.equal(at("2026-05-01T00:00:00.000Z").noticed, 1);
+  db.prepare("INSERT INTO actor_tokens(actor_id, token_hash, created, expires, last_used) VALUES (?,?,?,?,?)").run(back, "tb", "2026-05-02T00:00:00.000Z", "2027-01-01T00:00:00.000Z", "2026-05-02T00:00:00.000Z");
+  assert.deepEqual(at("2026-06-01T00:00:00.000Z"), { noticed: 0, erased: 0, cleared: 1 });
+  assert.equal(db.prepare("SELECT dormant_notice FROM actors WHERE id = ?").get(back).dormant_notice, null);
+  assert.equal(db.prepare("SELECT COUNT(*) n FROM audit WHERE kind LIKE 'dormant.%'").get().n, 3);
+});

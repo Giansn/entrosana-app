@@ -59,3 +59,35 @@ export function exportActor(db, actor) {
   return { exported: new Date().toISOString(), actor: { id: actor.id, kind: actor.kind, email: actor.email, name: actor.name, created: actor.created, org: actor.org || null, role: actor.role || null, about: actor.about || null, website: actor.website || null, langs: actor.langs || [], roles: [...(actor.roles || [])] },
            contributions, applications, requests, journal, invites, services, audit, tokens };
 }
+
+// Ruhende Konten (2026-09-10): letzte Regung = jüngste Marke (last_used oder created) oder das Konto selbst.
+// Nach NOTICE_MS ohne Regung geht ein Hinweis, nach weiteren GRACE_MS ohne Regung wird gelöscht.
+// Team-Konten (owner, reviewer) und Dienstkonten sind ausgenommen. mailFn(actor) und eraseFn(actor)
+// kommen vom Dienst; hier wird nur entschieden und gebucht.
+export const DORMANT_NOTICE_MS = 730 * 86400e3, DORMANT_GRACE_MS = 92 * 86400e3;
+export function lastActivity(db, actorId) {
+  const r = db.prepare("SELECT MAX(COALESCE(last_used, created)) t FROM actor_tokens WHERE actor_id = ?").get(actorId);
+  const a = db.prepare("SELECT created FROM actors WHERE id = ?").get(actorId);
+  return Math.max(r && r.t ? Date.parse(r.t) : 0, a && a.created ? Date.parse(a.created) : 0);
+}
+export function dormantSweep(db, now = new Date(), mailFn = () => Promise.resolve({ ok: true }), eraseFn = () => ({})) {
+  const out = { noticed: 0, erased: 0, cleared: 0 };
+  const rows = db.prepare(`SELECT a.* FROM actors a WHERE a.kind = 'email' AND a.email IS NOT NULL
+    AND NOT EXISTS (SELECT 1 FROM roles r WHERE r.actor_id = a.id AND r.role IN ('owner', 'reviewer'))`).all();
+  for (const a of rows) {
+    const idle = now.getTime() - lastActivity(db, a.id);
+    if (a.dormant_notice && idle < DORMANT_NOTICE_MS) {   // hat sich nach dem Hinweis gemeldet
+      db.prepare("UPDATE actors SET dormant_notice = NULL WHERE id = ?").run(a.id); out.cleared++; continue;
+    }
+    if (!a.dormant_notice && idle >= DORMANT_NOTICE_MS) {
+      db.prepare("UPDATE actors SET dormant_notice = ? WHERE id = ?").run(now.toISOString(), a.id);
+      append(db, { kind: "dormant.notice", actor_id: a.id, resource: "actor:" + a.id, text: "no sign-in for 24 months; notice sent, 3 months to sign in" });
+      Promise.resolve(mailFn(a)).catch(() => {}); out.noticed++; continue;
+    }
+    if (a.dormant_notice && now.getTime() - Date.parse(a.dormant_notice) >= DORMANT_GRACE_MS && idle >= DORMANT_NOTICE_MS) {
+      eraseFn(a); append(db, { kind: "dormant.erase", actor_id: a.id, resource: "actor:" + a.id, text: "no sign-in for 27 months; erased like a self-erasure" }); out.erased++;
+    }
+  }
+  return out;
+}
+

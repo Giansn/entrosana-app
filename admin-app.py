@@ -46,6 +46,7 @@ PAGES = [
     ("projects.html", "Projects", "/projects"),
     ("records.html", "Record trail", "/records"),
     ("services.html", "Running services", "/services"),
+    ("guidelines.html", "Guidelines", "/guidelines"),
 ]
 
 if not TOKEN_FILE.exists():

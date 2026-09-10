@@ -148,3 +148,57 @@ P=$(mktemp -d) && cp ~/entrosana-app/api/db/hub.backup.sqlite "$P/hub.sqlite"
 DB_PATH="$P/hub.sqlite" node --no-warnings ~/entrosana-app/api/admin.mjs verify-chain
 rm -rf "$P"
 ```
+
+## 6. Das Eigentümerkonto
+
+Rollen liegen nur auf dem Server: in der Tabelle `roles`, vergeben und
+entzogen mit `api/admin.mjs`, jede Vergabe als Zeile in der Kette. Kein Weg
+über das Netz vergibt eine Rolle; wer die Maschine hat, hat die Rollen. Das
+Eigentümerkonto (`gianson@pm.me`, Akteur 2) kann sich nicht selbst löschen
+und wird nicht als ruhend behandelt. Drei Lagen, von leicht nach schwer:
+
+**Zweiter Eigentümer.** Ein zweites, bestätigtes Konto (eigene Adresse, ein
+Anmeldeverweis geöffnet) bekommt die Rolle auf der Maschine; sie gilt sofort,
+ohne Neustart. Zurück geht es mit `revoke`.
+
+```bash
+cd ~/entrosana-app && node --no-warnings api/admin.mjs grant zweite@adresse.ch owner --by gianson@pm.me
+node --no-warnings api/admin.mjs list          # Konten und Rollen nachsehen
+node --no-warnings api/admin.mjs revoke zweite@adresse.ch owner
+```
+
+**Postfach verloren, Maschine da.** Der Anmeldeverweis kommt per Mail; ohne
+Postfach entsteht er direkt in der Datenbank. Der Dienst erwartet den
+SHA-256 der Marke in `verifications`, der Verweis lautet
+`https://entrosana.app/me?verify=<Marke>` und gilt hier eine Stunde. Danach
+ist das Gerät angemeldet wie nach einer Mail, und die Adresse kann unter
+/me gewechselt werden. Der Vorgang steht als `verify` in der Kette, ohne
+Hinweis auf den Weg; deshalb den Grund gleich als eigene Zeile anhängen.
+
+```bash
+cd ~/entrosana-app && node --no-warnings --input-type=module -e '
+import { open } from "./api/db.mjs"; import { sha, newToken } from "./api/auth.mjs"; import { append } from "./api/audit.mjs";
+const { db } = open(process.env.HOME + "/entrosana-app/api/db/hub.sqlite");
+const tok = newToken(), now = new Date();
+db.prepare("INSERT INTO verifications(email, token_hash, created, expires) VALUES (?,?,?,?)").run("gianson@pm.me", sha(tok), now.toISOString(), new Date(now.getTime() + 3600e3).toISOString());
+append(db, { kind: "verify.cli", actor_id: null, resource: "actor:2", text: "sign-in link created on the machine for the owner; mailbox unavailable" });
+console.log("https://entrosana.app/me?verify=" + tok);'
+```
+
+Für Aufrufe an die Schnittstelle ohne Browser gibt `node api/admin.mjs token
+gianson@pm.me 7` eine Marke für sieben Tage aus (Kette: `token.cli`); sie
+gehört in den Kopf `Authorization: Bearer …` und in keine Datei, die im
+Baum liegt.
+
+**Maschine weg.** Erst Abschnitt 4 (Rechner ersetzen, Sicherung
+zurückspielen), dann dieser Abschnitt auf der neuen Maschine: die Rollen
+kommen mit der Datenbank zurück. Zwei Schlüssel liegen absichtlich in keiner
+Sicherung, weil sie sich neu erzeugen lassen: der Dienstschlüssel
+`~/.config/entrosana-api.token` (Rechte 600) entsteht beim ersten Start des
+Dienstes von selbst, wenn er fehlt; SYGNIF bekommt mit `node api/admin.mjs
+token sygnif@entrosana.com 365` einen neuen Zugang, der in
+`~/.config/entrosana-sygnif.token` (JSON) abgelegt wird.
+
+Nachweis 2026-09-10: `grant`/`revoke` und die Marke aus `verifications`
+liefen im Gate-Konto (`gate-acct@example.org`) genau so durch, siehe
+`docs/leitlinien-konten.md`.

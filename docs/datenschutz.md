@@ -119,7 +119,7 @@ applications and proposals. Unconfirmed addresses are deleted after 7 days.
 Sign-in links expire after 20 minutes, confirmation links for proposals after one hour. When a device signs in to an existing account, the account's address gets a mail with time and coarse origin; under «Devices» on /me every session can be ended, singly or all at once. Erasing your data or changing the attribution of a module needs a sign-in link younger than 15 minutes. Accounts are for people of 13 and older; younger learners take part through a teacher or a parent, who holds the account. Under /me you can change your profile,
 download everything we hold (JSON), sign out of a device, and erase your account.
 Erasing removes address, profile and applications; published modules remain only
-where you chose that they should.
+where you chose that they should. An account with no sign-in for 24 months gets a notice by mail; if nobody signs in within the three months after it, the account is erased the same way, and published modules remain under your name only where you chose that they should.
 
 Everyone who registers is a collector. Contributor standing is granted by our
 team after an application (a text you write, kept with your account; decided
@@ -220,6 +220,8 @@ and we ask teachers never to send us the personal data of pupils; a module repor
 needs the group, not the names. If you believe we hold a child's data, write to
 us and we delete it.
 
+Schools: the Hub holds no pupil accounts and no pupil data. Teachers and schools register as adults; a module report names the group, never the child. Our processing register (the section at the end of this statement) is available on request at info@entrosana.com.
+
 ### 12. Changes
 
 We change this statement when the service changes and note the date at the top.
@@ -291,7 +293,7 @@ Zweck: zu wissen, mit wem wir sprechen; unter Ihrem Namen zu veröffentlichen;
 7 Tagen gelöscht, Anmeldeverweise verfallen nach 20 Minuten, Bestätigungsverweise zu Vorschlägen nach einer Stunde. Meldet sich ein Gerät bei einem bestehenden Konto an, erhält die Adresse des Kontos eine Mail mit Zeit und grober Herkunft; unter «Devices» auf /me lässt sich jede Sitzung einzeln oder auf einmal beenden. Das Löschen der eigenen Daten und der Wechsel der Namensnennung eines Moduls verlangen einen Anmeldeverweis, der jünger als 15 Minuten ist. Konten sind für Personen ab 13 Jahren; jüngere Lernende nehmen über eine Lehrperson oder ein Elternteil teil, die das Konto führen. Unter /me ändern
 Sie Ihr Profil, laden alles herunter, was wir halten (JSON), melden ein Gerät ab
 und löschen Ihr Konto. Das Löschen entfernt Adresse, Profil und Bewerbungen;
-veröffentlichte Module bleiben nur, wo Sie es so gewählt haben.
+veröffentlichte Module bleiben nur, wo Sie es so gewählt haben. Ein Konto ohne Anmeldung während 24 Monaten erhält einen Hinweis per Mail; meldet sich in den drei Monaten danach niemand an, wird das Konto auf dieselbe Weise gelöscht, und veröffentlichte Module bleiben nur unter Ihrem Namen, wo Sie es so gewählt haben.
 
 Wer sich registriert, ist Sammler. Den Stand als Beitragende vergibt unser Team
 nach einer Bewerbung (ein Text von Ihnen, der beim Konto bleibt; entschiedene
@@ -394,6 +396,8 @@ von Kindern und bitten Lehrpersonen, uns nie Personendaten von Schülerinnen und
 Schülern zu schicken; ein Modulbericht braucht die Gruppe, nicht die Namen.
 Vermuten Sie, dass wir Daten eines Kindes halten, schreiben Sie uns, und wir
 löschen sie.
+
+Schulen: Der Hub führt keine Schülerkonten und keine Schülerdaten. Lehrpersonen und Schulen registrieren sich als Erwachsene; ein Modulbericht nennt die Gruppe, nie das Kind. Unser Bearbeitungsverzeichnis (Abschnitt am Ende dieser Erklärung) geben wir auf Anfrage an info@entrosana.com heraus.
 
 ### 12. Änderungen
 
