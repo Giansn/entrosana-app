@@ -20,7 +20,7 @@ import { appendEntry, removeEntry, updateEntry as updateCatalogueEntry, entryFor
 import { exportActor, dormantSweep } from "./maintenance.mjs";
 import { standingOf, currentApplication, openApplication, listApplications, decideApplication } from "./applications.mjs";
 import { LANG_CODES, MAX_LANGS } from "./languages.mjs";
-import { listJournal, addEntry, updateEntry, deleteEntry, publicProfile, searchPublic } from "./journal.mjs";
+import { listJournal, addEntry, updateEntry, deleteEntry, publicProfile, publicProfileBySlug, slugOf, searchPublic } from "./journal.mjs";
 import { KINDS as SVC_KINDS, GROUPS as SVC_GROUPS, PLACES as SVC_PLACES, INTERVALS as SVC_INTERVALS, MAX_PER_ACTOR as SVC_MAX, parseCheck, guardTarget, runCheck, heartbeatState } from "./services.mjs";
 import { serviceToken, ensureServiceActor, resolveActor, issueToken, withRoles, newToken, sha } from "./auth.mjs";
 
@@ -122,8 +122,8 @@ routes.set("GET /api/healthz", (ctx) => {
 routes.set("GET /api/me", (ctx) => {
   if (!ctx.actor) return send(ctx.res, 401, { error: "no actor" });
   const a = ctx.actor, app = a.kind === "email" ? currentApplication(db, a.id) : null;
-  send(ctx.res, 200, { id: a.id, kind: a.kind, email: a.email, name: a.name, created: a.created, roles: [...a.roles], standing: standingOf(a.roles),
-    profile: { org: a.org || "", role: a.role || "", about: a.about || "", website: a.website || "", langs: a.langs || [] },
+  send(ctx.res, 200, { id: a.id, kind: a.kind, email: a.email, name: a.name, created: a.created, roles: [...a.roles], standing: standingOf(a.roles), slug: slugOf(db, a),
+    profile: { org: a.org || "", role: a.role || "", about: a.about || "", bio: a.bio || "", place: a.place || "", contact: a.contact_email || "", website: a.website || "", langs: a.langs || [] },
     avatar: a.avatar ? (a.avatar_updated || "1") : null,
     application: app ? { id: app.id, created: app.created, decided: app.decided, outcome: app.outcome, reason: app.reason } : null });
 });
@@ -681,13 +681,18 @@ routes.set("PATCH /api/me", async (ctx) => {
   if (body.org !== undefined) { sets.push("org = ?"); vals.push(str(body.org, 200) || null); changed.push("org"); }
   if (body.role !== undefined) { const role = str(body.role, 40); if (role && !ROLES.includes(role)) throw new HttpError(400, "role unknown"); sets.push("role = ?"); vals.push(role || null); changed.push("role"); }
   if (body.about !== undefined) { sets.push("about = ?"); vals.push(str(body.about, 280) || null); changed.push("about"); }
+  // Die Biographie: der Absatz für die öffentliche Seite, 4000 Zeichen wie bei den Modulen.
+  if (body.bio !== undefined) { sets.push("bio = ?"); vals.push(str(body.bio, 4000) || null); changed.push("bio"); }
+  if (body.place !== undefined) { sets.push("place = ?"); vals.push(str(body.place, 120) || null); changed.push("place"); }
+  // Öffentliche Kontaktadresse: frei wählbar, darf leer sein, muss aber eine Adresse sein. Die Anmeldeadresse bleibt davon unberührt.
+  if (body.contact !== undefined) { const c = str(body.contact, 254); if (c && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c)) throw new HttpError(400, "contact must be an e-mail address"); sets.push("contact_email = ?"); vals.push(c || null); changed.push("contact"); }
   if (body.website !== undefined) { const w = str(body.website, 200); if (w && !/^https:\/\/[^\s]+$/.test(w)) throw new HttpError(400, "website must be an https link"); sets.push("website = ?"); vals.push(w || null); changed.push("website"); }
   if (body.langs !== undefined) { const l = [...new Set((Array.isArray(body.langs) ? body.langs : []).map(x => String(x).toLowerCase()).filter(x => LANG_CODES.has(x)))].slice(0, MAX_LANGS); sets.push("langs = ?"); vals.push(l.length ? l.join(",") : null); changed.push("langs"); }
   if (!sets.length) throw new HttpError(400, "nothing to change");
   db.prepare(`UPDATE actors SET ${sets.join(", ")} WHERE id = ?`).run(...vals, ctx.actor.id);
   auditAppend(db, { kind: "profile.update", actor_id: ctx.actor.id, resource: "actor:" + ctx.actor.id, text: "profile fields set: " + changed.join(", ") });
   const a = withRoles(db, db.prepare("SELECT * FROM actors WHERE id = ?").get(ctx.actor.id));
-  send(ctx.res, 200, { ok: true, name: a.name, profile: { org: a.org || "", role: a.role || "", about: a.about || "", website: a.website || "", langs: a.langs || [] } });
+  send(ctx.res, 200, { ok: true, name: a.name, profile: { org: a.org || "", role: a.role || "", about: a.about || "", bio: a.bio || "", place: a.place || "", contact: a.contact_email || "", website: a.website || "", langs: a.langs || [] } });
 });
 
 // Abmelden: nur die vorgelegte Marke wird gelöscht, andere Geräte bleiben angemeldet.
@@ -798,10 +803,18 @@ routes.set("GET /api/actors", (ctx) => {
       (SELECT COUNT(*) FROM applications p WHERE p.actor_id = a.id AND p.decided IS NULL) open_applications,
       (SELECT COUNT(*) FROM actor_tokens t WHERE t.actor_id = a.id AND t.expires > ?) devices,
       (SELECT COUNT(*) FROM invites i WHERE i.inviter_id = a.id) invites_sent,
-      (SELECT COUNT(*) FROM invites i WHERE i.inviter_id = a.id AND i.accepted IS NOT NULL) invites_accepted FROM actors a ORDER BY a.id`).all(new Date().toISOString());
+      (SELECT COUNT(*) FROM invites i WHERE i.inviter_id = a.id AND i.accepted IS NOT NULL) invites_accepted,
+      (SELECT COUNT(*) FROM services s WHERE s.actor_id = a.id) services FROM actors a ORDER BY a.id`).all(new Date().toISOString());
   send(ctx.res, 200, { ok: true, items: rows.map(r => { const roles = rolesOf(db, r.id); return { id: r.id, kind: r.kind, email: r.email, name: r.name, created: r.created, roles: [...roles], standing: r.kind === "email" ? standingOf(roles) : r.kind,
-    profile: { org: r.org || "", role: r.role || "", about: r.about || "", website: r.website || "", langs: r.langs ? String(r.langs).split(",").filter(Boolean) : [] },
-    contributions: r.contributions, open_applications: r.open_applications, devices: r.devices, invites_sent: r.invites_sent, invites_accepted: r.invites_accepted }; }) });
+    profile: { org: r.org || "", role: r.role || "", about: r.about || "", bio: r.bio || "", place: r.place || "", contact: r.contact_email || "", website: r.website || "", langs: r.langs ? String(r.langs).split(",").filter(Boolean) : [] },
+    contributions: r.contributions, open_applications: r.open_applications, devices: r.devices, invites_sent: r.invites_sent, invites_accepted: r.invites_accepted,
+    services: r.services, dormant_notice: r.dormant_notice || null }; }) });
+});
+// Alle Dienste aller Konten fürs Team (2026-09-10), dazu der Schnappschuss der Maschine: die Konsole :8396 zeigt beides.
+routes.set("GET /api/services", (ctx) => {
+  if (!isTeam(ctx.actor)) throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
+  const rows = db.prepare("SELECT s.*, a.email actor_email, a.name actor_name FROM services s JOIN actors a ON a.id = s.actor_id ORDER BY a.id, s.grp, s.name").all();
+  send(ctx.res, 200, { ok: true, items: rows.map(r => Object.assign(svcRow(r), { actor_id: r.actor_id, actor_email: r.actor_email, actor_name: r.actor_name, target: r.target })), machine: machineSnapshot() });
 });
 // Einladungen fürs Team (2026-09-09): wer wen eingeladen hat, und ob die Adresse ein Konto wurde.
 routes.set("GET /api/invites", (ctx) => {
@@ -842,6 +855,10 @@ patterns.push([/^\/api\/me\/journal\/(\d{1,12})$/, {
 }]);
 patterns.push([/^\/api\/profiles\/(\d{1,12})$/, {
   GET: (ctx, [id]) => { const p = publicProfile(db, id); if (!p) throw new HttpError(404, "no public profile"); send(ctx.res, 200, { ok: true, profile: p }); },
+}]);
+// /contributors/<name>: dieselbe Antwort, aufgelöst über den aus dem Namen gerechneten Slug.
+patterns.push([/^\/api\/profiles\/slug\/([a-z0-9-]{1,80})$/, {
+  GET: (ctx, [slug]) => { const p = publicProfileBySlug(db, slug); if (!p) throw new HttpError(404, "no public profile"); send(ctx.res, 200, { ok: true, profile: p }); },
 }]);
 routes.set("GET /api/search", (ctx) => {
   if (limited("search:" + ctx.ip, 1200)) throw new HttpError(429, "too many searches from here; try again later");   // 1200 je Stunde je IP: eine Klasse hinter einem NAT sucht viel
@@ -913,7 +930,7 @@ function eraseActor(actor, keepIds = new Set(), removeIds = new Set(), why = "pe
     db.prepare("DELETE FROM services WHERE actor_id = ?").run(actor.id);              // eigene Dienste gehen mit
     if (actor.email) db.prepare("UPDATE invites SET email = '(erased)' WHERE email = ?").run(actor.email);   // erhaltene: Adresse weg
     // Name bleibt nur, wenn ein Modul unter ihm stehen bleibt; die Adresse geht immer.
-    db.prepare("UPDATE actors SET email = NULL, name = ?, org_id = NULL, org = NULL, role = NULL, about = NULL, website = NULL, langs = NULL, avatar = NULL, avatar_type = NULL, avatar_updated = NULL WHERE id = ?").run(kept ? actor.name : "(erased)", actor.id);
+    db.prepare("UPDATE actors SET email = NULL, name = ?, org_id = NULL, org = NULL, role = NULL, about = NULL, bio = NULL, place = NULL, contact_email = NULL, website = NULL, langs = NULL, avatar = NULL, avatar_type = NULL, avatar_updated = NULL WHERE id = ?").run(kept ? actor.name : "(erased)", actor.id);
     db.exec("COMMIT");
   } catch (e) { db.exec("ROLLBACK"); throw e; }
   auditAppend(db, { kind: "erase", actor_id: actor.id, resource: "actor:" + actor.id, text: `${why}; ${kept} module(s) kept under the name, ${unpublished} unpublished, ${deleted} contribution(s) deleted` });

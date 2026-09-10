@@ -724,6 +724,10 @@ def _beitraege_kurz():
     mcode, mj = api_call("GET", "/api/modules/meta")
     module = len(mj.get("items", {})) if mcode == 200 else "?"
     punkte = sum(v.get("points", 0) for v in mj.get("items", {}).values()) if mcode == 200 else "?"
+    scode, sj = api_call("GET", "/api/services")
+    dienste = len(sj.get("items", [])) if scode == 200 else "?"
+    dienste_ab = len([s for s in sj.get("items", []) if s.get("state") in ("warn", "off")]) if scode == 200 else "?"
+    maschine = len((sj.get("machine") or {}).get("services", [])) if scode == 200 else "?"
     return (f"<table><tr><td><b>Schlange</b><br><span class='mono'>{len(offen)} offen · {len(j.get('items', []))} gesamt</span></td>"
             "<td><a href='/contributions'>öffnen</a></td><td></td><td></td></tr>"
             f"<tr><td><b>Bewerbungen</b><br><span class='mono'>{bew} offen</span></td>"
@@ -735,7 +739,9 @@ def _beitraege_kurz():
             f"<tr><td><b>Einladungen</b><br><span class='mono'>{einl_offen} offen · {einl} gesamt</span></td>"
             "<td><a href='/invites'>öffnen</a></td><td></td><td></td></tr>"
             f"<tr><td><b>Module aus Beiträgen</b><br><span class='mono'>{module} Module · {punkte} Punkte</span></td>"
-            "<td><a href='/modules'>öffnen</a></td><td></td><td></td></tr></table>")
+            "<td><a href='/modules'>öffnen</a></td><td></td><td></td></tr>"
+            f"<tr><td><b>Dienste</b><br><span class='mono'>{dienste} in Konten, {dienste_ab} gestört · {maschine} auf der Maschine</span></td>"
+            "<td><a href='/services'>öffnen</a></td><td></td><td></td></tr></table>")
 
 
 def dash():
@@ -1282,7 +1288,7 @@ def _hub_kopf(titel):
     return (f"<h1>entro<span style='color:#2BD4E8'>sana</span>.app admin · {titel}</h1>"
             "<p class='mono'><a href='/'>← Übersicht</a> · <a href='/contributions'>Beiträge</a> · <a href='/applications'>Bewerbungen</a> · "
             "<a href='/accounts'>Konten</a> · <a href='/requests'>Anfragen</a> · <a href='/invites'>Einladungen</a> · "
-            "<a href='/modules'>Module</a> · <a href='/checklists'>Checklisten</a></p>")
+            "<a href='/modules'>Module</a> · <a href='/services'>Dienste</a> · <a href='/checklists'>Checklisten</a></p>")
 
 
 STANDING_DE = {"collector": "Sammler", "contributor": "Beitragende", "reviewer": "Team", "owner": "Eigentümer", "service": "Dienst"}
@@ -1343,6 +1349,39 @@ def invites_list():
     return page("Einladungen", _hub_kopf("Einladungen") + f"<p class='note'>{len(items)} Einladungen, {offen} offen. Jedes Konto lädt auf seiner Kontoseite ein; der Link gilt sieben Tage, "
                 "unbeantwortete Einladungen räumt die Wartung nach 180 Tagen weg.</p>"
                 + (f"<table><tr><th></th><th>von</th><th>an</th><th>Nachricht</th><th>gesendet</th><th>Stand</th></tr>{rows}</table>" if items else "<p class='mono'>keine</p>"))
+
+
+SVC_STATE_DE = {"ok": "läuft", "warn": "gestört", "off": "aus", "wait": "wartet"}
+SVC_KIND_DE = {"url": "Adresse", "mcp": "MCP", "webhook": "Lebenszeichen", "tcp": "Port", "tls": "Zertifikat"}
+
+
+def services_list():
+    """Dienste aller Konten (Tabelle services) und der Schnappschuss der Maschine; nur lesen, Änderungen macht jedes Konto selbst."""
+    code, j = api_call("GET", "/api/services")
+    if code != 200:
+        return page("Dienste", _hub_kopf("Dienste") + f"<p class='err'>{html.escape(str(j.get('error', code)))}</p>")
+    items = j.get("items", [])
+    rows = ""
+    for s in items:
+        st = s.get("state") or "wait"
+        cls = "ok" if st == "ok" else ("err" if st in ("warn", "off") else "mono")
+        wann = s.get("checked") or s.get("last_checked") or s.get("last_beat") or ""
+        rows += (f"<tr><td class='mono'>#{s.get('id')}</td><td><b>{html.escape(s.get('actor_name') or '—')}</b><br><span class='mono'>{html.escape(s.get('actor_email') or '')}</span></td>"
+                 f"<td><b>{html.escape(s.get('name') or '')}</b><br><span class='desc'>{html.escape(s.get('what') or '')}</span></td>"
+                 f"<td class='mono'>{html.escape(SVC_KIND_DE.get(s.get('kind'), s.get('kind') or ''))}<br>{html.escape(s.get('target') or '—')}</td>"
+                 f"<td class='mono'>{html.escape(str(s.get('group') or ''))} · {html.escape(str(s.get('place') or ''))}<br>alle {s.get('interval')} min</td>"
+                 f"<td class='{cls}'>{html.escape(SVC_STATE_DE.get(st, st))}<br><span class='mono'>{html.escape(str(s.get('status') or ''))}</span></td>"
+                 f"<td class='mono'>{_hub_wann(wann) if wann else '—'}</td></tr>")
+    m = j.get("machine") or {}
+    mrows = "".join(f"<tr><td class='mono'>{html.escape(x.get('group') or '')}</td><td><b>{html.escape(x.get('name') or '')}</b><br><span class='desc'>{html.escape(x.get('what') or '')}</span></td>"
+                    f"<td class='mono'>{html.escape(x.get('where') or '')}</td><td class='{'ok' if x.get('state') == 'ok' else ('err' if x.get('state') in ('warn', 'off') else 'mono')}'>{html.escape(SVC_STATE_DE.get(x.get('state'), x.get('state') or ''))}<br><span class='mono'>{html.escape(x.get('status') or '')}</span>"
+                    + (f"<br><span class='err'>{html.escape(x.get('flag'))}</span>" if x.get("flag") else "") + "</td></tr>" for x in m.get("services", []))
+    return page("Dienste", _hub_kopf("Dienste")
+        + f"<p class='note'>{len(items)} Dienste in Konten. Jedes Konto pflegt seine Liste auf <span class='mono'>/services</span> selbst; der Dienst prüft Adresse, MCP, Port und Zertifikat im gewählten Takt, Lebenszeichen zählen beim Eintreffen. "
+          "Ziele privater Netze darf nur der Eigentümer eintragen.</p>"
+        + (f"<table><tr><th></th><th>Konto</th><th>Dienst</th><th>Art · Ziel</th><th>Gruppe · Ort · Takt</th><th>Stand</th><th>zuletzt</th></tr>{rows}</table>" if items else "<p class='mono'>keine</p>")
+        + f"<h2>Die Maschine {html.escape(m.get('host') or '')}</h2><p class='note'>Aus <span class='mono'>tools/services-snapshot.sh</span>, gelesen {html.escape(m.get('read') or '—')}; alle zehn Minuten neu. Auf entrosana.app sieht nur der Eigentümer diese Zeilen, in seiner eigenen Liste.</p>"
+        + (f"<table><tr><th>Gruppe</th><th>Dienst</th><th>wo</th><th>Stand</th></tr>{mrows}</table>" if mrows else "<p class='mono'>kein Schnappschuss</p>"))
 
 
 def modules_list():
@@ -1465,7 +1504,8 @@ def accounts_list():
         rows += (f"<tr><td class='mono'>#{a['id']}</td><td><b>{html.escape(a.get('name') or '—')}</b><br><span class='mono'>{html.escape(a.get('email') or a.get('kind'))}</span>{about}{web}</td>"
                  f"<td>{html.escape(STANDING_DE.get(a.get('standing'), a.get('standing')))}<br><span class='mono'>{html.escape(rollen)}</span></td>"
                  f"<td class='desc'>{html.escape(profil) or '—'}</td>"
-                 f"<td class='mono'>{a.get('contributions')} Beiträge<br>{a.get('open_applications')} Bewerbungen<br>{a.get('devices')} Geräte<br>{a.get('invites_sent', 0)} Einladungen, {a.get('invites_accepted', 0)} angenommen</td>"
+                 f"<td class='mono'>{a.get('contributions')} Beiträge<br>{a.get('open_applications')} Bewerbungen<br>{a.get('devices')} Geräte<br>{a.get('invites_sent', 0)} Einladungen, {a.get('invites_accepted', 0)} angenommen<br>{a.get('services', 0)} Dienste"
+                 + (f"<br><span class='err'>ruhend, Hinweis {_hub_wann(a.get('dormant_notice'))}</span>" if a.get("dormant_notice") else "") + "</td>"
                  f"<td class='mono'>{_hub_wann(a.get('created'))}</td></tr>")
     hinweis = ("<p class='note'>Rollen vergibt der Eigentümer auf dem Server: <span class='mono'>node ~/entrosana-app/api/admin.mjs grant &lt;email&gt; reviewer</span>. "
                "Beitragende entstehen über <a href='/applications'>Bewerbungen</a>.</p>")
@@ -1587,6 +1627,9 @@ class H(BaseHTTPRequestHandler):
             return
         if u.path == "/modules":
             self._send(200, modules_list())
+            return
+        if u.path == "/services":
+            self._send(200, services_list())
             return
         if u.path == "/checklists":
             self._send(200, checklists_list())
