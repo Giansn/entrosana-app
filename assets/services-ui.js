@@ -167,7 +167,7 @@
   function machineRow(r) {
     var tr = el("tr", "svc__mrow"); var c0 = el("td"); c0.appendChild(ledFor(r.state)); tr.appendChild(c0);
     tr.appendChild(el("td", "svc__n", r.name)); tr.appendChild(el("td", "svc__w", r.what || "")); tr.appendChild(el("td", "svc__p", r.place || ""));
-    var c4 = el("td", "svc__p"); c4.appendChild(el("span", "origin origin--own", r.host)); c4.appendChild(document.createElement("br")); c4.appendChild(el("span", "fine", "read " + r.read)); tr.appendChild(c4);
+    var c4 = el("td", "svc__p"); c4.appendChild(el("span", "origin origin--own", r.host)); c4.appendChild(document.createElement("br")); c4.appendChild(el("span", "fine", "read " + String(r.read || "").slice(11))); tr.appendChild(c4);   // nur die Uhrzeit; Datum steht in der Zeile über der Liste
     tr.appendChild(el("td", "svc__s num " + (r.state === "ok" ? "ok" : (r.state === "warn" || r.state === "off") ? "warn" : ""), r.status || ""));
     var c6 = el("td", "num"); c6.appendChild(el("span", "fine", "on the machine")); tr.appendChild(c6);
     return tr;

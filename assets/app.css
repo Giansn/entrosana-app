@@ -2027,6 +2027,7 @@ button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
 .svc__pop__x:hover{ color:var(--seal); border-color:var(--seal) }
 .svc__pop .svc__bubble{ border:0; padding:0; margin:.7rem 0 0; font-size:.92rem }
 .svc__pop .svc__bubble .measure{ max-width:none }
+.svc__mrow .fine{ white-space:nowrap }
 @media (max-width:759.98px){
   .svc__infowrap{ position:static }
   .svc__pop{ position:fixed; top:auto; left:.6rem; right:.6rem; bottom:.6rem; width:auto; max-height:78vh }
