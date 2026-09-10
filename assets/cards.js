@@ -76,14 +76,16 @@
       var mail = document.createElement("a"); mail.href = "mailto:sygnif@entrosana.com?subject=" + encodeURIComponent("Contribution to " + (e.title || e.slug)); mail.textContent = "sygnif@entrosana.com"; c.appendChild(mail);
       c.appendChild(document.createTextNode(" · "));
       var tel = document.createElement("a"); tel.href = "tel:+41775297301"; tel.textContent = "077 529 73 01"; c.appendChild(tel);
-      if (MINE && MINE[e.slug]) {
-        c.appendChild(document.createTextNode(" · "));
-        var ed = document.createElement("a"); ed.className = "mcard__edit"; ed.href = "/me/modules#" + e.slug; ed.textContent = "edit ›"; c.appendChild(ed);
-      }
     }
     paintContact(null);
     withMeta(paintContact);
-    withMine(function () { paintContact(META); });
+    // Bearbeiten (2026-09-10): wer darf, bekommt den Knopf auf der Karte selbst, oben rechts über der Kartenfläche.
+    withMine(function (mine) {
+      if (!mine[e.slug] || wrap.querySelector(".mcard__editbtn")) return;
+      wrap.classList.add("mitem--editable");
+      var ed = document.createElement("a"); ed.className = "btn btn--ghost mcard__editbtn"; ed.href = "/me/modules#" + e.slug; ed.textContent = "Edit"; ed.setAttribute("aria-label", "Edit " + (e.title || e.slug));
+      wrap.appendChild(ed);
+    });
     wrap.appendChild(c);
     return wrap;
   }
