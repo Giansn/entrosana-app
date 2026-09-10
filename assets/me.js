@@ -139,6 +139,7 @@
         })
         .catch(function () { go.disabled = false; note(out, "idle", "The Hub's server is not reachable right now."); });
     });
+    sec.appendChild(el("p", "fine", "With an account you can keep up to 400 MB of files on the Hub's own server in Switzerland: CVs, reviews, concepts, project papers. Each file is private unless you set it public on your page. Up to 50 MB per file."));
     var p = el("p", "fine"); p.appendChild(document.createTextNode("Everything you do without an account stays on this device. "));
     var a = el("a", null, "How the Hub treats your data"); a.href = "https://entrosana.com/privacy/"; a.rel = "noopener"; p.appendChild(a); p.appendChild(document.createTextNode(".")); sec.appendChild(p);
   }
@@ -338,7 +339,46 @@
     paintJournal();
 
     // Dokumente: was gesendet wurde, was gehostet wird, was auf dem Gerät liegt.
-    var sd = psect("Documents", "Record trail and export ›", "/records", "What you sent, what you host, and the files on this device.");
+    var sd = psect("Documents", "Record trail and export ›", "/records", "Files you keep on the Hub, what you sent, and the files on this device.");
+    // Dateien auf dem Hub (2026-09-10): 400 MB je Konto, 50 MB je Datei, auf dem
+    // eigenen Server neben den Konten. Privat, bis man eine Datei öffentlich stellt.
+    function fmt(b) { return b >= 1048576 ? (b / 1048576).toFixed(b >= 10485760 ? 0 : 1) + " MB" : b >= 1024 ? Math.round(b / 1024) + " KB" : b + " B"; }
+    var quota = el("p", "quiet mono", "Counting…"); sd.appendChild(quota);
+    var fl = el("div", "rowlist"); sd.appendChild(fl);
+    var fact = el("div", "actions"); var fileIn2 = el("input"); fileIn2.type = "file"; fileIn2.hidden = true; fileIn2.setAttribute("aria-label", "Choose a file to upload");
+    fileIn2.accept = ".pdf,.png,.jpg,.jpeg,.webp,.gif,.md,.txt,.csv,.docx,.xlsx,.pptx,.odt,.ods,.odp,.zip";
+    var upBtn = el("button", "btn btn--ghost", "Upload a file"); upBtn.type = "button"; upBtn.addEventListener("click", function () { fileIn2.click(); });
+    var fout = live(); fact.appendChild(upBtn); fact.appendChild(fileIn2); sd.appendChild(fact); sd.appendChild(fout);
+    function paintFiles() {
+      api("/api/me/files").then(function (r) {
+        if (r.s !== 200) { quota.textContent = ""; return; }
+        var items = r.j.items || [];
+        quota.textContent = fmt(r.j.used) + " of " + fmt(r.j.quota) + " used · " + r.j.where + " · up to " + fmt(r.j.max_file) + " per file";
+        fl.textContent = "";
+        if (!items.length) { fl.appendChild(el("p", "quiet", "No file on the Hub yet.")); return; }
+        items.forEach(function (f) {
+          var rr = row("/api/files/" + me.id + "/" + f.id + "/" + encodeURIComponent(f.name), f.name, fmt(f.size) + " · " + when(f.created) + " · " + (f.public ? "public, on your page" : "private"), f.public ? "public" : "private", f.public);
+          var m = rr.querySelector(".row2__m"); m.textContent = "";
+          var tg = el("button", "btn btn--quiet", f.public ? "Make private" : "Make public"); tg.type = "button";
+          tg.addEventListener("click", function (ev) { ev.preventDefault(); api("/api/me/files/" + f.id, { method: "PATCH", body: JSON.stringify({ public: !f.public }) }).then(paintFiles); });
+          var dl = el("button", "btn btn--quiet", "Delete"); dl.type = "button";
+          dl.addEventListener("click", function (ev) { ev.preventDefault(); if (!confirm("Delete «" + f.name + "» from the Hub?")) return; api("/api/me/files/" + f.id, { method: "DELETE" }).then(paintFiles); });
+          m.appendChild(tg); m.appendChild(dl); fl.appendChild(rr);
+        });
+      }).catch(function () { quota.textContent = ""; });
+    }
+    fileIn2.addEventListener("change", function () {
+      var f = fileIn2.files && fileIn2.files[0]; fileIn2.value = ""; if (!f) return;
+      if (f.size > 52428800) { note(fout, "warn", "A file may have up to 50 MB; this one has " + fmt(f.size) + "."); return; }
+      note(fout, "idle", "Uploading " + f.name + " (" + fmt(f.size) + ")…"); upBtn.disabled = true;
+      var h = headers(false); h["Content-Type"] = "application/octet-stream"; h["X-File-Name"] = encodeURIComponent(f.name);
+      fetch("/api/me/files", { method: "PUT", headers: h, body: f })
+        .then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }, function () { return { s: r.status, j: {} }; }); })
+        .then(function (r) { upBtn.disabled = false; if (r.s === 201) { note(fout, "ok", "Stored: " + r.j.item.name + " (" + fmt(r.j.item.size) + "). Private until you set it public."); paintFiles(); } else note(fout, "warn", "Not stored: " + (r.j.error || r.s) + "."); })
+        .catch(function () { upBtn.disabled = false; note(fout, "warn", "The Hub's server is not reachable right now."); });
+    });
+    paintFiles();
+    sd.appendChild(el("p", "quiet", "Proposals you sent, and files on this device:"));
     var dl2 = el("div", "rowlist"); sd.appendChild(dl2);
     api("/api/contributions").then(function (r) {
       var items = r.s === 200 ? (r.j.items || []) : [];
@@ -460,6 +500,7 @@
     ["Record trail: every step you take in a project on this device is written to a list that only grows. Each line is sealed against the one before it, so a change anywhere shows up when the chain is verified. The trail stays in this browser; it leaves the device only when you attach it to a proposal or export it. The Hub keeps a chain of its own for decisions, and anyone can verify it.",
      "Public: your profile page with name, place, organisation, role, the one line about you, the biography, the public e-mail if you set one, website, languages, picture and the journal entries you mark public; modules published under your name; points as a count, never by name.",
      "Private: your sign-in e-mail address, private journal entries, the records on this device, proposals until they are published, applications and invitations. The team (owner and reviewers) sees proposals, applications, requests and accounts to do its work.",
+     "Files: up to 400 MB per account, 50 MB per file, stored next to the accounts on the Hub's own server in Switzerland. A file is private until you set it public; public files appear on your page and can be downloaded by anyone with the link. Deleting a file removes it; erasing the account removes them all.",
      "Where it rests, where it is processed: your data rests on our own server in Switzerland, with one encrypted backup copy at Cloudflare R2. Delivery runs through Cloudflare (USA), our code lives at GitHub (USA), and mail to sygnif@entrosana.com is read by Claude, a language model run by Anthropic (USA), before a person decides. «Swiss/EU» on our pages means the residency of stored data, not the seat of every provider that processes it."
     ].forEach(function (s) { secInfo.appendChild(el("p", "tl__t", s)); });
 

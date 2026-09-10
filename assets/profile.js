@@ -98,6 +98,21 @@
     }
     sec.appendChild(ps);
 
+    // Öffentliche Dateien (2026-09-10): nur die, die die Person selbst öffentlich gestellt hat.
+    if (p.files && p.files.length) {
+      var fmt = function (b) { return b >= 1048576 ? (b / 1048576).toFixed(b >= 10485760 ? 0 : 1) + " MB" : b >= 1024 ? Math.round(b / 1024) + " KB" : b + " B"; };
+      var fs = el("div", "psect"), fh = el("div", "psect__h");
+      fh.appendChild(el("h2", null, "Files")); fh.appendChild(el("span", null, p.files.length + (p.files.length === 1 ? " file" : " files"))); fs.appendChild(fh);
+      fs.appendChild(el("p", "psect__s", "Kept on the Hub's own server. Each link downloads the file as it was uploaded."));
+      var frl = el("div", "rowlist");
+      p.files.forEach(function (f) {
+        var a = el("a", "row2"); a.href = "/api/files/" + p.id + "/" + f.id + "/" + encodeURIComponent(f.name);
+        a.appendChild(el("span", "row2__t", f.name)); a.appendChild(el("span", "row2__s", fmt(f.size) + " · " + day(f.created)));
+        a.appendChild(el("span", "row2__m", "download ›")); frl.appendChild(a);
+      });
+      fs.appendChild(frl); sec.appendChild(fs);
+    }
+
     // Journal als Zeitleiste.
     var js = el("div", "psect"), jh = el("div", "psect__h");
     jh.appendChild(el("h2", null, "Journal")); jh.appendChild(el("span", null, "public entries")); js.appendChild(jh);
