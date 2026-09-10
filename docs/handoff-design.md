@@ -739,3 +739,13 @@ in `~/.cloudflared/config.yml`. DNS: das Tunnel-Zertifikat gilt nur für die Zon
 tunnel route dns` legte deshalb `docs.entrosana.app.entrosana.com` an (zu löschen). Der richtige Eintrag,
 CNAME `docs` → `69e77bd9-70aa-4d0e-b8ea-16eacc25cb3a.cfargotunnel.com` (proxied) in der Zone entrosana.app,
 braucht das Dashboard oder ein `cloudflared tunnel login` für diese Zone.
+
+**Nachtrag 2026-09-10, vorgeschlagene Projekte.** Die Vorschläge der Spur «contribute» (Propose a track, Review
+someone else's work, Ask for runway, Contribute a module) sind aus `assets/seeds.js` heraus; an ihrer Stelle
+steht der Abschnitt `hub` mit den drei Vorhaben des Hubs: «Docs in plain language, in several languages»
+(hub/001, 8 Schritte), «Translate the website text» (hub/002, 8), «Work out the requests» (hub/003, 6). Die
+Checklisten `tools/*` und `modules/*` bleiben, weil Katalogkarten und Detailseiten sie über `seed` zählen.
+`app.js ensureStarter()` legt die drei Projekte jedem Brett einmal an (Marke `entrosana-proposed:v2`),
+entfernt den alten Startvorschlag `contribute/003`, wenn keine Karte bewegt oder abgehakt wurde, und lässt ihn
+sonst stehen. Der Dialog «New project» zeigt die Abschnitte tools, modules, hub; die Konsole bearbeitet die
+drei unter /checklists wie die anderen.

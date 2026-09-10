@@ -3,7 +3,10 @@
 
    Jede Liste endet mit dem Schritt, der sie aus dem Browser herausführt: an
    wen sie in der eigenen Organisation geht, und wie entrosana erreichbar ist
-   (info@entrosana.com oder das Formular auf entrosana.com/request-access).
+   (info@entrosana.com oder das Formular auf entrosana.app/request).
+
+   Abschnitt «hub» (2026-09-10): die drei Vorhaben des Hubs selbst, die jedes Brett
+   einmal vorgeschlagen bekommt (app.js ensureStarter).
    Ohne diesen Schritt bleibt eine Checkliste eine Übung. */
 window.__seeds = {
  "tools/000": {
@@ -204,154 +207,134 @@ window.__seeds = {
    }
   ]
  },
- "contribute/000": {
-  "section": "contribute",
-  "title": "Propose a track",
-  "who": "the path from an idea to a module under your name",
+ "hub/001": {
+  "section": "hub",
+  "title": "Docs in plain language, in several languages",
+  "who": "docs.entrosana.app: six pages, first plain English, then German, French and Italian",
   "steps": [
    {
-    "t": "Send your proposal",
-    "n": "Form at entrosana.app/contribute/submit, or call 077 529 73 01.",
-    "i": "Mail works too: sygnif@entrosana.com. The form asks for name, e-mail, title, area, the proposal text and links to files you host. On the phone we write the proposal down with you."
+    "t": "Read the six pages as a newcomer",
+    "n": "Getting started, Accounts, Contribute, Services, API, Privacy.",
+    "i": "Open docs.entrosana.app and read each page once, fast. Note every sentence you had to read twice and every word a teacher would not know. One note per page on this card."
    },
    {
-    "t": "Confirm your address",
-    "n": "Open the link in the mail from sygnif@entrosana.com.",
-    "i": "The proposal counts once you did. Unconfirmed proposals are deleted after 7 days; the link itself expires after one hour."
+    "t": "Rewrite the hard sentences in plain English",
+    "n": "One idea per sentence; a gloss for every term.",
+    "i": "Edit the Markdown in the console under Docs. The change is live at once. Keep the facts; the privacy page must keep matching the statement on entrosana.com."
    },
    {
-    "t": "Register and apply as contributor",
-    "n": "Sign in at entrosana.app/me, set your name, apply as contributor.",
-    "i": "Collectors register freely; contributors are approved by the team before anything is published under their name. The application is a few sentences: where you work, what you would bring, why it belongs in the Hub."
+    "t": "Decide the languages and the order",
+    "n": "German (Swiss orthography) first, then French and Italian.",
+    "i": "Decide who reviews each language and whether the English page stays the source of truth. Write the decision into the journal on entrosana.app/me."
    },
    {
-    "t": "Declare what is on offer",
-    "n": "Kind · onsite or online · how long · how much content · languages · who it is for.",
-    "i": "Kind: module, track, tool or service. Onsite, online or both. How long: one lesson, a half day, a series. How much content: slides, worksheets, hours of material. Languages. Who it is for. These six variables decide who can run it and where it fits; put them in the proposal or in your first journal entry on entrosana.app/me."
+    "t": "Translate Getting started and Accounts into German",
+    "n": "The two pages every newcomer reads.",
+    "i": "Keep the headings, so the «On this page» line works. Swiss orthography: ss instead of the Eszett, umlauts as they are."
    },
    {
-    "t": "Wait for the team's reading",
-    "n": "A person reads it against the rules on /contribute and answers by mail with a reason.",
-    "i": "Outcomes: admitted, rejected, or not yet. Follow it at entrosana.app/contribute/status; decisions come from sygnif@entrosana.com."
+    "t": "Translate Contribute, Services, API and Privacy",
+    "n": "Privacy must match entrosana.com/privacy/de where it states a rule.",
+    "i": "The API page keeps its calls and field names in English; only the prose changes."
    },
    {
-    "t": "Work it out together",
-    "n": "Name the expertise you bring and what you need from the Hub; agree the shape.",
-    "i": "Expertise: subject knowledge, teaching, technical, translation, review. Needs: a teacher to run it, a reviewer, runway (time, machines, a person who knows the subject). Shape: what gets built, by whom, by when. Write it into the proposal thread or your journal."
+    "t": "Add the language switch to the docs",
+    "n": "One folder per language, a switch in the rail.",
+    "i": "docs-site/de/… next to the English files; the renderer takes the language from the path; the rail gets a line with the languages. Ask for it on entrosana.app/request as kind «service» if you do not build it yourself."
    },
    {
-    "t": "Deliver and publish",
-    "n": "Files as https links you host; the team publishes the admitted module as a draft under your name.",
-    "i": "Slides, worksheets, notes. A first class run makes the draft final; the record of its making stays checkable."
-   }
-  ],
-  "prompts": [
-   "Name the thing you want to build or teach",
-   "Say who it is for",
-   "What is on offer: kind · onsite or online · how long · how much content · languages",
-   "Link what already exists",
-   "Which expertise you bring, and what you need from the Hub",
-   "Agree how it gets reviewed"
-  ]
- },
- "contribute/001": {
-  "section": "contribute",
-  "title": "Review someone else's work",
-  "who": "for reading someone else's work carefully",
-  "steps": [
-   {
-    "t": "Write down what it claims to do",
-    "n": "In your words, before you judge it."
+    "t": "Have a native reader check each language",
+    "n": "A teacher or a learner reads one page aloud.",
+    "i": "What makes the reader stumble gets changed, not explained."
    },
    {
-    "t": "Check the claim against the thing itself",
-    "n": "Run it, read it, try it on a real case."
-   },
-   {
-    "t": "Say plainly where it does not hold",
-    "n": "With the case that breaks it."
-   },
-   {
-    "t": "Separate what is wrong from what you would do differently",
-    "n": "Only the first blocks."
-   },
-   {
-    "t": "Send it back to the author, and keep your copy",
-    "n": "To them directly, and to info@entrosana.com if the Hub asked for the review. Your copy is the record that you said it."
+    "t": "Publish and tell the Hub",
+    "n": "Link the languages from the rail footer; a journal entry on /me.",
+    "i": "Mark the journal entry public, so contributors see it on your profile."
    }
   ]
  },
- "contribute/002": {
-  "section": "contribute",
-  "title": "Ask for runway",
-  "who": "for work that needs time and machines",
+ "hub/002": {
+  "section": "hub",
+  "title": "Translate the website text",
+  "who": "entrosana.com: Home, Service, Hub, Modules, Contribute, Imprint, Privacy",
   "steps": [
    {
-    "t": "Say what the work needs to run",
-    "n": "Compute, hosting, review time, or a person."
+    "t": "List the pages and their word counts",
+    "n": "Seven pages; the site console shows every text.",
+    "i": "Home, Service, Hub, Modules, Contribute, Imprint, Privacy (English; German privacy exists). Note the word count per page on this card; it sets the order of work."
    },
    {
-    "t": "Say for how long",
-    "n": "An end date, even a rough one."
+    "t": "Fix the English source first",
+    "n": "A sentence that is unclear in English is unclear in every language.",
+    "i": "Read each page aloud; shorten what does not survive it. The site's text editor keeps the markup; only text between tags changes."
    },
    {
-    "t": "Show what got through review already",
-    "n": "Runway follows review, not the other way round."
+    "t": "Choose the languages and the order",
+    "n": "German (Swiss) first, then French and Italian.",
+    "i": "Decide whether entrosana.com stays English-first with language pages, or becomes German-first. Write it into the journal."
    },
    {
-    "t": "Name what happens if it is not granted",
-    "n": "Sometimes the honest answer is: nothing changes."
+    "t": "Translate Home and Service",
+    "n": "The two pages every visitor sees.",
+    "i": "Keep the number of text blocks; the editor refuses saves that change the structure. Terms used in the Hub (collector, contributor, module, track) get one German equivalent each and keep it."
    },
    {
-    "t": "Ask, with the export attached",
-    "n": "info@entrosana.com. Runway is granted against a written request, not a conversation."
+    "t": "Translate Hub, Modules and Contribute",
+    "n": "Same terms as on entrosana.app; the Contribute button links to entrosana.app/contribute.",
+    "i": "Where the page names a Hub feature, use the word the Hub shows in its interface until the Hub is translated too."
+   },
+   {
+    "t": "Privacy and Imprint",
+    "n": "The German privacy page exists at /privacy/de/; align its wording with the Hub docs.",
+    "i": "Legal wording stays as in the statement; a translation promises nothing new."
+   },
+   {
+    "t": "Set up the language pages in WordPress",
+    "n": "Child pages per language, hreflang links, a switch in the header.",
+    "i": "Page ids and the publishing route are in the console notes; the text API refuses structural changes, the eval-file route does not."
+   },
+   {
+    "t": "Review with a native reader and publish",
+    "n": "One page read aloud per language before it goes live.",
+    "i": "Publish language by language; note the date in the privacy statement if its wording changed."
    }
   ]
  },
- "contribute/003": {
-  "section": "contribute",
-  "title": "Contribute a module",
-  "who": "from an idea to a card on /modules under your name",
+ "hub/003": {
+  "section": "hub",
+  "title": "Work out the requests",
+  "who": "the request inbox: module, track, tool, service, report, contribute, other",
   "steps": [
    {
-    "t": "Pick the area and the shape",
-    "n": "Nature, social or technical; a lesson, a worksheet, a tool, a reading.",
-    "i": "Look at entrosana.app/modules to see what exists in each area. Your module lands in one of the three sections, so decide where it belongs before you write."
+    "t": "Open the requests in the console",
+    "n": "The console lists every open request with kind, sender and text.",
+    "i": "Requests older than 180 days are purged automatically; what is still there deserves an answer."
    },
    {
-    "t": "Write the one line and the lead sentence",
-    "n": "What it is, for whom, how long; one sentence that makes a teacher open it.",
-    "i": "The line under the title shows on the card: area · format · languages. The lead sentence is the first thing a visitor reads. Both can be changed later on /me/modules."
+    "t": "Sort them",
+    "n": "Answer now · needs a decision · belongs to a module's contributors · spam.",
+    "i": "Write the sort into the card note; the console has a «handled» mark per request."
    },
    {
-    "t": "Gather the files",
-    "n": "Slides, worksheets, a reading; links to where they live.",
-    "i": "Files are linked, not uploaded. Put them where they can stay, for example your own site or a shared folder, and paste the links into the proposal. Nothing personal about children in any of them."
+    "t": "Answer the quick ones",
+    "n": "From info@entrosana.com within a week; mark handled.",
+    "i": "A request for a tool or a service that exists gets the link; one that does not gets a plain no with the reason, or a date."
    },
    {
-    "t": "Send the proposal",
-    "n": "Form at entrosana.app/contribute/submit, or call 077 529 73 01.",
-    "i": "The form asks for name, e-mail, title, area, the proposal text and the file links. Mail works too: sygnif@entrosana.com."
+    "t": "Turn module and track requests into proposals",
+    "n": "Ask the sender to file it on entrosana.app/contribute/submit, or file it with consent under their name.",
+    "i": "A proposal is published under a name; the sender must agree to that in writing."
    },
    {
-    "t": "Confirm your address",
-    "n": "Open the link in the mail within an hour.",
-    "i": "The proposal counts as submitted once the address is confirmed. Until then it is deleted after seven days."
+    "t": "Forward reports to the module's contributors",
+    "n": "Reports arrive at sygnif@; the module page names the contributors.",
+    "i": "Decide with the contributors, answer the reporter, note the decision in the record trail through the console."
    },
    {
-    "t": "Register and apply as contributor",
-    "n": "On entrosana.app/me: your name, then «Apply as contributor».",
-    "i": "Publishing under your name needs contributor standing; the team approves it with a reason, by mail. Collectors register freely, contributors are approved."
-   },
-   {
-    "t": "Wait for the team's reading",
-    "n": "Admit and publish is one step; you get a mail with the reason.",
-    "i": "The team reads the proposal against what it claims: does it do what it says, is the area right, are the files reachable. A «not yet» names what is missing."
-   },
-   {
-    "t": "Edit and grow the module",
-    "n": "On entrosana.app/me/modules: text, state, facts; add co-contributors.",
-    "i": "Set the state: only an idea, still in development, finished. Add the people who work on it with you; the card names everyone. Points from readers show on the card, reports reach sygnif@."
+    "t": "Keep the list at zero every Friday",
+    "n": "A recurring check; new requests wait at most a week.",
+    "i": "Set a due date on this card each week, or make it a journal habit."
    }
   ]
  }

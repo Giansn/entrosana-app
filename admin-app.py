@@ -781,7 +781,7 @@ def dash():
         "<h2>Checklisten</h2>"
         "<p class='note'>Die Vorlagen der Projektverwaltung aus <span class='mono'>assets/seeds.js</span>: Titel, Schritte, Kartenzeilen, "
         "Details und die Prompts des Vorschlagsformulars.</p>"
-        "<table><tr><td><b>Checklisten</b><br><span class='mono'>tools · modules · contribute</span></td>"
+        "<table><tr><td><b>Checklisten</b><br><span class='mono'>tools · modules · hub</span></td>"
         "<td><a href='/checklists'>öffnen</a></td><td></td><td></td></tr></table>"
         "<h2>Beiträge, Bewerbungen, Konten, Anfragen</h2>"
         + _beitraege_kurz() +
