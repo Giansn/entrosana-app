@@ -100,9 +100,9 @@
     <span class="eyebrow">Add a service</span>
     <p class="h3">Something of yours, watched from the Hub.</p>
     <div class="field">
-      <label for="svc-name">Name</label>
-      <input id="svc-name" type="text" placeholder="schulserver.local">
-      <span class="help">How you call it. Shown exactly like this in the list. The only field that is always required.</span>
+      <label for="svc-name">Name <span class="req" aria-hidden="true">*</span></label>
+      <input id="svc-name" type="text" placeholder="schulserver.local" aria-required="true">
+      <span class="help">How you call it. Shown exactly like this in the list. Fields marked * are required.</span>
     </div>
     <div class="field" id="svc-dir-field">
       <label id="svc-dir-label">Who calls whom</label>
@@ -122,8 +122,8 @@
       </select>
     </div>
     <div class="field" id="svc-target-field">
-      <label for="svc-target">Address of your service</label>
-      <input id="svc-target" type="text" placeholder="https://schulserver.example.org/">
+      <label for="svc-target">Address of your service <span class="req" aria-hidden="true">*</span></label>
+      <input id="svc-target" type="text" placeholder="https://schulserver.example.org/" aria-required="true">
       <span class="help" id="svc-target-help">The address the Hub should open, https://… It expects an answer below 400. The address stays on the server; only name, category and result are shown, and only to you.</span>
     </div>
     <div class="field">

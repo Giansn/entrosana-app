@@ -19,81 +19,66 @@
   var KIND_WORD = { url: "address", mcp: "MCP", webhook: "heartbeat", tcp: "port", tls: "certificate" };
   var tk = token(), data = null;
 
-  // Die Erklärung: für Besucher ohne Konto und für Konten ohne Eintrag dieselbe.
-  function bubble(signedIn, asPop) {
+  // Die Erklärung, in einfachen Worten: erst wozu die Seite da ist, dann die zwei Richtungen, dann die Schritte.
+  // Für Besucher ohne Konto steht sie in der Seite, für Konten in einem grossen Fenster hinter dem (i).
+  function bubble(signedIn, inDialog) {
     var h = el("div", "hint svc__bubble");
-    if (!asPop) h.appendChild(el("p", "hint__t", "What this page is for"));
-    h.appendChild(el("p", null, "A list of things that must be up for your work: a school server, a file share in the staff room, an MCP server your assistant talks to, a nightly backup job. The Hub watches them and shows a dot per service: green when it answers, amber when something is off, grey when nothing has been heard yet."));
+    if (!inDialog) h.appendChild(el("p", "hint__t", "What this page is for"));
+    h.appendChild(el("p", null, "You have things that must keep running: a school server, a shared folder, a backup that runs at night, an MCP server your assistant uses. This page keeps your list of them and shows a dot for each one. Green: it answered. Amber: something is wrong. Grey: the Hub has not heard from it yet. The Hub does the checking, so you do not have to go and look."));
+
+    h.appendChild(el("p", "hint__t", "Two ways a check can work"));
     var ul = el("ul", "measure");
-    [["address", "the Hub's server opens a web address and expects an answer."],
-     ["MCP", "it speaks to an MCP server, lists its tools and counts them."],
-     ["port", "it checks that a port answers."],
-     ["certificate", "it reads the TLS certificate and warns two weeks before it expires."],
-     ["heartbeat", "for anything the Hub cannot reach itself, a machine inside your network or a nightly job. The Hub gives that entry a secret web address of its own (https://entrosana.app/api/hooks/ followed by a long random key); your job calls it on its schedule, and the dot stays green as long as the calls keep coming."]].forEach(function (k) { var li = el("li"); li.appendChild(el("b", null, k[0] + " — ")); li.appendChild(document.createTextNode(k[1])); ul.appendChild(li); });
+    [["The Hub checks my service.", " You give the Hub an address of yours: a web address, an MCP server, a host and port, or a certificate name. The Hub tries it on a fixed rhythm and records whether it answered."],
+     ["My service reports to the Hub.", " For things the Hub cannot reach itself: a machine inside your network, a cron job, a backup script. The Hub gives you a secret web address. Your job calls that address every time it runs. While the calls keep coming, the dot stays green; when they stop, it turns amber, then grey."]].forEach(function (k) {
+      var li = el("li"); li.appendChild(el("b", null, k[0])); li.appendChild(document.createTextNode(k[1])); ul.appendChild(li);
+    });
     h.appendChild(ul);
 
-    // Wie man einen anlegt. Die Schritte folgen den Feldern des Dialogs, damit
-    // hier nichts steht, was dort nicht verlangt wird.
-    h.appendChild(el("p", "hint__t", "How to add one"));
+    h.appendChild(el("p", "hint__t", "How to set one up"));
     var ol = el("ol", "measure");
     [["Press «+ Add a service».", ""],
-     ["Give it a name.", " That is the only field that is always required; the short description beside it is optional."],
-     ["Choose how it is checked.", " The five kinds above, named the same in the menu; the form asks for the rest depending on which one you pick."],
-     ["Put in the address the Hub should reach.", " A web address for address and MCP, host and port for port and certificate. Heartbeat is the exception, it needs none."],
-     ["For a heartbeat, copy the secret web address the Hub shows right after «Add».", " It looks like https://entrosana.app/api/hooks/3f9c… and belongs to this one entry; it appears once, with a ready-made curl line. Paste it into the job or the machine you want to watch, so it calls the address on its schedule, at least once per interval. Lost it? «new address» in the row makes a fresh one and retires the old."],
-     ["Pick how often it is checked, and where it belongs.", " Group and place are labels for sorting the list, they change nothing about the check."]].forEach(function (k) {
+     ["Give it a name.", " That is the only thing you must fill in."],
+     ["Choose the direction:", " «The Hub checks my service» or «My service reports to the Hub»."],
+     ["If the Hub checks it:", " pick the kind of check (address, MCP, port or certificate) and type the address of your service."],
+     ["If it reports to the Hub:", " press «Add and get the address». The Hub shows the secret address once, with a ready-made command line. Copy it into the job or the machine, so it calls the address each time it runs. Lost it? «new address» in the row makes a new one."],
+     ["Optional:", " a short description, a category, where it sits, and how often. Category and place only sort the list. «How often» is how often the Hub checks, or how often a report must arrive."]].forEach(function (k) {
       var li = el("li"); li.appendChild(el("b", null, k[0]));
       if (k[1]) li.appendChild(document.createTextNode(k[1]));
       ol.appendChild(li);
     });
     h.appendChild(ol);
 
-    h.appendChild(el("p", null, signedIn ? "Addresses stay on the server; the list is yours and nobody else sees it." : "The list belongs to your account and nobody else sees it. Sign in or register to keep one; it takes one mail."));
+    h.appendChild(el("p", "hint__t", "Who sees it"));
+    var who = signedIn ? "Only you. Addresses stay on the server; the list shows name, category and result." : "Only the account that made the list. Sign in or register to keep one.";
+    if (signedIn && snapFor()) who += " As the owner you also see the services of the Hub's own machine here; they are read on the machine every ten minutes.";
+    h.appendChild(el("p", null, who));
     return h;
   }
 
-  // Der Erklärtext war als Block die halbe Seite lang und stand jedes Mal da,
-  // auch wenn man ihn längst gelesen hatte. Jetzt liegt er hinter einem Knopf
-  // neben «Add a service» und ist damit auch dann erreichbar, wenn die Liste
-  // schon gefüllt ist (vorher gab es ihn dort gar nicht).
-  function infoPanel(signedIn) {
-    var wrap = el("div", "svc__info svc__pop"); wrap.id = "svc-info"; wrap.hidden = true;
-    wrap.setAttribute("role", "dialog"); wrap.setAttribute("aria-label", "What this page is for");
-    var head = el("div", "svc__pop__head"); head.appendChild(el("p", "hint__t", "What this page is for"));
-    var x = el("button", "iconbtn svc__pop__x", "\u00d7"); x.type = "button"; x.setAttribute("aria-label", "Close"); head.appendChild(x);
-    wrap.appendChild(head);
-    wrap.appendChild(bubble(signedIn, true));
-    x.addEventListener("click", function () { closeInfo(); });
-    return wrap;
+  // Das Fenster: gross, in der Mitte, scrollt in sich. Schliesst mit ×, «Got it», Escape oder Klick daneben.
+  var infoDlg = null;
+  function infoDialog(signedIn) {
+    if (infoDlg) infoDlg.remove();
+    infoDlg = el("dialog", "pick svc__infodlg"); infoDlg.setAttribute("aria-label", "What this page is for");
+    var box = el("div", "pick__box");
+    var head = el("div", "svc__pop__head"); head.appendChild(el("p", "h3", "What this page is for"));
+    var x = el("button", "iconbtn svc__pop__x", "\u00d7"); x.type = "button"; x.setAttribute("aria-label", "Close"); x.addEventListener("click", function () { infoDlg.close(); }); head.appendChild(x);
+    box.appendChild(head); box.appendChild(bubble(signedIn, true));
+    var act = el("div", "actions"); var ok = el("button", "btn", "Got it"); ok.type = "button"; ok.addEventListener("click", function () { infoDlg.close(); }); act.appendChild(ok); box.appendChild(act);
+    infoDlg.appendChild(box);
+    infoDlg.addEventListener("click", function (e) { if (e.target === infoDlg) infoDlg.close(); });
+    document.body.appendChild(infoDlg);
+    return infoDlg;
   }
-  var infoState = { panel: null, btn: null };
-  function closeInfo() {
-    var p = infoState.panel, b = infoState.btn; if (!p || p.hidden) return;
-    p.hidden = true; if (b) { b.setAttribute("aria-expanded", "false"); b.classList.remove("is-on"); b.focus(); }
-  }
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeInfo(); });
-  document.addEventListener("click", function (e) {
-    var p = infoState.panel, b = infoState.btn; if (!p || p.hidden) return;
-    if (p.contains(e.target) || (b && b.contains(e.target))) return;
-    closeInfo();
-  });
-  function infoBtn(panel) {
+  function infoBtn(dialogEl) {
     var b = el("button", "iconbtn iconbtn--info"); b.type = "button";
     b.title = "What this page is for";
     b.setAttribute("aria-label", "What this page is for");
-    b.setAttribute("aria-controls", "svc-info");
-    b.setAttribute("aria-expanded", "false");
+    b.setAttribute("aria-haspopup", "dialog");
     b.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" ' +
       'stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/>' +
       '<path d="M12 11.4v4.8"/><circle cx="12" cy="8.1" r=".95" fill="currentColor" stroke="none"/></svg>';
-    infoState.panel = panel; infoState.btn = b;
-    b.addEventListener("click", function () {
-      var open = panel.hidden;
-      panel.hidden = !open;
-      b.setAttribute("aria-expanded", String(open));
-      b.classList.toggle("is-on", open);
-      if (open) { var f = panel.querySelector(".svc__pop__x"); if (f) f.focus(); }
-    });
+    b.addEventListener("click", function () { if (!dialogEl.open) dialogEl.showModal(); });
     return b;
   }
 
@@ -119,7 +104,7 @@
       if (nWait) { var q = el("span", "note note--idle"); q.appendChild(el("span", "led led--wait")); q.appendChild(document.createTextNode(nWait + " waiting")); bar.appendChild(q); }
     }
     var add = el("button", "btn", "+ Add a service"); add.type = "button"; add.addEventListener("click", openAdd); bar.appendChild(add);
-    var info = infoPanel(true), iw = el("span", "svc__infowrap"); iw.appendChild(infoBtn(info)); iw.appendChild(info); bar.appendChild(iw);
+    bar.appendChild(infoBtn(infoDialog(true)));
     UI.appendChild(bar);
     try { localStorage.setItem("entrosana-svc-own:v1", String(own.length)); localStorage.setItem("entrosana-svc-machine:v1", String(machine.length)); } catch (e) {}   // Zähler in der Leiste auf den anderen Seiten
     var sc = document.getElementById("svc-count"); if (sc) sc.textContent = items.length || "";

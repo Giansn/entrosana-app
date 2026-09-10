@@ -2027,30 +2027,18 @@ button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
   background:color-mix(in srgb, var(--seal) 12%, transparent);
 }
 .iconbtn--info .ico{ width:1.15rem; height:1.15rem }
-.svc__infowrap{ position:relative; display:inline-flex; flex:none }
-.svc__info[hidden]{ display:none }
-/* Die Erklärung als Blase am (i)-Knopf (2026-09-10): schwebt unter dem Knopf, rechts bündig, scrollt in sich. */
-.svc__pop{
-  position:absolute; top:calc(100% + .75rem); right:0; z-index:40;
-  width:min(92vw, 31rem); max-height:min(72vh, 38rem); overflow:auto; overscroll-behavior:contain;
-  background:var(--card-bg); color:var(--ink); border:1px solid var(--line-ui); border-radius:var(--radius);
-  box-shadow:var(--shadow-2); padding:.55rem 1rem .8rem; text-align:left; font-weight:400;
-}
-.svc__pop::before{
-  content:""; position:absolute; top:-.42rem; right:.62rem; width:.75rem; height:.75rem;
-  background:var(--card-bg); border-left:1px solid var(--line-ui); border-top:1px solid var(--line-ui); transform:rotate(45deg);
-}
-.svc__pop__head{ display:flex; align-items:center; justify-content:space-between; gap:.6rem; position:sticky; top:0; background:var(--card-bg); padding:.15rem 0 .35rem; border-bottom:1px solid var(--line) }
-.svc__pop__head .hint__t{ margin:0 }
-.svc__pop__x{ width:1.9rem; height:1.9rem; flex:none; font-size:1.2rem; line-height:1; color:var(--muted) }
+/* Die Erklärung als grosses Fenster in der Mitte (2026-09-10): breiter als der Dialog, scrollt in sich. */
+.svc__infodlg{ max-width:min(94vw, 46rem) }
+.svc__infodlg .pick__box{ max-height:84vh; overflow:auto; overscroll-behavior:contain }
+.svc__pop__head{ display:flex; align-items:flex-start; justify-content:space-between; gap:.6rem; position:sticky; top:0; z-index:1; background:var(--card-bg); padding:0 0 .5rem; margin:0 0 .2rem; border-bottom:1px solid var(--line) }
+.svc__pop__head .h3{ margin:0 }
+.svc__pop__x{ width:2rem; height:2rem; flex:none; font-size:1.25rem; line-height:1; color:var(--muted) }
 .svc__pop__x:hover{ color:var(--seal); border-color:var(--seal) }
-.svc__pop .svc__bubble{ border:0; padding:0; margin:.7rem 0 0; font-size:.92rem }
-.svc__pop .svc__bubble .measure{ max-width:none }
-@media (max-width:759.98px){
-  .svc__infowrap{ position:static }
-  .svc__pop{ position:fixed; top:auto; left:.6rem; right:.6rem; bottom:.6rem; width:auto; max-height:78vh }
-  .svc__pop::before{ display:none }
-}
+.svc__infodlg .svc__bubble{ border:0; padding:0; margin:.6rem 0 0; font-size:.98rem; line-height:1.55; color:var(--ink-2) }
+.svc__infodlg .svc__bubble .measure{ max-width:none }
+.svc__infodlg .svc__bubble .hint__t{ margin:1.1rem 0 .4rem; font-size:1.02rem; color:var(--ink) }
+.svc__infodlg .svc__bubble li{ margin:.4rem 0 }
+.svc__infodlg .actions{ margin-top:1.2rem }
 .svc__info .hint{ margin:0 }
 .svc__info ol.measure{ margin:.35rem 0 .9rem; padding-left:1.3rem }
 .svc__info ol.measure li{ margin-bottom:.35rem }
@@ -2137,3 +2125,94 @@ button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
 .danger__row{ display:flex; align-items:center; gap:1rem; flex-wrap:wrap; padding:.75rem 0; border-bottom:1px solid color-mix(in srgb,var(--warn) 22%,transparent) }
 .danger__row:last-child{ border-bottom:0 }
 .danger__row p{ margin:0; font-size:.9rem; color:var(--ink-2); flex:1 1 22rem }
+
+/* ---------- Profil als Portfolio (2026-09-10) ----------
+   Für /p/<id> und /me dieselbe Form. Kopf mit Bild, Name und Einzeiler,
+   ein Zahlenband mit dem, was sich belegen lässt, die Biographie als Prosa,
+   die Module als Schaufenster, das Journal als Zeitleiste. Kästen nur für
+   die Ausstellungsstücke. Auf /me kommt links die Person mit Bearbeiten,
+   rechts die Arbeit als geführte Liste. */
+.hero{ display:grid; grid-template-columns:auto 1fr auto; gap:1.8rem; align-items:center; padding:1.2rem 0 2rem }
+.hero__av{
+  width:7.5rem; height:7.5rem; border-radius:999px; overflow:hidden; display:grid; place-items:center;
+  border:1px solid var(--seal); color:var(--seal); background:color-mix(in srgb,var(--seal) 12%,transparent);
+  font-family:var(--font-mono); font-size:2.6rem; box-shadow:var(--shadow-1);
+}
+.hero__av img{ width:100%; height:100%; object-fit:cover; display:block }
+.hero__name{ font-size:var(--step-3); font-weight:600; letter-spacing:-.03em; line-height:1.02; margin:0 }
+.hero__line{ font-size:var(--step-1); color:var(--ink-2); margin:.45rem 0 .7rem; max-width:44ch; line-height:1.4 }
+.hero__meta{ display:flex; flex-wrap:wrap; gap:.4rem 1.1rem; align-items:center; font-family:var(--font-mono); font-size:var(--step--1); color:var(--muted) }
+.hero__meta .tag{ margin:0 }
+.hero__act{ display:flex; flex-direction:column; gap:.5rem; align-items:stretch }
+.facts2{ display:flex; flex-wrap:wrap; gap:0 2.4rem; padding:1rem 0 1.4rem; position:relative; margin-bottom:2rem }
+.facts2::before,.facts2::after{
+  content:""; position:absolute; left:0; right:0; height:1px;
+  background:linear-gradient(90deg, color-mix(in srgb,var(--seal) 26%,transparent), transparent 82%);
+}
+.facts2::before{ top:0 } .facts2::after{ bottom:0 }
+.fact2{ display:grid; gap:.1rem }
+.fact2 b{ font-size:var(--step-1); font-weight:600; letter-spacing:-.015em }
+.fact2 span{ font-family:var(--font-mono); font-size:.74rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted) }
+.bio{ max-width:62ch; margin:0 0 2.6rem; font-size:var(--step-0); line-height:1.65; color:var(--ink-2); white-space:pre-wrap }
+.bio--none{ color:var(--muted); font-style:italic }
+.psect{ margin:0 0 2.8rem }
+.psect__h{ display:flex; align-items:baseline; gap:.7rem; margin:0 0 .25rem }
+.psect__h h2{ font-size:var(--step-2); font-weight:600; letter-spacing:-.02em; margin:0 }
+.psect__h > span, .psect__h > a{ margin-left:auto; font-family:var(--font-mono); font-size:.78rem; color:var(--muted); text-decoration:none }
+.psect__h > a{ color:var(--seal) }
+.psect__s{ color:var(--muted); font-size:.92rem; margin:0 0 1.1rem }
+.show{ display:grid; gap:1.1rem; grid-template-columns:repeat(auto-fill, minmax(17rem, 1fr)) }
+.piece{ padding:1.3rem 1.3rem 1.1rem; min-height:14rem; display:flex; flex-direction:column; color:inherit; text-decoration:none }
+.piece .chip{ align-self:flex-start; margin-bottom:.9rem }
+.piece__t{ font-size:var(--step-1); font-weight:600; letter-spacing:-.015em; margin:0 0 .35rem; line-height:1.2 }
+.piece__l{ color:var(--ink-2); font-size:.92rem; margin:0 0 .9rem; flex:1 }
+.piece__f{ font-family:var(--font-mono); font-size:.74rem; color:var(--muted); display:flex; justify-content:space-between; gap:.6rem; padding-top:.7rem; position:relative }
+.piece__f::before{ content:""; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg, color-mix(in srgb,var(--seal) 26%,transparent), transparent 82%) }
+.piece__f .st{ color:var(--seal) }
+.tl{ display:grid }
+.tl__d{ display:grid; grid-template-columns:6rem 1fr; gap:1.2rem; padding:.8rem 0; border-bottom:1px solid var(--line) }
+.tl__d:last-child{ border-bottom:0 }
+.tl__k{ font-family:var(--font-mono); font-size:.78rem; color:var(--muted); padding-top:.15rem }
+.tl__t{ margin:0; color:var(--ink-2); max-width:62ch; white-space:pre-wrap }
+.tl__acts{ grid-column:2; display:flex; gap:.3rem; flex-wrap:wrap; margin-top:.2rem }
+.quiet{ color:var(--muted); font-size:.92rem; margin:0 }
+
+/* /me: zweispaltig, links die Person, rechts die Arbeit. */
+.pf{ display:grid; grid-template-columns:19rem 1fr; gap:3rem; align-items:start; padding:1.2rem 0 2rem }
+.pf__id{ position:sticky; top:5.5rem }
+.pf__av{
+  width:9rem; height:9rem; border-radius:999px; display:grid; place-items:center; overflow:hidden;
+  border:1px solid var(--seal); color:var(--seal); background:color-mix(in srgb,var(--seal) 12%,transparent);
+  font-family:var(--font-mono); font-size:3rem; margin-bottom:1rem;
+}
+.pf__av img{ width:100%; height:100%; object-fit:cover; display:block }
+.pf__name{ font-size:var(--step-2); font-weight:600; letter-spacing:-.025em; margin:0; line-height:1.1 }
+.pf__handle{ font-family:var(--font-mono); font-size:var(--step--1); color:var(--muted); margin:.15rem 0 .8rem }
+.pf__bio{ margin:0 0 1rem; color:var(--ink-2); max-width:34ch; white-space:pre-wrap; font-size:.95rem }
+.pf__facts{ display:grid; gap:.4rem; margin:0 0 1.1rem; font-size:.9rem; color:var(--ink-2) }
+.pf__fact{ display:flex; gap:.55rem; align-items:baseline }
+.pf__fact .ico{ width:1rem; height:1rem; flex:none; color:var(--muted); align-self:center }
+.pf__fact a{ color:inherit } .pf__fact a:hover{ color:var(--seal) }
+.pf__chips{ display:flex; flex-wrap:wrap; gap:.3rem; margin:0 0 1.2rem }
+.pf__edit{ width:100%; display:inline-flex; justify-content:center }
+.pf__quiet{ display:flex; flex-direction:column; gap:.35rem; margin-top:1rem; font-family:var(--font-mono); font-size:var(--step--1) }
+.pf__quiet a{ color:var(--muted); text-decoration:none } .pf__quiet a:hover{ color:var(--seal) }
+.pf__main{ min-width:0 }
+.pf__lede{ font-size:var(--step-1); line-height:1.5; color:var(--ink-2); max-width:60ch; margin:0 0 2rem }
+.rowlist{ display:grid }
+.row2{ display:grid; grid-template-columns:1fr auto; gap:.2rem 1.5rem; padding:1rem 0; border-bottom:1px solid var(--line); text-decoration:none; color:inherit }
+.row2:last-child{ border-bottom:0 }
+.row2:hover .row2__t{ color:var(--seal) }
+.row2__t{ font-size:1.05rem; font-weight:500; grid-column:1 }
+.row2__s{ color:var(--muted); font-size:.9rem; grid-column:1 }
+.row2__m{ grid-column:2; grid-row:1/3; align-self:center; text-align:right; font-family:var(--font-mono); font-size:.78rem; color:var(--muted) }
+.row2__m .ok{ color:var(--verify) }
+.pf__edit-form{ margin-top:1rem }
+.pf__edit-form[hidden]{ display:none }
+.acct{ margin-top:3rem; padding-top:2rem; position:relative }
+.acct::before{ content:""; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg, color-mix(in srgb,var(--seal) 26%,transparent), transparent 82%) }
+.acct .block{ padding-top:1.2rem }
+@media (max-width:900px){
+  .pf{ grid-template-columns:1fr; gap:1.6rem } .pf__id{ position:static } .pf__av{ width:5rem; height:5rem; font-size:1.8rem }
+  .hero{ grid-template-columns:auto 1fr } .hero__act{ grid-column:1/-1; flex-direction:row } .hero__av{ width:4.6rem; height:4.6rem; font-size:1.6rem }
+}

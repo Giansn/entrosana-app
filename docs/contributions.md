@@ -506,8 +506,11 @@ sagt, wie viele Zeilen so entstehen. Die Leiste zählt eigene und Maschine zusam
 beide Zahlen im Browser ab, `entrosana-svc-own:v1` und `entrosana-svc-machine:v1`). Einträge aus der
 Fassung bis 2026-09-10, die allein im Browser lagen (`entrosana-services:v1`), erscheinen als Kasten
 mit «Move them to my account» (je Eintrag ein `POST /api/me/services`, die gegebene Prüfung bleibt,
-ohne Prüfung wird es ein Lebenszeichen) oder «Discard». Die Erklärung der Seite ist eine Blase am
-(i)-Knopf (Escape, Klick daneben oder × schliessen; am Telefon ein Blatt am unteren Rand).
+ohne Prüfung wird es ein Lebenszeichen) oder «Discard». Die Erklärung der Seite ist ein grosses Fenster in der Mitte
+hinter dem (i) (`dialog.svc__infodlg`, bis 46rem breit, scrollt in sich; ×, «Got it», Escape oder Klick
+daneben schliessen); der Text sagt zuerst, wozu die Seite da ist, dann die zwei Richtungen, dann die
+Schritte. Pflichtfelder tragen ein * (`.req`): Name immer, Adresse nur in der Richtung «The Hub checks my
+service».
 Der Dialog fragt nach dem Namen zuerst «Who calls whom»: «The Hub checks my service» (dann «How it is
 checked» mit address, MCP, port, certificate und darunter «Address of your service») oder «My service
 reports to the Hub» (Lebenszeichen, kein Adressfeld; die Adresse kommt vom Hub). Die Wahl bleibt im
