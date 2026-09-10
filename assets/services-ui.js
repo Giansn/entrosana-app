@@ -2,7 +2,7 @@
    von e14 (url, mcp, tcp, tls) oder der Dienst meldet sich selbst (webhook). Ohne Konto
    steht hier die Erklärung und der Weg zur Anmeldung; ein neues Konto sieht eine leere
    Liste mit derselben Erklärung. Das Team sieht darunter den Schnappschuss der eigenen
-   Maschine (window.__services aus tools/services-snapshot.sh). */
+   Maschine (data.machine aus tools/services-snapshot.sh, kommt nur für den Eigentümer mit). */
 (function () {
   var UI = document.getElementById("svc-ui");
   if (!UI) return;
@@ -20,16 +20,16 @@
   var tk = token(), data = null;
 
   // Die Erklärung: für Besucher ohne Konto und für Konten ohne Eintrag dieselbe.
-  function bubble(signedIn) {
+  function bubble(signedIn, asPop) {
     var h = el("div", "hint svc__bubble");
-    h.appendChild(el("p", "hint__t", "What this page is for"));
+    if (!asPop) h.appendChild(el("p", "hint__t", "What this page is for"));
     h.appendChild(el("p", null, "A list of things that must be up for your work: a school server, a file share in the staff room, an MCP server your assistant talks to, a nightly backup job. The Hub watches them and shows a dot per service: green when it answers, amber when something is off, grey when nothing has been heard yet."));
     var ul = el("ul", "measure");
     [["address", "the Hub's server opens a web address and expects an answer."],
      ["MCP", "it speaks to an MCP server, lists its tools and counts them."],
      ["port", "it checks that a port answers."],
      ["certificate", "it reads the TLS certificate and warns two weeks before it expires."],
-     ["heartbeat", "for anything the Hub cannot reach, inside your network or a cron job: the service calls a secret address of its own, and the dot stays green as long as it keeps calling."]].forEach(function (k) { var li = el("li"); li.appendChild(el("b", null, k[0] + " — ")); li.appendChild(document.createTextNode(k[1])); ul.appendChild(li); });
+     ["heartbeat", "for anything the Hub cannot reach itself, a machine inside your network or a nightly job. The Hub gives that entry a secret web address of its own (https://entrosana.app/api/hooks/ followed by a long random key); your job calls it on its schedule, and the dot stays green as long as the calls keep coming."]].forEach(function (k) { var li = el("li"); li.appendChild(el("b", null, k[0] + " — ")); li.appendChild(document.createTextNode(k[1])); ul.appendChild(li); });
     h.appendChild(ul);
 
     // Wie man einen anlegt. Die Schritte folgen den Feldern des Dialogs, damit
@@ -40,7 +40,7 @@
      ["Give it a name.", " That is the only field that is always required; the short description beside it is optional."],
      ["Choose what kind of check it is.", " The five kinds above; the form asks for the rest depending on which one you pick."],
      ["Put in the address the Hub should reach.", " A web address for address and MCP, host and port for port and certificate. Heartbeat is the exception, it needs none."],
-     ["For heartbeat, take the secret address the Hub hands back.", " Your job or your machine calls it on a schedule, and the dot stays green as long as the calls keep coming."],
+     ["For a heartbeat, copy the secret web address the Hub shows right after «Add».", " It looks like https://entrosana.app/api/hooks/3f9c… and belongs to this one entry; it appears once, with a ready-made curl line. Paste it into the job or the machine you want to watch, so it calls the address on its schedule, at least once per interval. Lost it? «new address» in the row makes a fresh one and retires the old."],
      ["Pick how often it is checked, and where it belongs.", " Group and place are labels for sorting the list, they change nothing about the check."]].forEach(function (k) {
       var li = el("li"); li.appendChild(el("b", null, k[0]));
       if (k[1]) li.appendChild(document.createTextNode(k[1]));
@@ -57,10 +57,26 @@
   // neben «Add a service» und ist damit auch dann erreichbar, wenn die Liste
   // schon gefüllt ist (vorher gab es ihn dort gar nicht).
   function infoPanel(signedIn) {
-    var wrap = el("div", "svc__info"); wrap.id = "svc-info"; wrap.hidden = true;
-    wrap.appendChild(bubble(signedIn));
+    var wrap = el("div", "svc__info svc__pop"); wrap.id = "svc-info"; wrap.hidden = true;
+    wrap.setAttribute("role", "dialog"); wrap.setAttribute("aria-label", "What this page is for");
+    var head = el("div", "svc__pop__head"); head.appendChild(el("p", "hint__t", "What this page is for"));
+    var x = el("button", "iconbtn svc__pop__x", "\u00d7"); x.type = "button"; x.setAttribute("aria-label", "Close"); head.appendChild(x);
+    wrap.appendChild(head);
+    wrap.appendChild(bubble(signedIn, true));
+    x.addEventListener("click", function () { closeInfo(); });
     return wrap;
   }
+  var infoState = { panel: null, btn: null };
+  function closeInfo() {
+    var p = infoState.panel, b = infoState.btn; if (!p || p.hidden) return;
+    p.hidden = true; if (b) { b.setAttribute("aria-expanded", "false"); b.classList.remove("is-on"); b.focus(); }
+  }
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeInfo(); });
+  document.addEventListener("click", function (e) {
+    var p = infoState.panel, b = infoState.btn; if (!p || p.hidden) return;
+    if (p.contains(e.target) || (b && b.contains(e.target))) return;
+    closeInfo();
+  });
   function infoBtn(panel) {
     var b = el("button", "iconbtn iconbtn--info"); b.type = "button";
     b.title = "What this page is for";
@@ -70,12 +86,13 @@
     b.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" ' +
       'stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/>' +
       '<path d="M12 11.4v4.8"/><circle cx="12" cy="8.1" r=".95" fill="currentColor" stroke="none"/></svg>';
+    infoState.panel = panel; infoState.btn = b;
     b.addEventListener("click", function () {
       var open = panel.hidden;
       panel.hidden = !open;
       b.setAttribute("aria-expanded", String(open));
       b.classList.toggle("is-on", open);
-      if (open) panel.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      if (open) { var f = panel.querySelector(".svc__pop__x"); if (f) f.focus(); }
     });
     return b;
   }
@@ -89,10 +106,11 @@
       UI.appendChild(bubble(false));
       var act = el("div", "actions"); var a1 = el("a", "btn", "Sign in or register"); a1.href = "/me"; act.appendChild(a1); UI.appendChild(act);
       var lg = legacyItems(); if (lg.length) UI.appendChild(el("p", "note note--idle", lg.length + (lg.length === 1 ? " entry" : " entries") + " from the earlier version of this page are still in this browser; sign in and they can be moved to your account."));
-      paintSnapshot(false);
       return;
     }
-    var items = (data && data.items) || [];
+    var own = (data && data.items) || [];
+    var snap = snapFor(), machine = snap ? snap.services.map(function (s) { return { machine: true, name: s.name, what: s.what, place: s.where, group: s.group, state: s.state, status: s.status, flag: s.flag, read: snap.read, host: snap.host }; }) : [];
+    var items = own.concat(machine);   // eine Liste: eigene Einträge und, beim Eigentümer, die Dienste der Maschine
     var bar = el("div", "svcbar");
     var nOk = items.filter(function (r) { return r.state === "ok"; }).length, nBad = items.filter(function (r) { return r.state === "warn" || r.state === "off"; }).length, nWait = items.length - nOk - nBad;
     if (items.length) {
@@ -101,26 +119,18 @@
       if (nWait) { var q = el("span", "note note--idle"); q.appendChild(el("span", "led led--wait")); q.appendChild(document.createTextNode(nWait + " waiting")); bar.appendChild(q); }
     }
     var add = el("button", "btn", "+ Add a service"); add.type = "button"; add.addEventListener("click", openAdd); bar.appendChild(add);
-    var info = infoPanel(true); bar.appendChild(infoBtn(info));
-    UI.appendChild(bar); UI.appendChild(info);
-    var snap = snapFor(), nSnap = snap ? snap.services.length : 0;
-    if (nSnap) {   // die Maschine zählt mit, damit die Zeile zur Tabelle unten passt
-      var sn = el("span", "note note--idle"); sn.appendChild(el("span", "led led--wait")); sn.appendChild(document.createTextNode(nSnap + " on the Hub's machine")); bar.insertBefore(sn, add);
-    }
-    try { localStorage.setItem("entrosana-svc-own:v1", String(items.length)); } catch (e) {}   // für den Zähler in der Leiste auf den anderen Seiten
-    var sc = document.getElementById("svc-count"); if (sc) sc.textContent = (items.length + nSnap) || "";
+    var info = infoPanel(true), iw = el("span", "svc__infowrap"); iw.appendChild(infoBtn(info)); iw.appendChild(info); bar.appendChild(iw);
+    UI.appendChild(bar);
+    try { localStorage.setItem("entrosana-svc-own:v1", String(own.length)); localStorage.setItem("entrosana-svc-machine:v1", String(machine.length)); } catch (e) {}   // Zähler in der Leiste auf den anderen Seiten
+    var sc = document.getElementById("svc-count"); if (sc) sc.textContent = items.length || "";
+    if (machine.length) UI.appendChild(el("p", "fine", machine.length + " of these are read straight from " + snap.host + " by the snapshot script, last at " + snap.read + "; the others are checked by the Hub on the interval you set."));
     var legacy = legacyItems();
     if (legacy.length) UI.appendChild(legacyBox(legacy));
     if (!items.length) {
       var none = el("div", "hint");
-      if (nSnap) {
-        none.appendChild(el("p", "hint__t", "Nothing in your own list yet; " + nSnap + " services are running on the Hub's machine."));
-        none.appendChild(el("p", null, "The table below is read from " + snap.host + " every ten minutes by the snapshot script; those rows belong to the machine, not to your account, and get no check of their own. Use «+ Add a service» for anything you want the Hub to watch for you" + (legacy.length ? ", or move the entries from the earlier page above" : "") + "."));
-      } else {
-        none.appendChild(el("p", "hint__t", "Your list is empty."));
-        none.appendChild(el("p", null, legacy.length ? "The entries from the earlier version of this page are above; move them to your account or add a new one." : "Add the first service above. The button beside it says what the Hub can watch."));
-      }
-      UI.appendChild(none); paintSnapshot(true); return;
+      none.appendChild(el("p", "hint__t", "Your list is empty."));
+      none.appendChild(el("p", null, legacy.length ? "The entries from the earlier version of this page are above; move them to your account or add a new one." : "Add the first service above. The button beside it says what the Hub can watch."));
+      UI.appendChild(none); return;
     }
 
     var order = [], byGroup = {};
@@ -137,6 +147,7 @@
       tbl.innerHTML = "<thead><tr><th></th><th>service</th><th>what it serves</th><th>where</th><th>check</th><th class='num'>state</th><th></th></tr></thead>";
       var tb = el("tbody");
       list.forEach(function (r) {
+        if (r.machine) { tb.appendChild(machineRow(r)); if (r.flag) { var fr = el("tr"); var fc = el("td"); fc.colSpan = 7; fc.appendChild(el("span", "svc__flag", r.flag)); fr.appendChild(fc); tb.appendChild(fr); } return; }
         var tr = el("tr"); var c0 = el("td"); c0.appendChild(ledFor(r.state)); tr.appendChild(c0);
         var c1 = el("td", "svc__n"); c1.appendChild(document.createTextNode(r.name)); if (r.target_hint) { c1.appendChild(document.createElement("br")); c1.appendChild(el("span", "fine", r.target_hint)); } tr.appendChild(c1);
         tr.appendChild(el("td", "svc__w", r.what || "")); tr.appendChild(el("td", "svc__p", r.place));
@@ -150,15 +161,21 @@
       });
       tbl.appendChild(tb); body.appendChild(tbl); d.appendChild(body); UI.appendChild(d);
     });
-    UI.appendChild(el("p", "note note--idle", "Checked from the Hub's server on the interval you set; heartbeats count when they arrive. Addresses stay on the server."));
-    paintSnapshot(true);
+    UI.appendChild(el("p", "note note--idle", (machine.length ? "Rows marked " + snap.host + " are read on the machine itself every ten minutes; the others are checked from the Hub's server on the interval you set. " : "Checked from the Hub's server on the interval you set; ") + "Heartbeats count when they arrive. Addresses stay on the server."));
+  }
+  // Eine Zeile der Maschine: gleiche Spalten wie die eigenen, Herkunft statt Prüfart, keine Knöpfe.
+  function machineRow(r) {
+    var tr = el("tr", "svc__mrow"); var c0 = el("td"); c0.appendChild(ledFor(r.state)); tr.appendChild(c0);
+    tr.appendChild(el("td", "svc__n", r.name)); tr.appendChild(el("td", "svc__w", r.what || "")); tr.appendChild(el("td", "svc__p", r.place || ""));
+    var c4 = el("td", "svc__p"); c4.appendChild(el("span", "origin origin--own", r.host)); c4.appendChild(document.createElement("br")); c4.appendChild(el("span", "fine", "read " + r.read)); tr.appendChild(c4);
+    tr.appendChild(el("td", "svc__s num " + (r.state === "ok" ? "ok" : (r.state === "warn" || r.state === "off") ? "warn" : ""), r.status || ""));
+    var c6 = el("td", "num"); c6.appendChild(el("span", "fine", "on the machine")); tr.appendChild(c6);
+    return tr;
   }
 
   // Schnappschuss der eigenen Maschine: nur für das Team.
-  function snapFor() {
-    var s = window.__services;
-    return s && s.services && tk && (tk.standing === "owner" || tk.standing === "reviewer") ? s : null;
-  }
+  // Die Maschine gehört dem Eigentümer: die Schnittstelle gibt den Schnappschuss nur ihm mit.
+  function snapFor() { var s = data && data.machine; return s && s.services ? s : null; }
   // Einträge aus der Fassung bis 2026-09-10 (entrosana-services:v1): lagen nur im Browser, der Server kannte sie nie.
   var K_LEGACY = "entrosana-services:v1";
   function legacyItems() { var o = read(K_LEGACY, null); return o && o.items && o.items.length ? o.items.filter(function (i) { return i && i.name; }) : []; }
@@ -191,27 +208,10 @@
     act.appendChild(mv); act.appendChild(drop); box.appendChild(act);
     return box;
   }
-  function paintSnapshot(signedIn) {
-    var snap = snapFor(); if (!snap) return;
-    var sec = el("div", "svc__snap");
-    sec.appendChild(el("span", "eyebrow", "The Hub's own machine"));
-    sec.appendChild(el("p", "fine", snap.host + " · read " + snap.read + " · " + snap.services.length + " services · read from the machine by tools/services-snapshot.sh every ten minutes, team only; not entries of your account"));
-    var tbl = el("table", "tbl"); tbl.innerHTML = "<thead><tr><th></th><th>service</th><th>what it serves</th><th>where</th><th class='num'>state</th></tr></thead>";
-    var tb = el("tbody"), group = null;
-    snap.services.forEach(function (s) {
-      if (s.group !== group) { group = s.group; var g = el("tr", "svc__grp"); var gc = el("td", null, group); gc.colSpan = 5; g.appendChild(gc); tb.appendChild(g); }
-      var tr = el("tr"); var c0 = el("td"); c0.appendChild(ledFor(s.state)); tr.appendChild(c0);
-      tr.appendChild(el("td", "svc__n", s.name)); tr.appendChild(el("td", "svc__w", s.what)); tr.appendChild(el("td", "svc__p", s.where));
-      tr.appendChild(el("td", "svc__s num " + (s.state === "ok" ? "ok" : s.state === "warn" ? "warn" : ""), s.status)); tb.appendChild(tr);
-      if (s.flag) { var f = el("tr"); var fc = el("td"); fc.colSpan = 5; fc.appendChild(el("span", "svc__flag", s.flag)); f.appendChild(fc); tb.appendChild(f); }
-    });
-    tbl.appendChild(tb); sec.appendChild(tbl); UI.appendChild(sec);
-  }
-
   function showHook(name, url) {
     var box = el("div", "hint svc__hook");
     box.appendChild(el("p", "hint__t", "The secret address for «" + name + "»"));
-    box.appendChild(el("p", null, "Shown once. Have the service call it on its schedule; GET or POST both count, an optional «status» text is kept. The dot stays green while the calls keep coming."));
+    box.appendChild(el("p", null, "This address belongs to this entry alone and is shown only now. Paste it into the job or the machine you want to watch and have it call the address on its schedule, at least once per interval; GET or POST both count, and an optional «status» text is kept. The dot stays green while the calls keep coming. If you lose the address, «new address» in the row makes a fresh one."));
     var pre = el("pre", "watchline", url + "\n\ncurl -fsS " + url + "?status=ok"); box.appendChild(pre);
     var copy = el("button", "btn btn--ghost", "Copy the address"); copy.type = "button";
     copy.addEventListener("click", function () { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { copy.textContent = "Copied"; }); });
@@ -224,7 +224,7 @@
   var dlg = document.getElementById("svc-add");
   var HELP = { url: "The Hub's server opens it and expects an answer below 400. The address stays on the server; only you see this list.",
                mcp: "Streamable HTTP endpoint of an MCP server, for example https://host/mcp. The Hub sends initialize and tools/list and counts the tools. Servers behind a key show as «needs auth».",
-               webhook: "No address needed: you get a secret address after adding. Your service calls it on its schedule; if the calls stop for longer than the interval, the dot turns amber, then grey.",
+               webhook: "Nothing to enter here. After «Add» the Hub shows a secret web address that belongs to this entry alone (https://entrosana.app/api/hooks/…), once, with a curl line. Your job or machine calls it on its schedule; if the calls stop for longer than the interval, the dot turns amber, then grey.",
                tcp: "host:port, for example mail.example.org:993. The Hub checks that the port answers.",
                tls: "A host name, for example example.org. The Hub reads the certificate and warns two weeks before it expires." };
   var PLACEHOLDER = { url: "https://schulserver.example.org/", mcp: "https://tools.example.org/mcp", webhook: "", tcp: "mail.example.org:993", tls: "example.org" };

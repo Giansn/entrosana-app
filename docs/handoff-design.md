@@ -715,3 +715,13 @@ Zahl der Module. Die Wahl bleibt im Gerät (`entrosana-area:v1`), `?area=<id>` f
 Wechsel nachgeführt; ohne Wahl öffnet das erste Gebiet mit Modulen. «Other» erscheint nur, wenn dort etwas liegt.
 Die vorigen Abschnitte (`data-area-section`) sind aus modules.html entfernt; `cards.js` behält den Code dafür.
 
+
+**Nachtrag 2026-09-10, Dienste des Eigentümers.** `assets/services.js` (Schnappschuss der Maschine aus
+`tools/services-snapshot.sh`) wird nicht mehr ausgeliefert und auf keiner Seite mehr eingebunden;
+`api/server.mjs` liest die Datei und gibt sie bei `GET /api/me/services` als `machine` nur dem
+Eigentümer mit. Auf /services stehen diese Zeilen in derselben Liste wie die eigenen Einträge
+(Hostname statt Prüfart, Lesezeit, keine Knöpfe); jedes andere Konto sieht nur seine eigenen. Der
+Zähler in der Leiste liest `entrosana-svc-own:v1` und `entrosana-svc-machine:v1`, die die Seite
+/services ablegt. Die Erklärung der Seite ist eine Blase am (i)-Knopf (`.svc__pop`), am Telefon ein
+Blatt am unteren Rand; der Text zum Lebenszeichen nennt die Adresse `/api/hooks/…`, wann sie
+erscheint und was damit zu tun ist.

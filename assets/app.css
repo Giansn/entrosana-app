@@ -2008,8 +2008,30 @@ button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
   background:color-mix(in srgb, var(--seal) 12%, transparent);
 }
 .iconbtn--info .ico{ width:1.15rem; height:1.15rem }
-.svc__info{ margin:.9rem 0 0 }
+.svc__infowrap{ position:relative; display:inline-flex; flex:none }
 .svc__info[hidden]{ display:none }
+/* Die Erklärung als Blase am (i)-Knopf (2026-09-10): schwebt unter dem Knopf, rechts bündig, scrollt in sich. */
+.svc__pop{
+  position:absolute; top:calc(100% + .75rem); right:0; z-index:40;
+  width:min(92vw, 31rem); max-height:min(72vh, 38rem); overflow:auto; overscroll-behavior:contain;
+  background:var(--card-bg); color:var(--ink); border:1px solid var(--line-ui); border-radius:var(--radius);
+  box-shadow:var(--shadow-2); padding:.55rem 1rem .8rem; text-align:left; font-weight:400;
+}
+.svc__pop::before{
+  content:""; position:absolute; top:-.42rem; right:.62rem; width:.75rem; height:.75rem;
+  background:var(--card-bg); border-left:1px solid var(--line-ui); border-top:1px solid var(--line-ui); transform:rotate(45deg);
+}
+.svc__pop__head{ display:flex; align-items:center; justify-content:space-between; gap:.6rem; position:sticky; top:0; background:var(--card-bg); padding:.15rem 0 .35rem; border-bottom:1px solid var(--line) }
+.svc__pop__head .hint__t{ margin:0 }
+.svc__pop__x{ width:1.9rem; height:1.9rem; flex:none; font-size:1.2rem; line-height:1; color:var(--muted) }
+.svc__pop__x:hover{ color:var(--seal); border-color:var(--seal) }
+.svc__pop .svc__bubble{ border:0; padding:0; margin:.7rem 0 0; font-size:.92rem }
+.svc__pop .svc__bubble .measure{ max-width:none }
+@media (max-width:759.98px){
+  .svc__infowrap{ position:static }
+  .svc__pop{ position:fixed; top:auto; left:.6rem; right:.6rem; bottom:.6rem; width:auto; max-height:78vh }
+  .svc__pop::before{ display:none }
+}
 .svc__info .hint{ margin:0 }
 .svc__info ol.measure{ margin:.35rem 0 .9rem; padding-left:1.3rem }
 .svc__info ol.measure li{ margin-bottom:.35rem }

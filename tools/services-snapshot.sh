@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Liest den Zustand der entrosana-Dienste von der Maschine und schreibt ihn nach
-# assets/services.js. Bewusst eine Datei statt einer Schnittstelle: serve.mjs
-# liefert nur aus, und die Inhaltssicherheitsregel kennt kein connect-src
-# (docs/handoff-design.md §8, §10). Die Seite liest window.__services.
+# assets/services.js. Seit 2026-09-10 liefert serve.mjs die Datei nicht mehr aus;
+# api/server.mjs liest sie und gibt sie bei GET /api/me/services nur dem
+# Eigentümer mit (seine Dienste sind seine Dienste, andere Konten sehen nur ihre
+# eigenen). Die Seite /services zeigt die Zeilen in derselben Liste wie die
+# eigenen Einträge.
 #
 # Aufruf:  bash tools/services-snapshot.sh
 set -uo pipefail

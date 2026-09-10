@@ -362,8 +362,8 @@
     if (rt) rt.textContent = state.records.filter(function (r) { return isToday(r.t); }).length || "";
     var sc = document.getElementById("svc-count");
     if (sc) { try { var stk = JSON.parse(localStorage.getItem("entrosana-app:token") || "null"), own = Number(localStorage.getItem("entrosana-svc-own:v1") || 0) || 0;
-      var mach = (stk && window.__services && (stk.standing === "owner" || stk.standing === "reviewer")) ? window.__services.services.length : 0;
-      sc.textContent = (stk ? own + mach : 0) || ""; } catch (e) { sc.textContent = ""; } }
+      var mach = Number(localStorage.getItem("entrosana-svc-machine:v1") || 0) || 0;   // nur beim Eigentümer je > 0
+      sc.textContent = (stk && stk.expires > new Date().toISOString() ? own + mach : 0) || ""; } catch (e) { sc.textContent = ""; } }
   }
 
   // ---------------------------------------------------------------- Ansichten

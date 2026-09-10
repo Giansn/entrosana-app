@@ -70,7 +70,6 @@ const ROUTES = new Map([
   ["/assets/project.css", { file: "assets/project.css", type: CSS }],
   ["/assets/project-shell.css", { file: "assets/project-shell.css", type: CSS }],
   ["/assets/seeds.js",    { file: "assets/seeds.js",    type: JS }],
-  ["/assets/services.js", { file: "assets/services.js", type: JS }],
   ["/assets/theme.js",    { file: "assets/theme.js",    type: JS }],
   ["/assets/status.js",   { file: "assets/status.js",   type: JS }],
   ["/assets/me.js",       { file: "assets/me.js",       type: JS }],

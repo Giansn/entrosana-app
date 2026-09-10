@@ -8,7 +8,7 @@
 // Anfrage wird nie ein Pfad oder eine SQL-Anweisung gebaut. Wer was darf,
 // entscheidet allein policy.mjs; jede Handlung wird in audit angehängt.
 import { createServer } from "node:http";
-import { appendFileSync, mkdirSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -552,10 +552,21 @@ async function svcCheckAndStore(r) {
   const res = await runCheck(r);
   db.prepare("UPDATE services SET last_state = ?, last_status = ?, last_checked = ?, last_ms = ? WHERE id = ?").run(res.state, String(res.status).slice(0, 160), new Date().toISOString(), res.ms | 0, r.id);
 }
+// Der Schnappschuss der Maschine (tools/services-snapshot.sh, alle zehn Minuten) gehört dem Eigentümer:
+// seine Dienste sind seine Dienste. Seit 2026-09-10 nicht mehr als Datei ausgeliefert, sondern hier mitgegeben.
+function machineSnapshot() {
+  try {
+    const raw = readFileSync(join(HERE, "..", "assets", "services.js"), "utf8");
+    const a = raw.indexOf("{"), b = raw.lastIndexOf("}");
+    const s = JSON.parse(raw.slice(a, b + 1));
+    return s && Array.isArray(s.services) ? { host: s.host, read: s.read, services: s.services } : null;
+  } catch { return null; }
+}
 routes.set("GET /api/me/services", (ctx) => {
   if (!ctx.actor || ctx.actor.kind !== "email") throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
   const rows = db.prepare("SELECT * FROM services WHERE actor_id = ? ORDER BY grp, name").all(ctx.actor.id);
-  send(ctx.res, 200, { items: rows.map(svcRow), team: isTeam(ctx.actor), kinds: SVC_KINDS, groups: SVC_GROUPS, places: SVC_PLACES, intervals: SVC_INTERVALS, max: SVC_MAX });
+  send(ctx.res, 200, { items: rows.map(svcRow), team: isTeam(ctx.actor), machine: ctx.actor.roles.has("owner") ? machineSnapshot() : null,
+    kinds: SVC_KINDS, groups: SVC_GROUPS, places: SVC_PLACES, intervals: SVC_INTERVALS, max: SVC_MAX });
 });
 routes.set("POST /api/me/services", async (ctx) => {
   if (!ctx.actor || ctx.actor.kind !== "email") throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
