@@ -25,7 +25,7 @@ test("dateien: name, endung, grenzen", () => {
 
 test("dateien: zeilen, kontingent, öffentliche auswahl", () => {
   const { db, migrations } = open(":memory:");
-  assert.equal(migrations.total, 20);
+  assert.equal(migrations.total, 21);
   const now = new Date().toISOString();
   db.prepare("INSERT INTO actors(kind, email, name, created) VALUES ('email', 'a@example.org', 'A', ?)").run(now);
   const id = db.prepare("SELECT id FROM actors WHERE email = 'a@example.org'").get().id;
@@ -35,5 +35,8 @@ test("dateien: zeilen, kontingent, öffentliche auswahl", () => {
   assert.equal(usedBytes(db, id), 1500);
   assert.equal(listFiles(db, id).length, 2);
   assert.deepEqual(publicFiles(db, id).map(f => f.name), ["cv.pdf"]);
+  assert.equal(listFiles(db, id)[0].label, "");
+  db.prepare("UPDATE files SET label = 'CV' WHERE name = 'cv.pdf'").run();
+  assert.deepEqual(publicFiles(db, id).map(f => f.label), ["CV"]);
   assert.equal(usedBytes(db, id + 1), 0);
 });

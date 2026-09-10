@@ -65,11 +65,12 @@ export function usedBytes(db, actorId) {
   return db.prepare("SELECT COALESCE(SUM(size), 0) AS n FROM files WHERE actor_id = ?").get(actorId).n;
 }
 export function listFiles(db, actorId) {
-  return db.prepare("SELECT id, name, ext, type, size, public, created, sha256 FROM files WHERE actor_id = ? ORDER BY created DESC, id DESC").all(actorId)
-    .map(r => ({ id: r.id, name: r.name, type: r.type, size: r.size, public: !!r.public, created: r.created, sha256: r.sha256 }));
+  return db.prepare("SELECT id, name, ext, type, size, public, created, sha256, label FROM files WHERE actor_id = ? ORDER BY created DESC, id DESC").all(actorId)
+    .map(r => ({ id: r.id, name: r.name, type: r.type, size: r.size, public: !!r.public, created: r.created, sha256: r.sha256, label: r.label || "" }));
 }
 export function publicFiles(db, actorId) {
-  return db.prepare("SELECT id, name, size, type, created FROM files WHERE actor_id = ? AND public = 1 ORDER BY created DESC, id DESC").all(actorId);
+  return db.prepare("SELECT id, name, size, type, created, label FROM files WHERE actor_id = ? AND public = 1 ORDER BY created DESC, id DESC").all(actorId)
+    .map(r => ({ id: r.id, name: r.name, size: r.size, type: r.type, created: r.created, label: r.label || "" }));
 }
 export function fileRow(db, actorId, id) {
   return db.prepare("SELECT * FROM files WHERE actor_id = ? AND id = ?").get(actorId, Number(id)) || null;

@@ -70,11 +70,21 @@
 
     // Zahlenband: nur, was öffentlich belegbar ist. Aufzeichnungen liegen auf
     // dem Gerät der Person und stehen deshalb nicht hier.
+    var fmt = function (b) { return b >= 1048576 ? (b / 1048576).toFixed(b >= 10485760 ? 0 : 1) + " MB" : b >= 1024 ? Math.round(b / 1024) + " KB" : b + " B"; };
     var facts = el("div", "facts2");
     [[String(p.modules.length), p.modules.length === 1 ? "published" : "published"], [p.since, "on the Hub since"],
      pr.langs && pr.langs.length ? [String(pr.langs.length), pr.langs.length === 1 ? "language" : "languages"] : null,
      p.journal.length ? [String(p.journal.length), p.journal.length === 1 ? "public entry" : "public entries"] : null
     ].forEach(function (f) { if (!f) return; var d = el("div", "fact2"); d.appendChild(el("b", null, f[0])); d.appendChild(el("span", null, f[1])); facts.appendChild(d); });
+    // Öffentliche Dateien stehen im Band neben den Sprachen (Wunsch des Eigentümers,
+    // 2026-09-10): oben die Beschriftung, die die Person gesetzt hat, sonst der Name
+    // ohne Endung; unten Art und Grösse. Ohne Dateien steht hier nichts.
+    (p.files || []).forEach(function (f) {
+      var a = el("a", "fact2 fact2--file"); a.href = "/api/files/" + p.id + "/" + f.id + "/" + encodeURIComponent(f.name); a.title = f.name + " · " + fmt(f.size) + " · download";
+      a.appendChild(el("b", null, f.label || f.name.replace(/\.[a-z0-9]{1,8}$/i, "")));
+      a.appendChild(el("span", null, (f.name.indexOf(".") > 0 ? f.name.split(".").pop() : "file") + " · " + fmt(f.size)));
+      facts.appendChild(a);
+    });
     sec.appendChild(facts);
 
     // Biographie als Prosa, mit Zeilenumbrüchen.
@@ -98,21 +108,6 @@
       ps.appendChild(show);
     }
     sec.appendChild(ps);
-
-    // Öffentliche Dateien (2026-09-10): nur die, die die Person selbst öffentlich gestellt hat.
-    if (p.files && p.files.length) {
-      var fmt = function (b) { return b >= 1048576 ? (b / 1048576).toFixed(b >= 10485760 ? 0 : 1) + " MB" : b >= 1024 ? Math.round(b / 1024) + " KB" : b + " B"; };
-      var fs = el("div", "psect"), fh = el("div", "psect__h");
-      fh.appendChild(el("h2", null, "Files")); fh.appendChild(el("span", null, p.files.length + (p.files.length === 1 ? " file" : " files"))); fs.appendChild(fh);
-      fs.appendChild(el("p", "psect__s", "Kept on the Hub's own server. Each link downloads the file as it was uploaded."));
-      var frl = el("div", "rowlist");
-      p.files.forEach(function (f) {
-        var a = el("a", "row2"); a.href = "/api/files/" + p.id + "/" + f.id + "/" + encodeURIComponent(f.name);
-        a.appendChild(el("span", "row2__t", f.name)); a.appendChild(el("span", "row2__s", fmt(f.size) + " · " + day(f.created)));
-        a.appendChild(el("span", "row2__m", "download ›")); frl.appendChild(a);
-      });
-      fs.appendChild(frl); sec.appendChild(fs);
-    }
 
     // Journal als Zeitleiste.
     var js = el("div", "psect"), jh = el("div", "psect__h");

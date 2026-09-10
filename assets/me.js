@@ -357,13 +357,25 @@
         fl.textContent = "";
         if (!items.length) { fl.appendChild(el("p", "quiet", "No file on the Hub yet.")); return; }
         items.forEach(function (f) {
-          var rr = row("/api/files/" + me.id + "/" + f.id + "/" + encodeURIComponent(f.name), f.name, fmt(f.size) + " · " + when(f.created) + " · " + (f.public ? "public, on your page" : "private"), f.public ? "public" : "private", f.public);
+          var rr = row("/api/files/" + me.id + "/" + f.id + "/" + encodeURIComponent(f.name), f.label || f.name, (f.label ? f.name + " · " : "") + fmt(f.size) + " · " + when(f.created) + " · " + (f.public ? "public, on your page" : "private"), f.public ? "public" : "private", f.public);
           var m = rr.querySelector(".row2__m"); m.textContent = "";
+          // Beschriftung (2026-09-10): kurzer Titel, steht auf der öffentlichen Seite im
+          // Zahlenband an Stelle des Dateinamens. Eingabe an Ort und Stelle, Enter sichert, Escape lässt es.
+          var lb = el("button", "btn btn--quiet", f.label ? "Relabel" : "Label"); lb.type = "button";
+          lb.addEventListener("click", function (ev) {
+            ev.preventDefault(); var t = rr.querySelector(".row2__t"); if (!t || rr.querySelector("input")) return;
+            var inp = el("input", "inline-edit"); inp.type = "text"; inp.maxLength = 60; inp.value = f.label || ""; inp.placeholder = "Short title for your page, e.g. CV"; inp.setAttribute("aria-label", "Label for " + f.name);
+            var done = false; function save() { if (done) return; done = true; api("/api/me/files/" + f.id, { method: "PATCH", body: JSON.stringify({ label: inp.value }) }).then(paintFiles); }
+            inp.addEventListener("click", function (e) { e.preventDefault(); });
+            inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); save(); } else if (e.key === "Escape") { e.preventDefault(); done = true; paintFiles(); } });
+            inp.addEventListener("blur", save);
+            t.textContent = ""; t.appendChild(inp); inp.focus(); inp.select();
+          });
           var tg = el("button", "btn btn--quiet", f.public ? "Make private" : "Make public"); tg.type = "button";
           tg.addEventListener("click", function (ev) { ev.preventDefault(); api("/api/me/files/" + f.id, { method: "PATCH", body: JSON.stringify({ public: !f.public }) }).then(paintFiles); });
           var dl = el("button", "btn btn--quiet", "Delete"); dl.type = "button";
           dl.addEventListener("click", function (ev) { ev.preventDefault(); if (!confirm("Delete «" + f.name + "» from the Hub?")) return; api("/api/me/files/" + f.id, { method: "DELETE" }).then(paintFiles); });
-          m.appendChild(tg); m.appendChild(dl); fl.appendChild(rr);
+          m.appendChild(lb); m.appendChild(tg); m.appendChild(dl); fl.appendChild(rr);
         });
       }).catch(function () { quota.textContent = ""; });
     }

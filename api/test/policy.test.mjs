@@ -32,7 +32,9 @@ test("einreichend: eigene lesen, eigene offene zurückziehen, sonst nichts", () 
 test("prüfend: lesen, entscheiden, veröffentlichen; nicht zurückziehen, nicht vergeben", () => {
   const rev = { id: 2, roles: new Set(["reviewer"]) };
   const c = contribution(7, "confirmed");
-  assert.deepEqual(ACTIONS.filter(a => can(rev, a, c)), ["submit", "read", "decide", "publish", "apply", "decide-application"]);
+  assert.deepEqual(ACTIONS.filter(a => can(rev, a, c)), ["submit", "read", "decide", "apply", "decide-application"]);
+  assert.equal(can(rev, "publish", c), false, "publishing is the owner's alone (2026-09-10)");
+  assert.equal(can({ id: 9, roles: new Set(["owner"]) }, "publish", c), true);
 });
 
 test("eigentümer: alles, auch fremde zurückziehen", () => {
@@ -46,8 +48,8 @@ test("unbekannte handlung: immer nein", () => {
 
 test("migrationen laufen auf :memory: und sind idempotent", () => {
   const { db, migrations } = open(":memory:");
-  assert.equal(migrations.total, 20);
-  assert.equal(migrations.applied, 20);
+  assert.equal(migrations.total, 21);
+  assert.equal(migrations.applied, 21);
   assert.equal(db.prepare("SELECT value FROM meta WHERE key='schema'").get().value, "6");
   db.close();
 });

@@ -896,6 +896,8 @@ patterns.push([/^\/api\/me\/files\/(\d{1,12})$/, {
     const row = fileRow(db, ctx.actor.id, id); if (!row) throw new HttpError(404, "no such file");
     const body = await readJson(ctx.req); const sets = [], vals = [];
     if (body.public !== undefined) { sets.push("public = ?"); vals.push(body.public ? 1 : 0); }
+    // Beschriftung (2026-09-10): kurzer Titel für die öffentliche Seite, höchstens 60 Zeichen, ohne Steuerzeichen.
+    if (body.label !== undefined) { sets.push("label = ?"); vals.push(String(body.label || "").replace(/[\x00-\x1f\x7f]/g, "").replace(/\s+/g, " ").trim().slice(0, 60)); }
     if (body.name !== undefined) { const n = safeName(body.name); if (!n || !n.toLowerCase().endsWith("." + row.ext)) throw new HttpError(400, "the name must keep its ending ." + row.ext); sets.push("name = ?"); vals.push(n); }
     if (sets.length) db.prepare("UPDATE files SET " + sets.join(", ") + " WHERE id = ?").run(...vals, row.id);
     send(ctx.res, 200, { ok: true, item: listFiles(db, ctx.actor.id).find(f => f.id === row.id) });
