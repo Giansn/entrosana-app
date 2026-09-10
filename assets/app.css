@@ -1916,6 +1916,12 @@ button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
 .svc__hookview .h3{ margin:.2rem 0 .6rem }
 .svc__hookview .watchline{ white-space:pre-wrap; overflow-wrap:anywhere; margin:.8rem 0 }
 .svc__hookview .actions{ margin-top:.9rem }
+.svc__dir{ display:inline-flex; flex-wrap:wrap; max-width:100%; margin:.1rem 0 }
+.svc__dir .bar__b{ font:inherit; font-size:var(--step--1); cursor:pointer; background:none; color:var(--ink-2); border:0; border-radius:0; padding:.45rem .8rem }
+.svc__dir .bar__b + .bar__b{ border-left:1px solid var(--line) }
+.svc__dir .bar__b.is-on{ background:color-mix(in srgb, var(--seal) 16%, transparent); color:var(--seal) }
+.svc__dir .bar__b:focus-visible{ outline:2px solid var(--seal); outline-offset:-2px }
+#svc-kind-field[hidden]{ display:none }
 .svc__snap{ margin-top:2.2rem; padding-top:1.2rem; border-top:1px solid var(--line) }
 .svc__snap .tbl{ margin-top:.6rem }
 .svc__legacy{ margin:0 0 1.2rem }

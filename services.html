@@ -104,20 +104,27 @@
       <input id="svc-name" type="text" placeholder="schulserver.local">
       <span class="help">How you call it. Shown exactly like this in the list. The only field that is always required.</span>
     </div>
-    <div class="field">
+    <div class="field" id="svc-dir-field">
+      <label id="svc-dir-label">Who calls whom</label>
+      <div class="seg svc__dir" id="svc-dir" role="radiogroup" aria-labelledby="svc-dir-label">
+        <button class="bar__b is-on" type="button" role="radio" aria-checked="true" data-dir="hub">The Hub checks my service</button>
+        <button class="bar__b" type="button" role="radio" aria-checked="false" data-dir="mine">My service reports to the Hub</button>
+      </div>
+      <span class="help" id="svc-dir-help">You give the Hub an address of yours; the Hub opens it on the interval and tells you whether it answers.</span>
+    </div>
+    <div class="field" id="svc-kind-field">
       <label for="svc-kind">How it is checked</label>
       <select id="svc-kind">
         <option value="url">address · the Hub opens a web address of yours</option>
-        <option value="webhook">heartbeat · your job calls a secret address the Hub gives you</option>
         <option value="mcp">MCP · the Hub lists the tools of an MCP server</option>
         <option value="tcp">port · the Hub checks that host:port answers</option>
         <option value="tls">certificate · the Hub reads the TLS certificate and its expiry</option>
       </select>
     </div>
     <div class="field" id="svc-target-field">
-      <label for="svc-target">Address</label>
+      <label for="svc-target">Address of your service</label>
       <input id="svc-target" type="text" placeholder="https://schulserver.example.org/">
-      <span class="help" id="svc-target-help">The Hub's server opens it and expects an answer below 400. The address stays on the server; only name, category and result are shown, and only to you.</span>
+      <span class="help" id="svc-target-help">The address the Hub should open, https://… It expects an answer below 400. The address stays on the server; only name, category and result are shown, and only to you.</span>
     </div>
     <div class="field">
       <label for="svc-what">What it serves</label>

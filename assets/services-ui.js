@@ -210,20 +210,34 @@
   }
   // ------------------------------------------------------------ Hinzufügen
   var dlg = document.getElementById("svc-add");
-  var HELP = { url: "The Hub's server opens it and expects an answer below 400. The address stays on the server; only you see this list.",
+  var HELP = { url: "The address the Hub should open, https://… It expects an answer below 400. The address stays on the server; only you see this list.",
                mcp: "Streamable HTTP endpoint of an MCP server, for example https://host/mcp. The Hub sends initialize and tools/list and counts the tools. Servers behind a key show as «needs auth».",
-               webhook: "No address to enter. After «Add» the Hub shows a secret web address for this entry, once, with a ready curl line. It looks like https://entrosana.app/api/hooks/3f9c… Copy it into the job or the machine you want to watch and have it call the address on its schedule, at least once per interval. If the calls stop for longer than the interval, the dot turns amber, then grey. Lost it? «new address» in the row makes a fresh one.",
+               webhook: "Nothing to type here. Press «Add and get the address» and the Hub shows the secret address for this entry, once, with a ready curl line. It looks like https://entrosana.app/api/hooks/3f9c… Copy it into the job or the machine you want to watch and have it call the address on its schedule, at least once per interval. If the calls stop for longer than the interval, the dot turns amber, then grey. Lost it? «new address» in the row makes a fresh one.",
                tcp: "host:port, for example mail.example.org:993. The Hub checks that the port answers.",
                tls: "A host name, for example example.org. The Hub reads the certificate and warns two weeks before it expires." };
   var PLACEHOLDER = { url: "https://schulserver.example.org/", mcp: "https://tools.example.org/mcp", webhook: "", tcp: "mail.example.org:993", tls: "example.org" };
   function fill(id, values, selected) { var sel = dlg.querySelector(id); sel.textContent = ""; values.forEach(function (v) { var o = document.createElement("option"); o.value = v; o.textContent = v; if (v === selected) o.selected = true; sel.appendChild(o); }); }
+  // Wer ruft wen: «hub» = der Hub prüft etwas von dir (Adresse nötig), «mine» = dein Dienst meldet sich (Lebenszeichen, Adresse kommt vom Hub).
+  var K_DIR = "entrosana-svc-dir:v1";
+  var DIR_HELP = { hub: "You give the Hub an address of yours; the Hub opens it on the interval and tells you whether it answers.",
+                   mine: "The Hub gives you a secret address. Your job or machine calls it on its schedule, and the dot stays green while the calls keep coming. Nothing to type." };
+  function dirNow() { var on = dlg.querySelector("#svc-dir .is-on"); return on ? on.getAttribute("data-dir") : "hub"; }
+  function kindNow() { return dirNow() === "mine" ? "webhook" : dlg.querySelector("#svc-kind").value; }
+  function setDir(d) {
+    dlg.querySelectorAll("#svc-dir .bar__b").forEach(function (b) { var on = b.getAttribute("data-dir") === d; b.classList.toggle("is-on", on); b.setAttribute("aria-checked", String(on)); });
+    dlg.querySelector("#svc-dir-help").textContent = DIR_HELP[d];
+    dlg.querySelector("#svc-kind-field").hidden = d === "mine";
+    var stale = dlg.querySelector(".svc__msg"); if (stale) stale.remove();   // ein Hinweis zur anderen Richtung gilt nicht mehr
+    dlg.querySelector("#svc-target-field").className = "field";
+    write(K_DIR, d); syncKind();
+  }
   function syncKind() {
-    var k = dlg.querySelector("#svc-kind").value, tf = dlg.querySelector("#svc-target-field"), inp = dlg.querySelector("#svc-target"), lab = dlg.querySelector("label[for='svc-target']");
+    var k = kindNow(), inp = dlg.querySelector("#svc-target"), lab = dlg.querySelector("label[for='svc-target']");
     dlg.querySelector("#svc-target-help").textContent = HELP[k]; inp.placeholder = PLACEHOLDER[k];
-    tf.hidden = false; inp.hidden = lab.hidden = (k === "webhook");   // beim Lebenszeichen bleibt die Erklärung stehen, nur das Adressfeld geht
+    inp.hidden = lab.hidden = (k === "webhook");   // beim Lebenszeichen bleibt die Erklärung stehen, nur das Adressfeld geht
     dlg.querySelector("[data-act='svc-save']").textContent = saveLabel();
   }
-  function saveLabel() { return dlg.querySelector("#svc-kind").value === "webhook" ? "Add and get the address" : "Add"; }
+  function saveLabel() { return kindNow() === "webhook" ? "Add and get the address" : "Add"; }
   function say(text) { var old = dlg.querySelector(".svc__msg"); if (old) old.remove(); var m = el("p", "note note--warn svc__msg", text); dlg.querySelector(".actions").before(m); }
   // Nach dem Anlegen eines Lebenszeichens bleibt der Dialog offen und zeigt die Adresse dort, wo man gerade hinschaut.
   function hookView(name, url) {
@@ -245,19 +259,20 @@
     ["#svc-name", "#svc-what", "#svc-target"].forEach(function (id) { dlg.querySelector(id).value = ""; dlg.querySelector(id).closest(".field").className = "field"; });
     var msg = dlg.querySelector(".svc__msg"); if (msg) msg.remove();
     dlg.classList.remove("is-hook"); var hv = dlg.querySelector(".svc__hookview"); if (hv) hv.remove();
-    syncKind(); dlg.showModal();
+    setDir(read(K_DIR, "hub") === "mine" ? "mine" : "hub"); dlg.showModal();
   }
   if (dlg) {
     var d0 = data || {};
     fill("#svc-group", d0.groups || ["Public", "LAN and tailnet", "Data", "Jobs"], "Public");
     fill("#svc-where", d0.places || ["via tunnel", "cloudflared", "LAN", "tailnet", "container only", "oneshot", "cloud", "on site"], "via tunnel");
     dlg.querySelector("#svc-kind").addEventListener("change", syncKind);
+    dlg.querySelectorAll("#svc-dir .bar__b").forEach(function (b) { b.addEventListener("click", function () { setDir(b.getAttribute("data-dir")); }); });
     dlg.querySelector("[data-act='svc-save']").addEventListener("click", function () {
       var name = dlg.querySelector("#svc-name").value.trim(), nf = dlg.querySelector("#svc-name").closest(".field");
       if (!name) { nf.className = "field is-bad"; say("Give the service a name first; it is the only field that is always required."); dlg.querySelector("#svc-name").focus(); return; } nf.className = "field";
-      var kind = dlg.querySelector("#svc-kind").value, target = dlg.querySelector("#svc-target").value.trim();
+      var kind = kindNow(), target = dlg.querySelector("#svc-target").value.trim();
       var tfld = dlg.querySelector("#svc-target-field");
-      if (kind !== "webhook" && !target) { tfld.className = "field is-bad"; say("Put in the address the Hub should reach."); dlg.querySelector("#svc-target").focus(); return; } tfld.className = "field";
+      if (kind !== "webhook" && !target) { tfld.className = "field is-bad"; say("This needs the address of your service, the one the Hub should open. If your service should call the Hub instead, choose «My service reports to the Hub» above."); dlg.querySelector("#svc-target").focus(); return; } tfld.className = "field";
       var old = dlg.querySelector(".svc__msg"); if (old) old.remove();
       var btn = dlg.querySelector("[data-act='svc-save']"); btn.disabled = true; btn.textContent = "Checking…";
       api("/api/me/services", { method: "POST", body: JSON.stringify({ name: name, what: dlg.querySelector("#svc-what").value.trim(), group: dlg.querySelector("#svc-group").value, place: dlg.querySelector("#svc-where").value, check: kind + ":" + target, interval: Number(dlg.querySelector("#svc-interval").value) }) })

@@ -508,9 +508,10 @@ Fassung bis 2026-09-10, die allein im Browser lagen (`entrosana-services:v1`), e
 mit «Move them to my account» (je Eintrag ein `POST /api/me/services`, die gegebene Prüfung bleibt,
 ohne Prüfung wird es ein Lebenszeichen) oder «Discard». Die Erklärung der Seite ist eine Blase am
 (i)-Knopf (Escape, Klick daneben oder × schliessen; am Telefon ein Blatt am unteren Rand).
-Der Dialog fragt nach dem Namen zuerst «How it is checked» (address, heartbeat, MCP, port, certificate,
-im Menü so benannt wie in der Erklärung) und gleich darunter die Adresse; Beschreibung, Kategorie, Ort
-und Rhythmus folgen. Beim Lebenszeichen heisst der Knopf «Add and get the address», die Erklärung bleibt im Dialog stehen
+Der Dialog fragt nach dem Namen zuerst «Who calls whom»: «The Hub checks my service» (dann «How it is
+checked» mit address, MCP, port, certificate und darunter «Address of your service») oder «My service
+reports to the Hub» (Lebenszeichen, kein Adressfeld; die Adresse kommt vom Hub). Die Wahl bleibt im
+Browser (`entrosana-svc-dir:v1`). Beschreibung, Kategorie, Ort und Rhythmus folgen. Beim Lebenszeichen heisst der Knopf «Add and get the address», die Erklärung bleibt im Dialog stehen
 (nur das Adressfeld verschwindet), und nach dem Anlegen bleibt der Dialog offen und zeigt die geheime
 Adresse `…/api/hooks/<Schlüssel>` mit curl-Zeile und «Copy the address»; sie erscheint nur dieses eine
 Mal, «new address» in der Zeile erzeugt eine neue. Fehlt der Name, sagt der Dialog es in einer Zeile.
