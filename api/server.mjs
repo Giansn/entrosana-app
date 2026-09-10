@@ -809,11 +809,13 @@ routes.set("GET /api/actors", (ctx) => {
       (SELECT COUNT(*) FROM actor_tokens t WHERE t.actor_id = a.id AND t.expires > ?) devices,
       (SELECT COUNT(*) FROM invites i WHERE i.inviter_id = a.id) invites_sent,
       (SELECT COUNT(*) FROM invites i WHERE i.inviter_id = a.id AND i.accepted IS NOT NULL) invites_accepted,
-      (SELECT COUNT(*) FROM services s WHERE s.actor_id = a.id) services FROM actors a ORDER BY a.id`).all(new Date().toISOString());
+      (SELECT COUNT(*) FROM services s WHERE s.actor_id = a.id) services,
+      (SELECT COUNT(*) FROM files f WHERE f.actor_id = a.id) files,
+      (SELECT COALESCE(SUM(f.size), 0) FROM files f WHERE f.actor_id = a.id) files_bytes FROM actors a ORDER BY a.id`).all(new Date().toISOString());
   send(ctx.res, 200, { ok: true, items: rows.map(r => { const roles = rolesOf(db, r.id); return { id: r.id, kind: r.kind, email: r.email, name: r.name, created: r.created, roles: [...roles], standing: r.kind === "email" ? standingOf(roles) : r.kind,
     profile: { org: r.org || "", role: r.role || "", about: r.about || "", bio: r.bio || "", place: r.place || "", contact: r.contact_email || "", website: r.website || "", langs: r.langs ? String(r.langs).split(",").filter(Boolean) : [] },
     contributions: r.contributions, open_applications: r.open_applications, devices: r.devices, invites_sent: r.invites_sent, invites_accepted: r.invites_accepted,
-    services: r.services, dormant_notice: r.dormant_notice || null }; }) });
+    services: r.services, files: r.files, files_bytes: r.files_bytes, dormant_notice: r.dormant_notice || null }; }), quota: QUOTA, max_file: MAX_FILE });
 });
 // Alle Dienste aller Konten fürs Team (2026-09-10), dazu der Schnappschuss der Maschine: die Konsole :8396 zeigt beides.
 routes.set("GET /api/services", (ctx) => {

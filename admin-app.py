@@ -724,6 +724,8 @@ def _beitraege_kurz():
     mcode, mj = api_call("GET", "/api/modules/meta")
     module = len(mj.get("items", {})) if mcode == 200 else "?"
     punkte = sum(v.get("points", 0) for v in mj.get("items", {}).values()) if mcode == 200 else "?"
+    kdateien = sum(int(a.get("files") or 0) for a in kj.get("items", [])) if kcode == 200 else "?"
+    kbytes = sum(int(a.get("files_bytes") or 0) for a in kj.get("items", [])) if kcode == 200 else 0
     scode, sj = api_call("GET", "/api/services")
     dienste = len(sj.get("items", [])) if scode == 200 else "?"
     dienste_ab = len([s for s in sj.get("items", []) if s.get("state") in ("warn", "off")]) if scode == 200 else "?"
@@ -741,7 +743,9 @@ def _beitraege_kurz():
             f"<tr><td><b>Module aus Beiträgen</b><br><span class='mono'>{module} Module · {punkte} Punkte</span></td>"
             "<td><a href='/modules'>öffnen</a></td><td></td><td></td></tr>"
             f"<tr><td><b>Dienste</b><br><span class='mono'>{dienste} in Konten, {dienste_ab} gestört · {maschine} auf der Maschine</span></td>"
-            "<td><a href='/services'>öffnen</a></td><td></td><td></td></tr></table>")
+            "<td><a href='/services'>öffnen</a></td><td></td><td></td></tr>"
+            f"<tr><td><b>Dateien der Konten</b><br><span class='mono'>{kdateien} Dateien, {_mb(kbytes)} · je Konto {_mb(kj.get('quota') or 0) if kcode == 200 else '?'}</span></td>"
+            "<td><a href='/accounts'>Konten</a></td><td></td><td></td></tr></table>")
 
 
 def dash():
@@ -1546,10 +1550,16 @@ def docs_save(data):
     return {"ok": True, "backup": b}
 
 
+def _mb(n):
+    n = int(n or 0)
+    return f"{n / 1048576:.1f} MB" if n >= 1048576 else (f"{n / 1024:.0f} kB" if n >= 1024 else f"{n} B")
+
+
 def accounts_list():
     code, j = api_call("GET", "/api/actors")
     if code != 200:
         return page("Konten", _hub_kopf("Konten") + f"<p class='err'>{html.escape(str(j.get('error', code)))}</p>")
+    quota = j.get("quota") or 0
     rows = ""
     for a in j.get("items", []):
         pr = a.get("profile") or {}
@@ -1560,7 +1570,7 @@ def accounts_list():
         rows += (f"<tr><td class='mono'>#{a['id']}</td><td><b>{html.escape(a.get('name') or '—')}</b><br><span class='mono'>{html.escape(a.get('email') or a.get('kind'))}</span>{about}{web}</td>"
                  f"<td>{html.escape(STANDING_DE.get(a.get('standing'), a.get('standing')))}<br><span class='mono'>{html.escape(rollen)}</span></td>"
                  f"<td class='desc'>{html.escape(profil) or '—'}</td>"
-                 f"<td class='mono'>{a.get('contributions')} Beiträge<br>{a.get('open_applications')} Bewerbungen<br>{a.get('devices')} Geräte<br>{a.get('invites_sent', 0)} Einladungen, {a.get('invites_accepted', 0)} angenommen<br>{a.get('services', 0)} Dienste"
+                 f"<td class='mono'>{a.get('contributions')} Beiträge<br>{a.get('open_applications')} Bewerbungen<br>{a.get('devices')} Geräte<br>{a.get('invites_sent', 0)} Einladungen, {a.get('invites_accepted', 0)} angenommen<br>{a.get('services', 0)} Dienste<br>{a.get('files', 0)} Dateien, {_mb(a.get('files_bytes', 0))}" + (f" von {_mb(quota)}" if quota else "")
                  + (f"<br><span class='err'>ruhend, Hinweis {_hub_wann(a.get('dormant_notice'))}</span>" if a.get("dormant_notice") else "") + "</td>"
                  f"<td class='mono'>{_hub_wann(a.get('created'))}</td></tr>")
     hinweis = ("<p class='note'>Rollen vergibt der Eigentümer auf dem Server: <span class='mono'>node ~/entrosana-app/api/admin.mjs grant &lt;email&gt; reviewer</span>. "
