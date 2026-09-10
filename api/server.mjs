@@ -1013,7 +1013,7 @@ routes.set("DELETE /api/me", async (ctx) => {
   send(ctx.res, 200, { ok: true, kept: r.kept, unpublished: r.unpublished, deleted: r.deleted });
 });
 
-const METHODS = new Set(["GET", "HEAD", "POST", "PATCH", "DELETE"]);
+const METHODS = new Set(["GET", "HEAD", "POST", "PATCH", "PUT", "DELETE"]);
 
 createServer(async (req, res) => {
   const t0 = process.hrtime.bigint();
