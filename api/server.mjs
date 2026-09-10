@@ -1026,7 +1026,7 @@ createServer(async (req, res) => {
     log({ m: req.method, p: path, s: res.statusCode, ms: Math.round(Number(process.hrtime.bigint() - t0) / 1e5) / 10, ip, a: actorId });
   });
   try {
-    if (!METHODS.has(req.method)) return send(res, 405, { error: "method not allowed" }, { Allow: "GET, HEAD, POST, PATCH, DELETE" });
+    if (!METHODS.has(req.method)) return send(res, 405, { error: "method not allowed" }, { Allow: "GET, HEAD, POST, PATCH, PUT, DELETE" });
     const method = req.method === "HEAD" ? "GET" : req.method;
     let handler = routes.get(`${method} ${path}`), params = [];
     if (!handler) {
