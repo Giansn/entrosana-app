@@ -1908,3 +1908,10 @@ button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
 .led--wait{ background:transparent; border:1px solid var(--line-ui) }
 .led--off{ background:var(--muted); opacity:.45 }
 
+/* Gebiete als Reiter (2026-09-10): das Feld darf die volle Breite haben, der Zähler sitzt im Reiter. */
+.tabpanel--wide{ max-width:none }
+.tabs--areas .tabs__b{ display:inline-flex; align-items:center; gap:.45rem }
+.tabs__n{ font-family:var(--font-mono); font-size:.72rem; color:var(--muted); border:1px solid var(--line); border-radius:999px; padding:.05rem .45rem }
+.tabs__b.is-on .tabs__n{ color:var(--seal); border-color:color-mix(in srgb, var(--seal) 40%, var(--line)) }
+@media (max-width:760px){ .tabs--areas{ overflow-x:auto; flex-wrap:nowrap; scrollbar-width:none; padding-bottom:.2rem } .tabs--areas .tabs__b{ flex:none; min-height:2.6rem } }
+

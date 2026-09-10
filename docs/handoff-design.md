@@ -708,3 +708,10 @@ Der Zähler in der Leiste zeigt die eigene Zahl, für das Team die der Maschine.
 Helles Thema geprüft auf allen 18 Seiten (Kontrast nach WCAG): Bernstein «still in development» und der aktive
 Chip auf dem Siegel waren zu schwach, `--verify` im hellen Thema auf 4.9:1 gehoben.
 
+*Gebiete als Reiter (2026-09-10).* Die Modulseite zeigt Nature, Social und Technical als Reiter (WAI-ARIA tablist,
+Pfeiltasten, ein Reiter im Tabulator-Lauf), je einer zur Zeit: oben die Einleitung des Gebiets aus dem
+`onrequest`-Eintrag, darunter die Karten mit Kontaktzeile, bei leerem Gebiet der Hinweistext. Der Reiter trägt die
+Zahl der Module. Die Wahl bleibt im Gerät (`entrosana-area:v1`), `?area=<id>` führt direkt hin und wird beim
+Wechsel nachgeführt; ohne Wahl öffnet das erste Gebiet mit Modulen. «Other» erscheint nur, wenn dort etwas liegt.
+Die vorigen Abschnitte (`data-area-section`) sind aus modules.html entfernt; `cards.js` behält den Code dafür.
+

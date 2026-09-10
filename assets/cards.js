@@ -191,6 +191,64 @@
   var boxes = document.querySelectorAll("[data-cards]");
   for (var i = 0; i < boxes.length; i++) paint(boxes[i]);
 
+  // Gebiete als Reiter (2026-09-10): Nature, Social, Technical, je einer zur Zeit. «Other» erscheint nur, wenn dort etwas liegt.
+  // Die Wahl bleibt im Gerät; ?area= und #area führen direkt hin, die Gebietseinleitung steht im Reiter oben.
+  function areaTabs() {
+    var strip = document.querySelector("[data-area-tabs]"), panel = document.querySelector("[data-area-panel]");
+    var data = cat.modules;
+    if (!strip || !panel || !data) return;
+    var K = "entrosana-area:v1";
+    var areas = ["nature-based", "social", "technical", "other"].map(function (a) {
+      return { id: a, name: AREA_NAME[a], intro: null, mods: [] };
+    });
+    data.list.forEach(function (e) {
+      var a = areas.filter(function (x) { return x.id === areaOf(e); })[0]; if (!a) return;
+      if (e.track === "onrequest") a.intro = e; else a.mods.push(e);
+    });
+    areas = areas.filter(function (a) { return a.id !== "other" || a.mods.length; });
+    var EMPTY = { "nature-based": "No nature module yet. Propose one, or ask for one.", social: "No further social module yet. Propose one, or ask for one.", technical: "No technical module yet. Propose one, or ask for one.", other: "" };
+    var btns = [];
+    areas.forEach(function (a, i) {
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "tabs__b"; b.id = "tab-area-" + a.id;
+      b.setAttribute("role", "tab"); b.setAttribute("aria-controls", "panel-areas");
+      b.appendChild(document.createTextNode(a.name));
+      var n = document.createElement("span"); n.className = "tabs__n"; n.textContent = String(a.mods.length); b.appendChild(n);
+      b.addEventListener("click", function () { show(i, true); });
+      b.addEventListener("keydown", function (ev) {
+        var to = ev.key === "ArrowRight" ? i + 1 : ev.key === "ArrowLeft" ? i - 1 : ev.key === "Home" ? 0 : ev.key === "End" ? areas.length - 1 : -1;
+        if (to < 0 && ev.key !== "ArrowLeft") return;
+        ev.preventDefault(); to = (to + areas.length) % areas.length; show(to, true); btns[to].focus();
+      });
+      btns.push(b); strip.appendChild(b);
+    });
+    panel.id = "panel-areas"; panel.setAttribute("role", "tabpanel"); panel.tabIndex = 0;
+    function show(idx, remember) {
+      var a = areas[idx];
+      btns.forEach(function (b, i) { var on = i === idx; b.className = "tabs__b" + (on ? " is-on" : ""); b.setAttribute("aria-selected", on ? "true" : "false"); b.tabIndex = on ? 0 : -1; });
+      panel.setAttribute("aria-labelledby", btns[idx].id);
+      panel.textContent = "";
+      if (a.intro) {
+        var intro = document.createElement("div"); intro.className = "area__intro";
+        var pth = document.createElement("p"); pth.className = "work__sub measure"; pth.textContent = a.intro.lede || a.intro.about || ""; intro.appendChild(pth);
+        var go = document.createElement("a"); go.className = "fine"; go.href = "/modules/" + a.intro.slug; go.textContent = "What this area covers, and how a module is scoped on request ›"; intro.appendChild(go);
+        panel.appendChild(intro);
+      }
+      var grid = document.createElement("div"); grid.className = "cards cards--1";
+      a.mods.forEach(function (e) { grid.appendChild(item("modules", e)); });
+      if (!a.mods.length) { var empty = document.createElement("p"); empty.className = "note note--idle"; empty.textContent = EMPTY[a.id] || "Nothing here yet."; grid.appendChild(empty); }
+      panel.appendChild(grid);
+      if (remember) { try { localStorage.setItem(K, a.id); } catch (e) {} if (history.replaceState) history.replaceState(null, "", "/modules?area=" + a.id); }
+    }
+    var want = new URLSearchParams(location.search).get("area") || (location.hash || "").replace("#", "");
+    if (!want) { try { want = localStorage.getItem(K); } catch (e) {} }
+    var start = -1;
+    areas.forEach(function (a, i) { if (a.id === want) start = i; });
+    if (start < 0) { areas.forEach(function (a, i) { if (start < 0 && a.mods.length) start = i; }); }
+    show(start < 0 ? 0 : start, false);
+  }
+  areaTabs();
+
   // ---- Reiter statt Kartenwand ----
   // Die drei Gebiete standen als drei Karten untereinander; wer vergleichen
   // wollte, musste scrollen. Ein Behälter mit data-tabs zeigt dieselben
