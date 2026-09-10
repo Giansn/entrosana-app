@@ -2277,3 +2277,12 @@ button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
 .app--docs .rail__proj, .app--docs .nav__projects{ display:none }   /* die Docs haben keine Projekte; rail-projects.js schreibt sonst «none yet» */
 #docs .work__sub code{ font-family:var(--font-mono); font-size:.86em; color:var(--seal) }
 
+
+/* Überschriften im ganzen Hub in Glegoo (Wunsch des Eigentümers, 2026-09-10):
+   Seitentitel, Abschnittstitel, Kartentitel, Dialogtitel, Doku. Schnitt 400,
+   kein künstliches Fett, keine Unterschneidung. Zeilentitel in Listen, Eyebrows
+   und Zahlen im Band bleiben in der Grundschrift. Steht am Ende, damit die Regel
+   über den älteren Gewichtsangaben liegt. */
+h1, h2, h3, h4, .h3, .work__h, .work__h2, .view__title, .pf__name, .hero__name, .psect__h h2, .modal__title, .dlg__title,
+.mcard__t, .piece__t, .step--empty .step__t, .doc h1, .doc h2, .doc h3{
+  font-family:var(--font-head); font-weight:400; font-synthesis:none; letter-spacing:0 }
