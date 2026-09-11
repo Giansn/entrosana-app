@@ -2299,3 +2299,6 @@ h1, h2, h3, h4, .h3, .work__h, .work__h2, .view__title, .pf__name, .hero__name, 
 .edit-panel__t{ margin:0; font-family:var(--font-mono); font-size:.8rem; color:var(--muted) }
 .edit-panel .actions .btn--danger{ margin-left:auto }
 .tl__acts .btn--sm{ margin-top:.2rem }
+/* Auch die grossen Werte im Zahlenband der Profilseite, Zahlen wie Dateititel, stehen in
+   Glegoo (Eigentümer 2026-09-11: «the letter is still the old one»). */
+.fact2 b{ font-family:var(--font-head); font-weight:400; letter-spacing:0 }
