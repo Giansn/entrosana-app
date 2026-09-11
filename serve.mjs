@@ -213,7 +213,7 @@ function sendSite(req, res, proto, cacheKey, known, build, type = HTML) {
 }
 const assetsStamp = () => (assetTag("app.css") || "") + (assetTag("theme.js") || "") + (assetTag("docs.js") || "");
 // Ein Markdown-Host: dir = Ordner der Seiten (pages.json + <key>.md), shellFile = Hülle, base = Pfadpräfix ("" oder "/docs").
-function serveMarkdown(req, res, path, proto, { dir, shellFile, base, extra, tag }) {
+function serveMarkdown(req, res, path, proto, { dir, shellFile, base, extra, tag, site }) {
   const shellPath = join(ROOT, shellFile);
   const rel = base ? (path === base ? "" : path.startsWith(base + "/") ? path.slice(base.length + 1) : null) : path.replace(/^\//, "");
   if (rel === null) return false;
@@ -226,10 +226,10 @@ function serveMarkdown(req, res, path, proto, { dir, shellFile, base, extra, tag
   const LEGACY = { "getting-started": "get-started/create-an-account", "accounts": "concepts/standings-and-roles", "contribute": "how-to/propose-a-module",
                    "services": "concepts/services-and-heartbeats", "api": "reference/api-overview", "privacy": "privacy/summary" };   // die sechs Seiten vom 2026-09-10
   if (LEGACY[key]) { res.writeHead(301, { Location: (base || "") + "/" + LEGACY[key], "Content-Length": 0 }).end(); return true; }   // relativer Ort: der Browser hängt den Host an
-  if (!/^[a-z0-9-]+(\/[a-z0-9-]+)?$/.test(key)) { sendSite(req, res, proto, tag + ":index", false, { stamp, html: () => sitePage(ROOT, "index", readFileSync(shellPath, "utf8"), { dir, base, extra }) }); return true; }
+  if (!/^[a-z0-9-]+(\/[a-z0-9-]+)?$/.test(key)) { sendSite(req, res, proto, tag + ":index", false, { stamp, html: () => sitePage(ROOT, "index", readFileSync(shellPath, "utf8"), { dir, base, extra, site }) }); return true; }
   const known = docsManifest(ROOT, dir).has(key);
   const page = known ? key : "index";
-  sendSite(req, res, proto, tag + ":" + page, known, { stamp, html: () => sitePage(ROOT, page, readFileSync(shellPath, "utf8"), { dir, base, extra }) });
+  sendSite(req, res, proto, tag + ":" + page, known, { stamp, html: () => sitePage(ROOT, page, readFileSync(shellPath, "utf8"), { dir, base, extra, site }) });
   return true;
 }
 function serveDocs(req, res, path, proto) { serveMarkdown(req, res, path, proto, { dir: "docs-site", shellFile: "docs-site/shell.html", base: "", tag: "docs" }); }
@@ -237,11 +237,11 @@ function serveDocs(req, res, path, proto) { serveMarkdown(req, res, path, proto,
 function serveAtrium(req, res, path, proto) {
   const glyphs = JSON.parse(readFileSync(join(ROOT, "docs-site", "glyphs.json"), "utf8"));
   const home = { href: "/", label: "Atrium", glyph: glyphs.index };
-  if (path === "/docs" || path.startsWith("/docs/")) { serveMarkdown(req, res, path, proto, { dir: "docs-dev", shellFile: "atrium-site/shell.html", base: "/docs", extra: [home], tag: "atrium" }); return; }
+  if (path === "/docs" || path.startsWith("/docs/")) { serveMarkdown(req, res, path, proto, { dir: "docs-dev", shellFile: "atrium-site/shell.html", base: "/docs", extra: [home], tag: "atrium", site: "entrosana atrium" }); return; }
   const shellPath = join(ROOT, "atrium-site", "shell.html");
   const stamp = () => siteStamp(ROOT, "atrium-site") + ":" + statSync(shellPath).mtimeMs + ":" + assetsStamp();
   sendSite(req, res, proto, "atrium:home", path === "/", { stamp: () => stamp() + ":" + siteStamp(ROOT, "docs-dev"),
-    html: () => sitePage(ROOT, "index", readFileSync(shellPath, "utf8"), { dir: "atrium-site", navDir: "docs-dev", base: "/docs", extra: [Object.assign({ active: true }, home)] }) });
+    html: () => sitePage(ROOT, "index", readFileSync(shellPath, "utf8"), { dir: "atrium-site", navDir: "docs-dev", base: "/docs", extra: [Object.assign({ active: true }, home)], site: "entrosana atrium" }) });
 }
 
 createServer((req, res) => {

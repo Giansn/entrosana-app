@@ -93,7 +93,7 @@ export function sitePage(root, key, shell, opts = {}) {
       const cur = opts.navDir ? null : page.key;
       const open = g.items.some((it) => it.key === cur) || g.items.length <= 1;
       const items = g.items.map((it) => `      <a class="rail__item rail__item--plain${it.key === cur ? " is-active" : ""}" href="${hrefOf(it.key)}"${it.key === cur ? ' aria-current="page"' : ""}>${esc(it.label)}</a>`).join("\n");
-      if (g.items.length === 1 && g.items[0].key === "index") return items;
+      if (g.items.length === 1) return items;   // eine Seite allein braucht keine Klappe (Overview, Changelog)
       return `    <details class="rail__sec"${open ? " open" : ""}><summary class="rail__group rail__sum">${esc(g.title)}</summary>\n${items}\n    </details>`;
     })).join("\n");
   const toc = r.toc.length ? `<nav class="doc__toc" aria-label="On this page"><span class="eyebrow">On this page</span>${r.toc.map((t) => `<a href="#${t.id}">${esc(t.text)}</a>`).join("")}</nav>` : "";
@@ -102,7 +102,8 @@ export function sitePage(root, key, shell, opts = {}) {
   const prevnext = man.flat.length > 1 ? `<nav class="doc__pn" aria-label="Previous and next">${prev ? `<a class="doc__pn-a" href="${hrefOf(prev.key)}"><span class="fine">Previous</span><b>${esc(prev.label)}</b></a>` : "<span></span>"}${next ? `<a class="doc__pn-a doc__pn-a--next" href="${hrefOf(next.key)}"><span class="fine">Next</span><b>${esc(next.label)}</b></a>` : "<span></span>"}</nav>` : "";
   const updated = statSync(file).mtime.toISOString().slice(0, 10);
   const crumb = page.key === "index" ? esc(page.label) : `${esc(page.group)} <i>/</i> <b>${esc(page.label)}</b>`;
-  return shell.replace(/\{\{title\}\}/g, esc(r.title || page.label)).replace(/\{\{desc\}\}/g, esc(desc)).replace("{{lede}}", inline(r.lede)).replace(/\{\{path\}\}/g, hrefOf(page.key))
+  const titletag = page.key === "index" ? esc(r.title || page.label) : `${esc(r.title || page.label)} | ${esc(opts.site || "entrosana docs")}`;
+  return shell.replace("{{titletag}}", titletag).replace(/\{\{title\}\}/g, esc(r.title || page.label)).replace(/\{\{desc\}\}/g, esc(desc)).replace("{{lede}}", inline(r.lede)).replace(/\{\{path\}\}/g, hrefOf(page.key))
               .replace("{{crumb}}", crumb).replace("{{group}}", esc(page.group)).replace("{{nav}}", nav).replace("{{toc}}", toc).replace("{{content}}", r.html)
               .replace("{{prevnext}}", prevnext).replace("{{updated}}", updated);
 }
