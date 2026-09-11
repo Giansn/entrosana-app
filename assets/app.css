@@ -22,7 +22,7 @@
   --shadow-1:0 1px 2px rgba(0,0,0,.35),0 4px 12px rgba(0,0,0,.30);
   --shadow-2:0 4px 8px rgba(0,0,0,.42),0 14px 32px rgba(0,0,0,.45);
 
-  --font-mono:"Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-mono:"Inconsolata", "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
   --font-sans:Calibri, Carlito, "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-serif:Calibri, Carlito, "Segoe UI", system-ui, -apple-system, sans-serif;
 
@@ -2146,6 +2146,15 @@ button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
   src:url(/assets/fonts/glegoo-latin-ext.woff2) format("woff2");
   unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF }
 :root{ --font-head:"Glegoo", var(--font-sans) }
+/* Monospace mitgeliefert (Wunsch des Eigentümers, 2026-09-11): Inconsolata, frei (OFL),
+   nach Consolas entworfen, eine variable Datei je Bereich für alle Schnitte 200 bis 900.
+   Damit sieht die Wortmarke auf jedem Gerät so aus wie auf seinem Windows-Rechner. */
+@font-face{ font-family:"Inconsolata"; font-style:normal; font-weight:200 900; font-display:swap;
+  src:url(/assets/fonts/inconsolata-latin.woff2) format("woff2");
+  unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD }
+@font-face{ font-family:"Inconsolata"; font-style:normal; font-weight:200 900; font-display:swap;
+  src:url(/assets/fonts/inconsolata-latin-ext.woff2) format("woff2");
+  unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF }
 .solo .hero__name, .solo .psect__h h2{ font-family:var(--font-head); font-weight:400; font-synthesis:none; letter-spacing:0 }
 .solo .hero__name{ line-height:1.08 }
 .hero__line{ font-size:var(--step-1); color:var(--ink-2); margin:.45rem 0 .7rem; max-width:44ch; line-height:1.4 }
@@ -2303,3 +2312,100 @@ h1, h2, h3, h4, .h3, .work__h, .work__h2, .view__title, .pf__name, .hero__name, 
 /* Auch die grossen Werte im Zahlenband der Profilseite, Zahlen wie Dateititel, stehen in
    Glegoo (Eigentümer 2026-09-11: «the letter is still the old one»). */
 .fact2 b{ font-family:var(--font-head); font-weight:400; letter-spacing:0 }
+
+/* ---------- Telefon: Fortsetzen-Karte und Kopfpille (2026-09-11) ----------
+   Gemessen auf entrosana.app bei echten Telefonbreiten, nicht geschätzt:
+   · Die Fortsetzen-Karte ist ein Raster auto 1fr auto. Auf dem Schreibtisch richtig,
+     am Telefon bekommt die Textspalte, was nach Ring und Knopf übrig bleibt: bei 360 px
+     die Spalten 49,6 | 100 | 105,2 in einer 328-px-Karte. Der Titel bricht in vier
+     Zeilen, der Untertitel in acht; bei 320 px schneidet der Rand «Open project» ab.
+   · Die Kopfpille bricht nicht um (flex-wrap:nowrap). Bei 320 px bleiben dem
+     Kontoverweis 8 px (min-width:0, flex 0 1 auto): das Fragezeichen des Avatars steht
+     dann unter «Sign in». Das sieht aus wie eine Überlappung und ist ein zerquetschter
+     Verweis.
+   Unter 760 px, der Telefongrenze dieser Datei, stapelt die Karte: Ring und Text in
+   einer Zeile, der Knopf darunter über die volle Breite, wie .pf__btns es schon hält.
+   Der Kontoverweis darf nicht mehr schrumpfen. Unter 360 px bricht die Kopfpille um
+   und wächst in der Höhe, statt ihre Kinder zu zerdrücken. */
+@media (max-width:759.98px){
+  .resume{
+    grid-template-columns:auto 1fr; grid-template-areas:"ring text" "btn btn";
+    gap:.5rem .9rem;
+  }
+  .resume > .ring{ grid-area:ring }
+  .resume > div:not(.ring){ grid-area:text; min-width:0 }
+  .resume > .btn{
+    grid-area:btn; width:100%; display:inline-flex; justify-content:center; margin-top:.35rem;
+  }
+  .top__acct .rail__acct{ flex:none }
+}
+@media (max-width:359.98px){
+  .top{ flex-wrap:wrap; height:auto; min-height:62px; padding-block:.5rem; row-gap:.35rem }
+}
+
+/* ---------- Telefon: die Leiter neu geboden (2026-09-11) ----------
+   Die Stufen --step--1 … --step-2 wurden gesetzt, als Überschriften Calibri 600
+   trugen. Seit dem Wechsel auf Glegoo 400 (2026-09-10, Zeile 2289) ist derselbe
+   Nennwert kleiner in der x-Höhe und leichter im Strich, und die Telefonenden der
+   Leiter wurden nie nachgeführt. Gemessen bei 360 px: Fliesstext 14,7–15,3 px
+   Calibri (die kleine x-Höhe liest sich eine Stufe kleiner), Mono 12,2–12,6 px
+   (Kartenzeile, Eyebrows, «Nothing recorded yet»), h3 18,6 px, h1 24,4 px.
+   Eigentümer: «text cut too tight, headers not readable».
+   Nicht Elemente einzeln, sondern die Leiter: unter 760 px wird jede Stufe auf den
+   Wert geboden, den die Leiter selbst bei 760 px liefert. Ein Telefon fällt so nie
+   unter Tablet-Grösse, und an der Grenze bleibt es stetig (grösster Sprung +1,0 px
+   bei --step--1). Steigung und Obergrenze bleiben stehen, damit die Stufen weiter
+   fliessen, wenn die Enden je angehoben werden. Schnitt 400 und Laufweite 0 aus
+   Zeile 2289 bleiben unangetastet.
+   Drei Läufe mit festem rem in Leseposition treten der Leiter bei: die Kartenzeile
+   .resume__m (.76rem), der Kachelfuss .tile__foot (.74rem) und der Kacheltext
+   .tile p (.92rem). Pille und Ring behalten ihre Masse: Chrom, kein Lesetext. */
+@media (max-width:759.98px){
+  :root{
+    --step--1:clamp(.9rem,   .74rem + .2vw,  .9rem);
+    --step-0: clamp(1.05rem, .9rem + .25vw,  1.05rem);
+    --step-1: clamp(1.3rem,  1.05rem + .5vw, 1.4rem);
+    --step-2: clamp(1.75rem, 1.3rem + 1vw,   2.1rem);
+  }
+  .resume__m, .tile__foot{ font-size:var(--step--1) }
+  .tile p:not(.h3){ font-size:var(--step-0) }
+}
+
+/* ---------- Telefon: Konto und Abmelden im aufgeklappten Menü, unter «Export trail»
+   (Wunsch des Eigentümers, 2026-09-11) ----------
+   Angemeldet steht in der Kopfpille Avatar + «Sign out», breiter als «? Sign in»,
+   der einzige Stand, der zuvor gemessen wurde. Bei 412 px schneidet der Schalter ◐
+   den Knopf an («Sign ou|t»), und der Pfad «Contribute / Submit» bricht in zwei
+   Zeilen. Kein Platz erzwingt das. Also zurück in die Leiste, wo der Block bis zum
+   2026-09-08 sass: als .rail__account direkt unter «Export trail», vor .rail__end.
+   app.js bemalt jeden .rail__acct (querySelectorAll) und hängt die Anmelde- und
+   Abmeldezeile an dessen Elternknoten; der zweite Block braucht keine Zeile Skript.
+   Unter 760 px verlässt das Konto die Pille; in der Leiste erscheint es nur
+   aufgeklappt, wie .rail__auth seit Zeile 1776. Auf dem Schreibtisch ändert sich
+   nichts: das Konto bleibt in der Pille, der Leistenblock ist verborgen. */
+.rail__account{ display:none }
+@media (max-width:759.98px){
+  .top__acct{ display:none }
+  .rail.is-open .rail__account{ display:block; margin-top:.6rem; padding-top:.75rem; position:relative }
+  .rail.is-open .rail__account::before{   /* dieselbe Haarlinie wie .rail__end */
+    content:""; position:absolute; top:0; left:0; right:.25rem; height:1px;
+    background:linear-gradient(90deg,
+      color-mix(in srgb, var(--seal) 26%, transparent) 0,
+      color-mix(in srgb, var(--seal) 26%, transparent) 72%, transparent);
+  }
+  .rail__account .rail__acct{ display:flex; align-items:center; gap:.6rem; padding:.5rem .55rem }
+}
+
+/* Startdateien auf /contribute (2026-09-11): dieselben Knöpfe wie im Dialog «New
+   project» (.pick__sec/.pick__seed sind nicht an .pick gebunden), nur begrenzt in
+   der Breite, damit ein Knopf im Satzspiegel nicht über die ganze Spalte läuft. */
+.seedlist{ max-width:34rem; margin-top:.4rem }
+
+/* Landeseite /start (2026-09-11). Über der Falz: Eyebrow, Titel, ein Satz, eine
+   Handlung — was Nielsen Norman und Baymard als den Teil messen, auf dem gut die
+   Hälfte der Aufmerksamkeit liegt. Darum sitzt der Held mit Luft nach oben, der
+   Titel eine Stufe grösser als ein Seitentitel, die Zeile auf Lesebreite. */
+.landing__hero{ padding-top:clamp(1.5rem, 8vh, 4.5rem) }
+.landing__h{ font-size:var(--step-3); max-width:16ch; line-height:1.08 }
+.landing__lede{ font-size:var(--step-0); margin-bottom:1.4rem }
+.landing__record{ margin-top:1.4rem; max-width:62ch }

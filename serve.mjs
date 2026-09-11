@@ -31,7 +31,7 @@ const INDEXABLE = false;
 // Was in die sitemap.xml gehört: die inhaltlichen Seiten. /records, /projects
 // und /services zeigen, was auf dem jeweiligen Gerät liegt, /project ist noch
 // nicht gebaut — nichts davon hat in einem Suchindex etwas verloren.
-const SITEMAP_BASE = ["/", "/tools", "/modules", "/contribute"];
+const SITEMAP_BASE = ["/", "/start", "/tools", "/modules", "/contribute"];   // /start: Landeseite (2026-09-11)
 // Dazu kommen die abgeleiteten Detailseiten ohne Entwurfsmarke, siehe deriveRoutes().
 const SITEMAP = { get list() { return SITEMAP_BASE.concat([...DERIVED].filter(([, r]) => !r.draft).map(([p]) => p)); } };
 
@@ -40,6 +40,7 @@ const CSS = "text/css; charset=utf-8";
 const JS = "text/javascript; charset=utf-8";
 const ROUTES = new Map([
   ["/",           { file: "index.html",      type: HTML }],
+  ["/start",      { file: "start.html",      type: HTML }],   // Landeseite (2026-09-11)
   ["/tools",      { file: "tools.html",      type: HTML }],
   ["/modules",    { file: "modules.html",    type: HTML }],
   ["/contribute", { file: "contribute.html", type: HTML }],
@@ -86,6 +87,8 @@ const ROUTES = new Map([
   ["/assets/mark.svg",    { file: "assets/mark.svg",    type: "image/svg+xml" }],
   ["/assets/fonts/glegoo-latin.woff2",     { file: "assets/fonts/glegoo-latin.woff2",     type: "font/woff2" }],
   ["/assets/fonts/glegoo-latin-ext.woff2", { file: "assets/fonts/glegoo-latin-ext.woff2", type: "font/woff2" }],
+  ["/assets/fonts/inconsolata-latin.woff2",     { file: "assets/fonts/inconsolata-latin.woff2",     type: "font/woff2" }],
+  ["/assets/fonts/inconsolata-latin-ext.woff2", { file: "assets/fonts/inconsolata-latin-ext.woff2", type: "font/woff2" }],
   // Vorschaubild für geteilte Links. Wird nicht von der Seite geladen, sondern
   // von fremden Diensten geholt, deshalb greift die CSP hier nicht.
   ["/assets/share-1200x630.png", { file: "assets/share-1200x630.png", type: "image/png" }],
