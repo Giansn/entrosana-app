@@ -179,12 +179,13 @@
     var pm = el("span", "muted", me.email + " · private"); fact(I.mail, pm);
     side.appendChild(facts);
     if (pr.langs && pr.langs.length) { var chips = el("div", "pf__chips"); pr.langs.forEach(function (c) { chips.appendChild(el("span", "chip", langName(c))); }); side.appendChild(chips); }
-    var editBtn = el("button", "btn btn--ghost pf__edit", "Edit profile"); editBtn.type = "button"; editBtn.setAttribute("aria-expanded", "false"); side.appendChild(editBtn);
-    var quiet = el("div", "pf__quiet");
-    var q1 = el("a", null, "Public page ↗"); q1.href = me.slug ? "/contributors/" + me.slug : "/p/" + me.id;
-    var q2 = el("a", null, "Invite someone"); q2.href = "#account"; q2.addEventListener("click", function (ev) { ev.preventDefault(); show("account", "invite"); });
-    var q3 = el("a", null, "Account and devices"); q3.href = "#account"; q3.addEventListener("click", function (ev) { ev.preventDefault(); show("account"); });
-    quiet.appendChild(q1); quiet.appendChild(q2); quiet.appendChild(q3); side.appendChild(quiet);
+    // Klare Knöpfe mit dem Namen der Funktion, untereinander (Wunsch des Eigentümers, 2026-09-11).
+    var btns = el("div", "pf__btns"); side.appendChild(btns);
+    var editBtn = el("button", "btn btn--ghost pf__edit", "Edit profile"); editBtn.type = "button"; editBtn.setAttribute("aria-expanded", "false"); btns.appendChild(editBtn);
+    var q1 = el("a", "btn btn--ghost", "View public page ↗"); q1.href = me.slug ? "/contributors/" + me.slug : "/p/" + me.id; q1.target = "_blank"; q1.rel = "noopener";
+    var q2 = el("a", "btn btn--ghost", "Invite someone"); q2.href = "#account"; q2.addEventListener("click", function (ev) { ev.preventDefault(); show("account", "invite"); });
+    var q3 = el("a", "btn btn--ghost", "Account and devices"); q3.href = "#account"; q3.addEventListener("click", function (ev) { ev.preventDefault(); show("account"); });
+    btns.appendChild(q1); btns.appendChild(q2); btns.appendChild(q3);
 
     // Bearbeiten: Name, Organisation, Rolle, Ort, eine Zeile, Biographie, Website, Sprachen, Bild.
     var edit = el("div", "pf__edit-form"); edit.hidden = !!me.name; side.appendChild(edit);
@@ -210,7 +211,7 @@
     fL.insertBefore(picker.el, fL.querySelector(".help")); picker.el.insertBefore(picker.input, picker.el.querySelector(".langpick__list"));
     var fs1 = el("fieldset"); [fN, fO, fR, fP, fA, fB, fC, fW, fL].forEach(function (f) { fs1.appendChild(f); }); nf.appendChild(fs1);
     var na = el("div", "actions"), nb = el("button", "btn", "Save profile"); nb.type = "submit"; na.appendChild(nb);
-    var nc = el("button", "btn btn--quiet", "Close"); nc.type = "button"; nc.addEventListener("click", function () { edit.hidden = true; editBtn.setAttribute("aria-expanded", "false"); }); na.appendChild(nc);
+    var nc = el("button", "btn btn--ghost", "Close"); nc.type = "button"; nc.addEventListener("click", function () { edit.hidden = true; editBtn.setAttribute("aria-expanded", "false"); }); na.appendChild(nc);
     nf.appendChild(na); var nout = live(); nf.appendChild(nout);
     nf.addEventListener("submit", function (ev) {
       ev.preventDefault(); var v = nameIn.value.trim();
@@ -226,7 +227,7 @@
     var pic = el("div", "actions me__pic"); var fileIn = el("input"); fileIn.type = "file"; fileIn.accept = "image/*"; fileIn.hidden = true; fileIn.setAttribute("aria-label", "Choose a picture");
     var pb = el("button", "btn btn--ghost", me.avatar ? "Change picture" : "Add a picture"); pb.type = "button"; pb.addEventListener("click", function () { fileIn.click(); });
     var pout = live(); pic.appendChild(pb);
-    if (me.avatar) { var rb = el("button", "btn btn--quiet", "Remove picture"); rb.type = "button"; rb.addEventListener("click", function () { api("/api/me/avatar", { method: "DELETE" }).then(function (r) { if (r.s === 200) { var tk = token(); if (tk) { tk.avatar = null; saveToken(tk); } refresh(); } }); }); pic.appendChild(rb); }
+    if (me.avatar) { var rb = el("button", "btn btn--ghost", "Remove picture"); rb.type = "button"; rb.addEventListener("click", function () { api("/api/me/avatar", { method: "DELETE" }).then(function (r) { if (r.s === 200) { var tk = token(); if (tk) { tk.avatar = null; saveToken(tk); } refresh(); } }); }); pic.appendChild(rb); }
     pic.appendChild(fileIn); edit.appendChild(pic); edit.appendChild(pout);
     fileIn.addEventListener("change", function () {
       var f = fileIn.files && fileIn.files[0]; if (!f) return;
@@ -277,7 +278,8 @@
     var pane = panes.work;
     function psect(title, rightText, rightHref, sub) {
       var s = el("div", "psect"), h = el("div", "psect__h"); h.appendChild(el("h2", null, title));
-      if (rightText) { var r = el(rightHref ? "a" : "span", null, rightText); if (rightHref) r.href = rightHref; h.appendChild(r); }
+      // Rechts ein klarer Knopf mit dem Namen der Funktion statt einer leisen Zeile (Wunsch des Eigentümers, 2026-09-11).
+      if (rightText) { var r = el(rightHref ? "a" : "span", rightHref ? "btn btn--ghost btn--sm" : null, rightText); if (rightHref) r.href = rightHref; h.appendChild(r); }
       s.appendChild(h); if (sub) s.appendChild(el("p", "psect__s", sub)); pane.appendChild(s); return s;
     }
     function row(href, title, sub, right, rightOk) {
@@ -291,7 +293,7 @@
 
     // Module zuoberst.
     if (me.standing !== "collector") {
-      var sm = psect("Modules", "Edit your modules ›", "/me/modules", "Published under your name, and the ones still on the way there.");
+      var sm = psect("Modules", "Edit modules", "/me/modules", "Published under your name, and the ones still on the way there.");
       var ml = el("div", "rowlist"); sm.appendChild(ml); ml.appendChild(el("p", "quiet", "Loading…"));
       var STATE = { finished: "finished", available: "finished", development: "in development", idea: "an idea", running: "running" };
       api("/api/me/modules").then(function (r) {
@@ -303,7 +305,7 @@
     }
 
     // Oversight: Zahl und Weg, die Listen selbst stehen in der Leiste.
-    var so = psect("Oversight", "Open the rail ›", "/projects", "What is yours and where it lives. The lists themselves are in the rail.");
+    var so = psect("Oversight", "Open projects", "/projects", "What is yours and where it lives. The lists themselves are in the rail.");
     var ol = el("div", "rowlist"); so.appendChild(ol);
     ol.appendChild(row("/projects", "Projects", "on this device, with their steps", projs.length + (openSteps ? " · " + openSteps + " open" : "")));
     ol.appendChild(row("/records", "Record trail", "append-only, sealed line by line", String(recs.length)));
@@ -311,6 +313,8 @@
     api("/api/me/services").then(function (r) { if (r.s === 200) svcRow.querySelector(".row2__m").textContent = String((r.j.items || []).length); }).catch(function () {});
     var oa = el("div", "actions"); var np2 = el("a", "btn btn--ghost", "New project"); np2.href = "/project"; oa.appendChild(np2); so.appendChild(oa);
 
+    // Schalter «sichtbar» als Baustein für Journal und Dateien.
+    function toggle(labelText, on) { var w = el("label", "toggle"); var cb = el("input"); cb.type = "checkbox"; cb.checked = !!on; var tr = el("span", "toggle__track"); tr.appendChild(el("span", "toggle__dot")); w.appendChild(cb); w.appendChild(tr); w.appendChild(el("span", "toggle__label", labelText)); w.input = cb; return w; }
     // Journal: Formular, dann die Zeitleiste mit den bisherigen Handlungen.
     var sj = psect("Journal", null, null, "What you learned, tried, changed. Public entries appear on your profile page; private ones stay with your account.");
     var jf = el("form"); jf.noValidate = true; var jta = el("textarea"); jta.rows = 3; jta.maxLength = 2000;
@@ -326,11 +330,21 @@
           var d = el("div", "tl__d"); d.id = "j" + e.id;
           d.appendChild(el("span", "tl__k", dayLabel(e.created) + " " + timeOf(e.created) + (e.updated ? " · edited" : "") + (e.public ? "" : " · private")));
           var txt = el("p", "tl__t", e.text); d.appendChild(txt);
-          var acts = el("div", "tl__acts");
-          var tg = el("button", "btn btn--quiet", e.public ? "Make private" : "Make public"); tg.type = "button"; tg.addEventListener("click", function () { api("/api/me/journal/" + e.id, { method: "PATCH", body: JSON.stringify({ public: !e.public }) }).then(paintJournal); });
-          var ed = el("button", "btn btn--quiet", "Edit"); ed.type = "button"; ed.addEventListener("click", function () { var ta = el("textarea"); ta.value = e.text; ta.rows = 3; ta.maxLength = 2000; d.replaceChild(ta, txt); var sv = el("button", "btn btn--ghost", "Save"); sv.type = "button"; sv.addEventListener("click", function () { api("/api/me/journal/" + e.id, { method: "PATCH", body: JSON.stringify({ text: ta.value }) }).then(paintJournal); }); acts.replaceChild(sv, ed); ta.focus(); });
-          var dl = el("button", "btn btn--quiet", "Delete"); dl.type = "button"; dl.addEventListener("click", function () { if (!confirm("Delete this entry?")) return; api("/api/me/journal/" + e.id, { method: "DELETE" }).then(paintJournal); });
-          acts.appendChild(tg); acts.appendChild(ed); acts.appendChild(dl); d.appendChild(acts); jl.appendChild(d);
+          // Ein Knopf «Edit» je Eintrag: Text, Sichtbarkeit und Löschen an einem Ort (Wunsch des Eigentümers, 2026-09-11).
+          var acts = el("div", "tl__acts"); var ed = el("button", "btn btn--ghost btn--sm", "Edit"); ed.type = "button";
+          ed.addEventListener("click", function () {
+            var open = d.querySelector(".edit-panel"); if (open) { open.remove(); txt.hidden = false; return; }
+            var p = el("form", "edit-panel"); p.noValidate = true;
+            var ta = el("textarea"); ta.value = e.text; ta.rows = 3; ta.maxLength = 2000; var fE = field("Entry", ta, null); p.appendChild(fE);
+            var vis = toggle("Visible on my public profile", e.public); p.appendChild(vis);
+            var a2 = el("div", "actions"); var sv = el("button", "btn", "Save"); sv.type = "submit"; var cn = el("button", "btn btn--ghost", "Cancel"); cn.type = "button"; var dl = el("button", "btn btn--danger", "Delete entry"); dl.type = "button";
+            cn.addEventListener("click", function () { p.remove(); txt.hidden = false; });
+            dl.addEventListener("click", function () { if (!confirm("Delete this entry? This cannot be undone.")) return; api("/api/me/journal/" + e.id, { method: "DELETE" }).then(paintJournal); });
+            a2.appendChild(sv); a2.appendChild(cn); a2.appendChild(dl); p.appendChild(a2);
+            p.addEventListener("submit", function (ev) { ev.preventDefault(); var v = ta.value.trim(); if (!v) { bad(fE, "Write a line first."); return; } sv.disabled = true; api("/api/me/journal/" + e.id, { method: "PATCH", body: JSON.stringify({ text: v, public: vis.input.checked }) }).then(paintJournal); });
+            txt.hidden = true; d.insertBefore(p, acts); ta.focus();
+          });
+          acts.appendChild(ed); d.appendChild(acts); jl.appendChild(d);
         });
       }).catch(function () { jl.textContent = ""; jl.appendChild(el("p", "quiet", "The Hub's server is not reachable; entries wait.")); });
     }
@@ -339,16 +353,21 @@
     paintJournal();
 
     // Dokumente: was gesendet wurde, was gehostet wird, was auf dem Gerät liegt.
-    var sd = psect("Documents", "Record trail and export ›", "/records", "Files you keep on the Hub, what you sent, and the files on this device.");
+    var sd = psect("Documents", "Open record trail", "/records", "Files you keep on the Hub, what you sent, and the files on this device.");
     // Dateien auf dem Hub (2026-09-10): 400 MB je Konto, 50 MB je Datei, auf dem
     // eigenen Server neben den Konten. Privat, bis man eine Datei öffentlich stellt.
     function fmt(b) { return b >= 1048576 ? (b / 1048576).toFixed(b >= 10485760 ? 0 : 1) + " MB" : b >= 1024 ? Math.round(b / 1024) + " KB" : b + " B"; }
     var quota = el("p", "quiet mono", "Counting…"); sd.appendChild(quota);
     var fl = el("div", "rowlist"); sd.appendChild(fl);
+    // Hochladen mit Titel (Wunsch des Eigentümers, 2026-09-11): nach der Wahl der Datei
+    // erscheint ein Formular mit Titel und Sichtbarkeit, erst «Upload» sendet. Jede Zeile
+    // hat einen Knopf «Edit», der Titel, Sichtbarkeit und Löschen an einem Ort zeigt.
+    function cleanTitle(name) { return String(name || "").replace(/\.[a-z0-9]{1,8}$/i, "").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 60); }
     var fact = el("div", "actions"); var fileIn2 = el("input"); fileIn2.type = "file"; fileIn2.hidden = true; fileIn2.setAttribute("aria-label", "Choose a file to upload");
     fileIn2.accept = ".pdf,.png,.jpg,.jpeg,.webp,.gif,.md,.txt,.csv,.docx,.xlsx,.pptx,.odt,.ods,.odp,.zip";
     var upBtn = el("button", "btn btn--ghost", "Upload a file"); upBtn.type = "button"; upBtn.addEventListener("click", function () { fileIn2.click(); });
-    var fout = live(); fact.appendChild(upBtn); fact.appendChild(fileIn2); sd.appendChild(fact); sd.appendChild(fout);
+    var fout = live(); fact.appendChild(upBtn); fact.appendChild(fileIn2); sd.appendChild(fact);
+    var upForm = el("form", "edit-panel"); upForm.hidden = true; upForm.noValidate = true; sd.appendChild(upForm); sd.appendChild(fout);
     function paintFiles() {
       api("/api/me/files").then(function (r) {
         if (r.s !== 200) { quota.textContent = ""; return; }
@@ -357,37 +376,45 @@
         fl.textContent = "";
         if (!items.length) { fl.appendChild(el("p", "quiet", "No file on the Hub yet.")); return; }
         items.forEach(function (f) {
-          var rr = row("/api/files/" + me.id + "/" + f.id + "/" + encodeURIComponent(f.name), f.label || f.name, (f.label ? f.name + " · " : "") + fmt(f.size) + " · " + when(f.created) + " · " + (f.public ? "public, on your page" : "private"), f.public ? "public" : "private", f.public);
-          var m = rr.querySelector(".row2__m"); m.textContent = "";
-          // Beschriftung (2026-09-10): kurzer Titel, steht auf der öffentlichen Seite im
-          // Zahlenband an Stelle des Dateinamens. Eingabe an Ort und Stelle, Enter sichert, Escape lässt es.
-          var lb = el("button", "btn btn--quiet", f.label ? "Relabel" : "Label"); lb.type = "button";
-          lb.addEventListener("click", function (ev) {
-            ev.preventDefault(); var t = rr.querySelector(".row2__t"); if (!t || rr.querySelector("input")) return;
-            var inp = el("input", "inline-edit"); inp.type = "text"; inp.maxLength = 60; inp.value = f.label || ""; inp.placeholder = "Short title for your page, e.g. CV"; inp.setAttribute("aria-label", "Label for " + f.name);
-            var done = false; function save() { if (done) return; done = true; api("/api/me/files/" + f.id, { method: "PATCH", body: JSON.stringify({ label: inp.value }) }).then(paintFiles); }
-            inp.addEventListener("click", function (e) { e.preventDefault(); });
-            inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); save(); } else if (e.key === "Escape") { e.preventDefault(); done = true; paintFiles(); } });
-            inp.addEventListener("blur", save);
-            t.textContent = ""; t.appendChild(inp); inp.focus(); inp.select();
+          var rr = row("/api/files/" + me.id + "/" + f.id + "/" + encodeURIComponent(f.name), f.label || cleanTitle(f.name), f.name + " · " + fmt(f.size) + " · " + when(f.created), f.public ? "on your page" : "private", f.public);
+          var m = rr.querySelector(".row2__m"); var ed = el("button", "btn btn--ghost btn--sm", "Edit"); ed.type = "button"; m.appendChild(ed); fl.appendChild(rr);
+          ed.addEventListener("click", function (ev) {
+            ev.preventDefault(); var open = rr.nextSibling; if (open && open.classList && open.classList.contains("edit-panel")) { open.remove(); return; }
+            var p = el("form", "edit-panel"); p.noValidate = true;
+            var ti = el("input"); ti.type = "text"; ti.maxLength = 60; ti.value = f.label || ""; ti.placeholder = cleanTitle(f.name);
+            var fT = field("Title on your page", ti, "Short, like «CV» or «Concept Waldtag». Empty means the file name."); p.appendChild(fT);
+            var vis = toggle("Visible on my public page", f.public); p.appendChild(vis);
+            var acts = el("div", "actions"); var sv = el("button", "btn", "Save"); sv.type = "submit"; var cn = el("button", "btn btn--ghost", "Cancel"); cn.type = "button"; var dl = el("button", "btn btn--danger", "Delete file"); dl.type = "button";
+            cn.addEventListener("click", function () { p.remove(); });
+            dl.addEventListener("click", function () { if (!confirm("Delete «" + f.name + "» from the Hub? This cannot be undone.")) return; api("/api/me/files/" + f.id, { method: "DELETE" }).then(paintFiles); });
+            acts.appendChild(sv); acts.appendChild(cn); acts.appendChild(dl); p.appendChild(acts);
+            p.addEventListener("submit", function (e2) { e2.preventDefault(); sv.disabled = true; api("/api/me/files/" + f.id, { method: "PATCH", body: JSON.stringify({ label: ti.value.trim(), public: vis.input.checked }) }).then(paintFiles); });
+            rr.parentNode.insertBefore(p, rr.nextSibling); ti.focus();
           });
-          var tg = el("button", "btn btn--quiet", f.public ? "Make private" : "Make public"); tg.type = "button";
-          tg.addEventListener("click", function (ev) { ev.preventDefault(); api("/api/me/files/" + f.id, { method: "PATCH", body: JSON.stringify({ public: !f.public }) }).then(paintFiles); });
-          var dl = el("button", "btn btn--quiet", "Delete"); dl.type = "button";
-          dl.addEventListener("click", function (ev) { ev.preventDefault(); if (!confirm("Delete «" + f.name + "» from the Hub?")) return; api("/api/me/files/" + f.id, { method: "DELETE" }).then(paintFiles); });
-          m.appendChild(lb); m.appendChild(tg); m.appendChild(dl); fl.appendChild(rr);
         });
       }).catch(function () { quota.textContent = ""; });
     }
     fileIn2.addEventListener("change", function () {
       var f = fileIn2.files && fileIn2.files[0]; fileIn2.value = ""; if (!f) return;
       if (f.size > 52428800) { note(fout, "warn", "A file may have up to 50 MB; this one has " + fmt(f.size) + "."); return; }
-      note(fout, "idle", "Uploading " + f.name + " (" + fmt(f.size) + ")…"); upBtn.disabled = true;
-      var h = headers(false); h["Content-Type"] = "application/octet-stream"; h["X-File-Name"] = encodeURIComponent(f.name);
-      fetch("/api/me/files", { method: "PUT", headers: h, body: f })
-        .then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }, function () { return { s: r.status, j: {} }; }); })
-        .then(function (r) { upBtn.disabled = false; if (r.s === 201) { note(fout, "ok", "Stored: " + r.j.item.name + " (" + fmt(r.j.item.size) + "). Private until you set it public."); paintFiles(); } else note(fout, "warn", "Not stored: " + (r.j.error || r.s) + "."); })
-        .catch(function () { upBtn.disabled = false; note(fout, "warn", "The Hub's server is not reachable right now."); });
+      upForm.textContent = ""; upForm.hidden = false; fout.textContent = "";
+      upForm.appendChild(el("p", "edit-panel__t", f.name + " · " + fmt(f.size)));
+      var ti = el("input"); ti.type = "text"; ti.maxLength = 60; ti.value = cleanTitle(f.name);
+      var fT = field("Title on your page", ti, "Short, like «CV» or «Concept Waldtag»."); upForm.appendChild(fT);
+      var vis = toggle("Visible on my public page", false); upForm.appendChild(vis);
+      var acts = el("div", "actions"); var go = el("button", "btn", "Upload"); go.type = "submit"; var cancel = el("button", "btn btn--ghost", "Cancel"); cancel.type = "button";
+      cancel.addEventListener("click", function () { upForm.hidden = true; upForm.textContent = ""; });
+      acts.appendChild(go); acts.appendChild(cancel); upForm.appendChild(acts);
+      upForm.onsubmit = function (ev) {
+        ev.preventDefault(); var t = ti.value.trim(); if (!t) { bad(fT, "Give the file a title."); return; }
+        go.disabled = true; note(fout, "idle", "Uploading " + f.name + " (" + fmt(f.size) + ")…");
+        var h = headers(false); h["Content-Type"] = "application/octet-stream"; h["X-File-Name"] = encodeURIComponent(f.name); h["X-File-Label"] = encodeURIComponent(t); if (vis.input.checked) h["X-Public"] = "1";
+        fetch("/api/me/files", { method: "PUT", headers: h, body: f })
+          .then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }, function () { return { s: r.status, j: {} }; }); })
+          .then(function (r) { go.disabled = false; if (r.s === 201) { upForm.hidden = true; upForm.textContent = ""; note(fout, "ok", "Stored as «" + (r.j.item.label || r.j.item.name) + "» (" + fmt(r.j.item.size) + "), " + (r.j.item.public ? "visible on your page." : "private until you set it visible.")); paintFiles(); } else note(fout, "warn", "Not stored: " + (r.j.error || r.s) + "."); })
+          .catch(function () { go.disabled = false; note(fout, "warn", "The Hub's server is not reachable right now."); });
+      };
+      ti.focus(); ti.select();
     });
     paintFiles();
     sd.appendChild(el("p", "quiet", "Proposals you sent, and files on this device:"));
@@ -397,10 +424,10 @@
       if (!items.length) dl2.appendChild(el("p", "quiet", "No proposals sent from this account yet."));
       items.forEach(function (c) { var rr = row("/contribute/status?id=" + c.id, c.title, (c.files || []).map(function (f) { return f.label || f.url; }).join(" · "), c.status); dl2.appendChild(rr); });
     }).catch(function () { dl2.appendChild(el("p", "quiet", "The Hub's server is not reachable; the list of proposals waits.")); });
-    projs.filter(function (p) { return p.kind === "file" && hub; }).forEach(function (p) { var rr = row(null, p.title, "file on this device", ""); var b = el("button", "btn btn--quiet", "Download .md"); b.type = "button"; b.addEventListener("click", function () { hub.download(String(p.id).replace("/", "-") + ".md", hub.markdown(p.p)); }); rr.querySelector(".row2__m").appendChild(b); dl2.appendChild(rr); });
+    projs.filter(function (p) { return p.kind === "file" && hub; }).forEach(function (p) { var rr = row(null, p.title, "file on this device", ""); var b = el("button", "btn btn--ghost btn--sm", "Download .md"); b.type = "button"; b.addEventListener("click", function () { hub.download(String(p.id).replace("/", "-") + ".md", hub.markdown(p.p)); }); rr.querySelector(".row2__m").appendChild(b); dl2.appendChild(rr); });
 
     // Beitragen: Sammler bewerben sich hier; alle anderen sehen ihren Stand in einer Zeile.
-    var sc = psect("Contributing", "Your contributions ›", "/contribute/status", null);
+    var sc = psect("Contributing", "Open contributions", "/contribute/status", null);
     if (me.standing === "collector") {
       var app = me.application;
       if (app && !app.decided) sc.appendChild(el("p", "note note--idle", "Your application from " + when(app.created) + " is with the team. They answer by mail."));
@@ -424,7 +451,7 @@
     // ---------------------------------------------------------------- Review
     if (team) {
       pane = panes.team;
-      var st = psect("Review queue", "Open the review queue ›", "/review", "Proposals, decisions and contributor applications. Every decision needs a reason.");
+      var st = psect("Review queue", "Open review queue", "/review", "Proposals, decisions and contributor applications. Every decision needs a reason.");
       var tcount = el("p", "quiet", "Counting…"); st.appendChild(tcount);
       var tlist = el("div", "rowlist"); st.appendChild(tlist);
       var tact = el("div", "actions");
@@ -479,7 +506,7 @@
         dvl.textContent = ""; var items = (r.j.items || []);
         items.forEach(function (d) {
           var rr = row(null, "Signed in " + when2(d.created) + (d.current ? " · this device" : ""), (d.last_used ? "last used " + when2(d.last_used) + " · " : "") + "until " + String(d.expires).slice(0, 10), d.current ? "current" : "", d.current);
-          if (!d.current) { var b = el("button", "btn btn--quiet", "Sign out"); b.type = "button"; b.addEventListener("click", function () { api("/api/me/devices/" + d.id, { method: "DELETE" }).then(paintDevices); }); rr.querySelector(".row2__m").textContent = ""; rr.querySelector(".row2__m").appendChild(b); }
+          if (!d.current) { var b = el("button", "btn btn--ghost btn--sm", "Sign out"); b.type = "button"; b.addEventListener("click", function () { api("/api/me/devices/" + d.id, { method: "DELETE" }).then(paintDevices); }); rr.querySelector(".row2__m").textContent = ""; rr.querySelector(".row2__m").appendChild(b); }
           dvl.appendChild(rr);
         });
         dvAll.hidden = items.length < 2;
@@ -500,7 +527,7 @@
         a.download = "entrosana-hub-export.json"; document.body.appendChild(a); a.click(); a.remove();
       });
     });
-    var so2 = el("button", "btn btn--quiet", "Sign out on this device"); so2.type = "button";
+    var so2 = el("button", "btn btn--ghost", "Sign out on this device"); so2.type = "button";
     so2.addEventListener("click", function () {
       var done = function () { dropToken(); paintRail(); signedOut({ kind: "ok", text: "Signed out on this device. Other devices stay signed in." }); };
       api("/api/me/token", { method: "DELETE" }).then(done, done);
@@ -508,7 +535,7 @@
     da.appendChild(ex); da.appendChild(so2); sec3.appendChild(da);
 
     // Aufklärung: was der Record Trail ist und wer was sieht; Einzelheiten in der Datenschutzerklärung.
-    var secInfo = psect("Record trail and visibility", "privacy statement ↗", "https://entrosana.com/privacy", null);
+    var secInfo = psect("Record trail and visibility", "Privacy statement ↗", "https://entrosana.com/privacy", null);
     ["Record trail: every step you take in a project on this device is written to a list that only grows. Each line is sealed against the one before it, so a change anywhere shows up when the chain is verified. The trail stays in this browser; it leaves the device only when you attach it to a proposal or export it. The Hub keeps a chain of its own for decisions, and anyone can verify it.",
      "Public: your profile page with name, place, organisation, role, the one line about you, the biography, the public e-mail if you set one, website, languages, picture and the journal entries you mark public; modules published under your name; points as a count, never by name.",
      "Private: your sign-in e-mail address, private journal entries, the records on this device, proposals until they are published, applications and invitations. The team (owner and reviewers) sees proposals, applications, requests and accounts to do its work.",

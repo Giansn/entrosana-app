@@ -81,7 +81,7 @@
     // ohne Endung; unten Art und Grösse. Ohne Dateien steht hier nichts.
     (p.files || []).forEach(function (f) {
       var a = el("a", "fact2 fact2--file"); a.href = "/api/files/" + p.id + "/" + f.id + "/" + encodeURIComponent(f.name); a.title = f.name + " · " + fmt(f.size) + " · download";
-      a.appendChild(el("b", null, f.label || f.name.replace(/\.[a-z0-9]{1,8}$/i, "")));
+      a.appendChild(el("b", null, f.label || f.name.replace(/\.[a-z0-9]{1,8}$/i, "").replace(/[_-]+/g, " ")));
       a.appendChild(el("span", null, (f.name.indexOf(".") > 0 ? f.name.split(".").pop() : "file") + " · " + fmt(f.size)));
       facts.appendChild(a);
     });

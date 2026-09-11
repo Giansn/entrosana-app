@@ -2162,7 +2162,7 @@ button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
 .fact2 span{ font-family:var(--font-mono); font-size:.74rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted) }
 /* Dateien im Band (2026-09-10): Beschriftung oben, Art und Grösse unten, der Eintrag lädt die Datei. */
 .fact2--file{ text-decoration:none; color:inherit }
-.fact2--file b{ max-width:16ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.fact2--file b{ max-width:18ch; line-height:1.15 }
 .fact2--file:hover b, .fact2--file:focus-visible b{ color:var(--seal) }
 .inline-edit{ font:inherit; font-size:.95rem; padding:.15rem .45rem; border:1px solid var(--line-ui); border-radius:.4rem; background:transparent; color:var(--ink); width:min(100%, 22rem) }
 .bio{ max-width:62ch; margin:0 0 2.6rem; font-size:var(--step-0); line-height:1.65; color:var(--ink-2); white-space:pre-wrap }
@@ -2170,8 +2170,8 @@ button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
 .psect{ margin:0 0 2.8rem }
 .psect__h{ display:flex; align-items:baseline; gap:.7rem; margin:0 0 .25rem }
 .psect__h h2{ font-size:var(--step-2); font-weight:600; letter-spacing:-.02em; margin:0 }
-.psect__h > span, .psect__h > a{ margin-left:auto; font-family:var(--font-mono); font-size:.78rem; color:var(--muted); text-decoration:none }
-.psect__h > a{ color:var(--seal) }
+.psect__h > span, .psect__h > a:not(.btn){ margin-left:auto; font-family:var(--font-mono); font-size:.78rem; color:var(--muted); text-decoration:none }
+.psect__h > a:not(.btn){ color:var(--seal) } .psect__h > a.btn{ margin-left:auto }
 .psect__s{ color:var(--muted); font-size:.92rem; margin:0 0 1.1rem }
 .show{ display:grid; gap:1.1rem; grid-template-columns:repeat(auto-fill, minmax(17rem, 1fr)) }
 .piece{ padding:1.3rem 1.3rem 1.1rem; min-height:14rem; display:flex; flex-direction:column; color:inherit; text-decoration:none }
@@ -2286,3 +2286,16 @@ button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
 h1, h2, h3, h4, .h3, .work__h, .work__h2, .view__title, .pf__name, .hero__name, .psect__h h2, .modal__title, .dlg__title,
 .mcard__t, .piece__t, .step--empty .step__t, .doc h1, .doc h2, .doc h3{
   font-family:var(--font-head); font-weight:400; font-synthesis:none; letter-spacing:0 }
+
+/* Klare Knöpfe statt leiser Zeilen auf /me (Wunsch des Eigentümers, 2026-09-11):
+   kleine Rahmenknöpfe in Zeilen und Abschnittsköpfen, ein Bearbeitungsfeld je Zeile
+   mit Titel, Sichtbarkeit und Löschen an einem Ort, die Wege links als Knopfstapel. */
+.btn--sm{ padding:.28rem .7rem; font-size:.8rem }
+.pf__btns{ display:grid; gap:.5rem; margin-top:1rem }
+.pf__btns .btn{ width:100%; display:inline-flex; justify-content:center }
+.row2__m .btn{ font-family:var(--font-sans); margin-left:.6rem; vertical-align:middle }
+.edit-panel{ display:grid; gap:.8rem; padding:1rem 1.1rem; margin:.3rem 0 1rem; border:1px solid var(--line-ui); border-radius:.7rem; background:color-mix(in srgb, var(--ink) 3%, transparent) }
+.edit-panel[hidden]{ display:none }
+.edit-panel__t{ margin:0; font-family:var(--font-mono); font-size:.8rem; color:var(--muted) }
+.edit-panel .actions .btn--danger{ margin-left:auto }
+.tl__acts .btn--sm{ margin-top:.2rem }

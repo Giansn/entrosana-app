@@ -878,8 +878,11 @@ patterns.push([/^\/api\/me\/files$/, {
     const chk = checkUpload({ name, size, used: usedBytes(db, ctx.actor.id), count });
     if (!chk.ok) { ctx.req.resume(); throw new HttpError(chk.status, chk.error); }
     const now = new Date().toISOString();
-    const id = db.prepare("INSERT INTO files(actor_id, name, ext, type, size, sha256, public, created) VALUES (?,?,?,?,?,?,?,?)")
-      .run(ctx.actor.id, chk.name, chk.ext, chk.type, size, "", String(ctx.req.headers["x-public"] || "") === "1" ? 1 : 0, now).lastInsertRowid;
+    // Titel beim Hochladen (2026-09-11): X-File-Label, URL-kodiert, höchstens 60 Zeichen, ohne Steuerzeichen.
+    let label = ""; try { label = decodeURIComponent(String(ctx.req.headers["x-file-label"] || "")); } catch { label = ""; }
+    label = label.replace(/[\x00-\x1f\x7f]/g, "").replace(/\s+/g, " ").trim().slice(0, 60);
+    const id = db.prepare("INSERT INTO files(actor_id, name, ext, type, size, sha256, public, created, label) VALUES (?,?,?,?,?,?,?,?,?)")
+      .run(ctx.actor.id, chk.name, chk.ext, chk.type, size, "", String(ctx.req.headers["x-public"] || "") === "1" ? 1 : 0, now, label).lastInsertRowid;
     const row = { id, actor_id: ctx.actor.id, ext: chk.ext };
     try {
       const got = await receive(ctx.req, pathFor(FILES_ROOT, row), MAX_FILE);
