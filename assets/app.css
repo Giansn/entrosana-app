@@ -1141,6 +1141,22 @@ p{ margin:0 0 var(--pad-para) }
    die helle Fassung erfüllt AA bereits und bleibt unangetastet. */
 :root{ --muted:#9CA4B2; --warn:#DC7A6E }
 
+/* ---------- Heller Arbeitsplatz ----------
+   Eigentümer 2026-09-11, wie auf entrosana.com: auf Rechnern mit heller
+   Systemeinstellung, die den dunklen Modus zeigen, wirkte alles etwas zu dunkel
+   (Büromonitor). Dort liegen Grund, Flächen, Felder, Linien und die leise Schrift
+   noch eine Stufe über den Werten oben; Geräte mit dunkler Systemeinstellung sehen
+   die Werte oben unverändert. Nur die Töne, nicht die Akzente. Dunkel ist der
+   Zustand ohne Attribut, darum :not([data-theme="light"]); --schimmer folgt --paper.
+   Denselben Satz trägt project-shell.css für /project. */
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="light"]){
+    --paper:#2A2E35; --paper-2:#30353D; --card-bg:#333842; --field-bg:#2D323B;
+    --line:#434A56; --line-2:#4D5562; --line-ui:#828A99;
+    --muted:#A4ACBA; --ink-2:#CDD1D8;
+  }
+}
+
 /* Der Rollbalken bekommt seine Bahn immer reserviert. Sonst springt die Breite
    je nachdem, ob eine Seite genug Inhalt zum Rollen hat, und die Kopfpille
    endet auf der einen Seite 15 px weiter rechts als auf der anderen. */
@@ -2412,3 +2428,48 @@ h1, h2, h3, h4, .h3, .work__h, .work__h2, .view__title, .pf__name, .hero__name, 
 .landing__h{ font-size:var(--step-3); max-width:16ch; line-height:1.08 }
 .landing__lede{ font-size:var(--step-0); margin-bottom:1.4rem }
 .landing__record{ margin-top:1.4rem; max-width:62ch }
+
+/* Docs-Hosts, Aufbau wie eine Produktdokumentation (2026-09-11): Gruppen im Rail, Suche, Inhaltsspalte rechts, Vor/Zurück, Hinweiskästen, Kopierknöpfe. */
+.rail__sec{ margin:.4rem 0 0 }
+.rail__sec > summary{ list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:space-between; padding-right:.4rem }
+.rail__sec > summary::-webkit-details-marker{ display:none }
+.rail__sum::after{ content:"›"; color:var(--muted); transform:rotate(90deg); transition:transform .15s; font-size:1rem; line-height:1 }
+.rail__sec:not([open]) > .rail__sum::after{ transform:none }
+.rail__item--plain{ padding-left:1.1rem; font-size:.92rem }
+.docsearch{ position:relative; flex:1 1 12rem; max-width:22rem; margin-left:.4rem }
+.docsearch input{ width:100%; box-sizing:border-box; font:inherit; font-size:.92rem; padding:.45rem .7rem; border:1px solid var(--line-ui); border-radius:999px; background:var(--field-bg); color:var(--ink) }
+.docsearch input:focus{ outline:2px solid var(--seal); outline-offset:1px }
+.docsearch__r{ position:absolute; top:calc(100% + .45rem); left:0; right:0; z-index:40; background:var(--card-bg); border:1px solid var(--line-ui); border-radius:var(--radius); box-shadow:var(--shadow-2); padding:.3rem; max-height:60vh; overflow:auto }
+.docsearch__a{ display:flex; justify-content:space-between; align-items:baseline; gap:.6rem; padding:.45rem .6rem; text-decoration:none; color:var(--ink); border-radius:3px }
+.docsearch__a:hover, .docsearch__a:focus{ background:color-mix(in srgb, var(--seal) 12%, transparent) }
+.docsearch__a b{ font-weight:500 } .docsearch__a span, .docsearch__none{ color:var(--muted); font-size:.8rem } .docsearch__none{ margin:.3rem .6rem }
+.docgrid{ display:grid; grid-template-columns:minmax(0, 72ch); gap:2.5rem; align-items:start }
+.doccol{ min-width:0 }
+.doc h2 .anchor, .doc h3 .anchor{ color:inherit; text-decoration:none }
+.doc h2 .anchor:hover::after, .doc h3 .anchor:hover::after{ content:" #"; color:var(--seal); font-weight:400 }
+.callout{ margin:0 0 1.1rem; padding:.7rem 1rem; border:1px solid var(--line); border-left:3px solid var(--seal); border-radius:var(--radius); background:color-mix(in srgb, var(--seal) 6%, transparent) }
+.callout__k{ display:block; font-size:.72rem; letter-spacing:.07em; text-transform:uppercase; color:var(--seal); margin:0 0 .25rem }
+.callout p{ margin:0 }
+.callout--warning{ border-left-color:var(--warn); background:color-mix(in srgb, var(--warn) 7%, transparent) } .callout--warning .callout__k{ color:var(--warn) }
+.callout--owner{ border-left-color:var(--verify) } .callout--owner .callout__k{ color:var(--verify) }
+.callout--tip{ border-left-color:var(--done, var(--seal)) }
+.code{ position:relative; margin:.4rem 0 1.15rem }
+.code pre{ margin:0 }
+.code__copy{ position:absolute; top:.45rem; right:.45rem; font:inherit; font-size:.72rem; padding:.15rem .5rem; border:1px solid var(--line-ui); border-radius:3px; background:var(--card-bg); color:var(--muted); cursor:pointer }
+.code__copy:hover{ color:var(--seal); border-color:var(--seal) }
+.doc pre[data-lang]{ padding-top:1.7rem; position:relative }
+.doc pre[data-lang]::before{ content:attr(data-lang); position:absolute; top:.5rem; left:.85rem; font-size:.66rem; letter-spacing:.07em; text-transform:uppercase; color:var(--muted) }
+.doc__pn{ display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin:2.4rem 0 .6rem; border-top:1px solid var(--line); padding-top:1.2rem }
+.doc__pn-a{ display:flex; flex-direction:column; gap:.15rem; text-decoration:none; color:var(--ink); padding:.6rem .85rem; border:1px solid var(--line); border-radius:var(--radius) }
+.doc__pn-a--next{ text-align:right; align-items:flex-end }
+.doc__pn-a:hover{ border-color:var(--seal) } .doc__pn-a b{ font-weight:500 }
+.doc__meta{ margin:0 0 2rem }
+.doctoc{ min-width:0 }
+@media (min-width:1200px){
+  .docgrid{ grid-template-columns:minmax(0, 72ch) 14rem }
+  .doctoc{ position:sticky; top:1.2rem }
+  .doctoc .doc__toc{ flex-direction:column; align-items:flex-start; gap:.4rem; margin:0; border-left:1px solid var(--line); padding-left:1rem; font-size:.88rem }
+  .doctoc .doc__toc a{ border:0 }
+}
+@media (max-width:759.98px){ .docsearch{ flex-basis:100%; max-width:none; margin:0; order:5 } .doc__pn{ grid-template-columns:1fr } .doc__pn-a--next{ text-align:left; align-items:flex-start } }
+

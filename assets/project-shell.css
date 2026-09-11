@@ -170,6 +170,16 @@ body{
   --bg-active:color-mix(in srgb, var(--seal) 15%, var(--card-bg));
 }
 
+/* Heller Arbeitsplatz, derselbe Satz wie in app.css (Eigentümer 2026-09-11):
+   heller eingestelltes System im dunklen Modus, eine Stufe über den Werten oben. */
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="light"]){
+    --paper:#2A2E35; --paper-2:#30353D; --card-bg:#333842; --field-bg:#2D323B;
+    --line:#434A56; --line-2:#4D5562; --line-ui:#828A99;
+    --e-muted:#A4ACBA; --muted:#A4ACBA; --ink-2:#CDD1D8;
+  }
+}
+
 /* ---------- Die Kopfzeile spricht dieselbe Sprache wie überall ----------
    Auf den anderen Unterseiten steht dort .crumb: Mono, klein, ruhig. Der
    Projektname wird genauso gesetzt, damit keine Seite aus der Reihe fällt. */
