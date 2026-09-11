@@ -139,7 +139,8 @@ p{ margin:0 0 var(--pad-para) }
 }
 /* 2.4em auf der geerbten Grundgrösse, wie .com: 2,4 × 16,8 px = 40,31 px. */
 .brand__logo{ width:2.4em; height:2.4em; display:block; flex:none }
-.brand__word{ font-size:15px; letter-spacing:.01em; font-weight:600; color:inherit }
+/* Wortmarke wie auf entrosana.com (Eigentümer 2026-09-11): Mono-Stapel, Schnitt 400, -.01em. */
+.brand__word{ font-family:var(--font-mono); font-size:15px; letter-spacing:-.01em; font-weight:400; color:inherit }
 
 /* ---------- Gerüst ---------- */
 .app{ display:grid; grid-template-columns:var(--rail) 1fr; min-height:100dvh }
