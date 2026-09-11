@@ -19,7 +19,8 @@ branch=$(git branch --show-current)
 if [ "$branch" != "master" ]; then log branch false "auf Zweig $branch, nicht master; nichts getan"; exit 0; fi
 
 # 1) Texte aus der Konsole
-TEXT=(*.html assets/catalogue.js assets/seeds.js assets/catalogue-sizes.js docs-site/*.md)
+shopt -s nullglob
+TEXT=(*.html assets/catalogue.js assets/seeds.js assets/catalogue-sizes.js docs-site/pages.json docs-site/*.md docs-site/*/*.md docs-dev/pages.json docs-dev/*.md docs-dev/*/*.md atrium-site/*.md)
 changed=$(git status --short --untracked-files=no -- "${TEXT[@]}" 2>/dev/null | wc -l)
 if [ "$changed" -gt 0 ]; then
   if git add -- "${TEXT[@]}" && git -c user.name=Giansn -c user.email=gianson@pm.me commit -q -m "texte: abgleich $(date '+%Y-%m-%d %H:%M') aus der konsole"; then

@@ -776,3 +776,21 @@ route dns` legt Hostnamen darum in der .app-Zone an und erzeugte den Streuner `a
 (löschen). Der richtige Eintrag ist CNAME `atrium` → `69e77bd9-70aa-4d0e-b8ea-16eacc25cb3a.cfargotunnel.com`
 (proxied) in der Zone entrosana.com: Dashboard, oder `cloudflared tunnel login` mit Wahl der .com-Zone und dann der
 Befehl. Das Forum selbst ist nicht gebaut; die Landung sagt das.
+
+**Nachtrag 2026-09-11, Docs als Produktdokumentation.** Aufbau nach dem Muster der Cloudflare-Docs: Gruppen in
+der Seitenleiste (Overview, Get started, Concepts, How to, API reference, Privacy, Changelog) aus
+`docs-site/pages.json` (Gruppen, Schlüssel, Namen, Beschreibungen; Schlüssel = Pfad, Datei
+`docs-site/<key>.md`, verschachtelt), Brotkrume Gruppe / Seite, Suche im Kopf (`assets/docs.js` über
+`/docs-index.json`, auf dem Atrium `/docs/index.json`; Titel, Überschriften, Text), Spalte «On this page»
+rechts ab 1200px, Vor/Zurück in der Reihenfolge des Verzeichnisses, «Last updated» aus der Dateizeit,
+Hinweiskästen (`> **Note:**`, Tip, Warning, Owner), Kopierknöpfe an Codeblöcken, Anker an Überschriften.
+`docs-render.mjs`: `manifest()`, `render()`, `sitePage(root, key, shell, opts)` mit `dir`, `base`, `extra`,
+`navDir`; `siteIndex()`, `siteStamp()`. `serve.mjs`: `serveMarkdown()` für beide Hosts, 301 von den sechs
+Pfaden vom 2026-09-10 auf die neuen Seiten, Atrium-Landung mit eigenem `atrium-site/pages.json` und dem
+Rail aus `docs-dev`. 29 Seiten, davon neun API-Referenz mit Anfrage- und Antwortbeispielen. Konsole /docs:
+Liste nach Gruppen aus pages.json, `/docs/edit/<key>` und `/docs/dev/<key>`, übernehmen und holen je
+Seite; der stündliche Abgleich checkt `docs-site/**`, `docs-dev/**` und `atrium-site/*.md` ein. Cloudflare
+fügt an der Kante `challenge-platform/scripts/jsd/main.js` und ein Inline-Skript ein (JavaScript
+Detections); das Inline-Skript verletzt die CSP und steht als Fehler in der Browserkonsole, bis der
+Eigentümer die Funktion im Dashboard abschaltet; die Tunnel-Zertifikate dürfen die Zoneneinstellung nicht
+ändern (403).

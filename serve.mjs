@@ -6,7 +6,7 @@
 // bloss abgesichert. Neue Seite heisst: neuer Eintrag in ROUTES.
 import { createServer } from "node:http";
 import { readFileSync, statSync } from "node:fs";
-import { PAGES as DOCS_PAGES, docsPage, sitePage } from "./docs-render.mjs";
+import { manifest as docsManifest, sitePage, siteIndex, siteStamp } from "./docs-render.mjs";
 import { createHash } from "node:crypto";
 import vm from "node:vm";
 import { join, dirname } from "node:path";
@@ -64,6 +64,7 @@ const ROUTES = new Map([
   ["/assets/cards.js",       { file: "assets/cards.js",       type: JS }],
   ["/assets/detail.js",      { file: "assets/detail.js",      type: JS }],
   ["/assets/services-ui.js", { file: "assets/services-ui.js", type: JS }],
+  ["/assets/docs.js",     { file: "assets/docs.js",     type: JS }],   // Docs-Hosts: Kopierknöpfe und Suche (2026-09-11)
   ["/assets/app.css",     { file: "assets/app.css",     type: CSS }],
   ["/assets/app.js",      { file: "assets/app.js",      type: JS }],
   ["/assets/overview.js", { file: "assets/overview.js", type: JS }],
@@ -193,67 +194,54 @@ function normalize(url) {
 // liefern die erste Seite mit 404, wie beim Hub. Gehalten, bis Quelle, Hülle, Glyphen oder app.css sich ändern.
 const docsCache = new Map();
 // Gemeinsamer Weg für Markdown-Hosts: Seite rendern, halten, mit den Köpfen der App ausliefern.
-function sendSite(req, res, proto, cacheKey, known, build) {
+function sendSite(req, res, proto, cacheKey, known, build, type = HTML) {
   const stamp = build.stamp();
   let e = docsCache.get(cacheKey);
   if (!e || e.stamp !== stamp) {
-    const body = Buffer.from(version(build.html()), "utf8");
+    const html = build.html(); const body = Buffer.from(type === HTML ? version(html) : html, "utf8");
     e = { stamp, body, etag: `W/"${createHash("sha1").update(body).digest("base64url").slice(0, 16)}"` };
     docsCache.set(cacheKey, e);
   }
   const status = known ? 200 : 404;
   if (status === 200 && req.headers["if-none-match"] === e.etag) { res.writeHead(304, { ETag: e.etag, "Cache-Control": "no-cache" }).end(); return; }
-  const headers = { "Content-Type": HTML, "Content-Length": e.body.length, "Cache-Control": "no-cache", "ETag": e.etag,
+  const headers = { "Content-Type": type, "Content-Length": e.body.length, "Cache-Control": "no-cache", "ETag": e.etag,
     "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "Content-Security-Policy": CSP };
   if (!INDEXABLE) headers["X-Robots-Tag"] = "noindex, nofollow";
   if (proto === "https") headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
   res.writeHead(status, headers);
   res.end(req.method === "HEAD" ? undefined : e.body);
 }
-// atrium.entrosana.com: "/" ist die Landung (atrium-site/index.md), "/docs" und "/docs/<seite>" die Docs in Entwicklung (docs-dev/).
+const assetsStamp = () => (assetTag("app.css") || "") + (assetTag("theme.js") || "") + (assetTag("docs.js") || "");
+// Ein Markdown-Host: dir = Ordner der Seiten (pages.json + <key>.md), shellFile = Hülle, base = Pfadpräfix ("" oder "/docs").
+function serveMarkdown(req, res, path, proto, { dir, shellFile, base, extra, tag }) {
+  const shellPath = join(ROOT, shellFile);
+  const rel = base ? (path === base ? "" : path.startsWith(base + "/") ? path.slice(base.length + 1) : null) : path.replace(/^\//, "");
+  if (rel === null) return false;
+  const stamp = () => siteStamp(ROOT, dir) + ":" + statSync(shellPath).mtimeMs + ":" + assetsStamp();
+  if (rel === "index.json" || (!base && rel === "docs-index.json")) {
+    sendSite(req, res, proto, tag + ":index.json", true, { stamp, html: () => JSON.stringify(siteIndex(ROOT, { dir, base })) }, "application/json; charset=utf-8");
+    return true;
+  }
+  const key = rel.replace(/\/+$/, "") || "index";
+  const LEGACY = { "getting-started": "get-started/create-an-account", "accounts": "concepts/standings-and-roles", "contribute": "how-to/propose-a-module",
+                   "services": "concepts/services-and-heartbeats", "api": "reference/api-overview", "privacy": "privacy/summary" };   // die sechs Seiten vom 2026-09-10
+  if (LEGACY[key]) { res.writeHead(301, { Location: (base || "") + "/" + LEGACY[key], "Content-Length": 0 }).end(); return true; }   // relativer Ort: der Browser hängt den Host an
+  if (!/^[a-z0-9-]+(\/[a-z0-9-]+)?$/.test(key)) { sendSite(req, res, proto, tag + ":index", false, { stamp, html: () => sitePage(ROOT, "index", readFileSync(shellPath, "utf8"), { dir, base, extra }) }); return true; }
+  const known = docsManifest(ROOT, dir).has(key);
+  const page = known ? key : "index";
+  sendSite(req, res, proto, tag + ":" + page, known, { stamp, html: () => sitePage(ROOT, page, readFileSync(shellPath, "utf8"), { dir, base, extra }) });
+  return true;
+}
+function serveDocs(req, res, path, proto) { serveMarkdown(req, res, path, proto, { dir: "docs-site", shellFile: "docs-site/shell.html", base: "", tag: "docs" }); }
+// atrium.entrosana.com: "/" ist die Landung (atrium-site/index.md), "/docs…" die Docs in Entwicklung (docs-dev/).
 function serveAtrium(req, res, path, proto) {
-  const shellPath = join(ROOT, "atrium-site", "shell.html"), glyphPath = join(ROOT, "docs-site", "glyphs.json");
-  const glyphs = () => JSON.parse(readFileSync(glyphPath, "utf8"));
-  const shell = () => readFileSync(shellPath, "utf8");
-  const assets = () => (assetTag("app.css") || "") + (assetTag("theme.js") || "");
-  const home = { href: "/", label: "Atrium", glyph: glyphs().index };
-  const m = /^\/docs(?:\/([a-z-]+))?\/?$/.exec(path);
-  if (m) {
-    const key = m[1] || "getting-started", known = DOCS_PAGES.some(([k]) => k === key), page = known ? key : "getting-started";
-    const mdPath = join(ROOT, "docs-dev", page + ".md");
-    sendSite(req, res, proto, "atrium:docs:" + page, known, {
-      stamp: () => [shellPath, mdPath, glyphPath].map((f) => statSync(f).mtimeMs).join(":") + ":" + assets(),
-      html: () => sitePage(ROOT, page, shell(), glyphs(), { dir: "docs-dev", pages: DOCS_PAGES, base: "/docs", extra: [home] }),
-    });
-    return;
-  }
-  const known = path === "/", mdPath = join(ROOT, "atrium-site", "index.md");
-  sendSite(req, res, proto, "atrium:index", known, {
-    stamp: () => [shellPath, mdPath, glyphPath].map((f) => statSync(f).mtimeMs).join(":") + ":" + assets(),
-    html: () => sitePage(ROOT, "index", shell(), glyphs(), { dir: "atrium-site", pages: [["index", "Atrium"]], navPages: DOCS_PAGES, base: "/docs", path: "/", extra: [Object.assign({ active: true }, home)], extraActive: true }),
-  });
-}
-function serveDocs(req, res, path, proto) {
-  const key = path === "/" ? "getting-started" : path.replace(/^\/+|\/+$/g, "");
-  const known = DOCS_PAGES.some(([k]) => k === key);
-  const page = known ? key : "getting-started";
-  const shellPath = join(ROOT, "docs-site", "shell.html"), mdPath = join(ROOT, "docs-site", page + ".md"), glyphPath = join(ROOT, "docs-site", "glyphs.json");
-  const stamp = [shellPath, mdPath, glyphPath].map((f) => statSync(f).mtimeMs).join(":") + ":" + (assetTag("app.css") || "") + (assetTag("theme.js") || "");
-  let e = docsCache.get(page);
-  if (!e || e.stamp !== stamp) {
-    const html = version(docsPage(ROOT, page, readFileSync(shellPath, "utf8"), JSON.parse(readFileSync(glyphPath, "utf8"))));
-    const body = Buffer.from(html, "utf8");
-    e = { stamp, body, etag: `W/"${createHash("sha1").update(body).digest("base64url").slice(0, 16)}"` };
-    docsCache.set(page, e);
-  }
-  const status = known ? 200 : 404;
-  if (status === 200 && req.headers["if-none-match"] === e.etag) { res.writeHead(304, { ETag: e.etag, "Cache-Control": "no-cache" }).end(); return; }
-  const headers = { "Content-Type": HTML, "Content-Length": e.body.length, "Cache-Control": "no-cache", "ETag": e.etag,
-    "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin", "Content-Security-Policy": CSP };
-  if (!INDEXABLE) headers["X-Robots-Tag"] = "noindex, nofollow";
-  if (proto === "https") headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
-  res.writeHead(status, headers);
-  res.end(req.method === "HEAD" ? undefined : e.body);
+  const glyphs = JSON.parse(readFileSync(join(ROOT, "docs-site", "glyphs.json"), "utf8"));
+  const home = { href: "/", label: "Atrium", glyph: glyphs.index };
+  if (path === "/docs" || path.startsWith("/docs/")) { serveMarkdown(req, res, path, proto, { dir: "docs-dev", shellFile: "atrium-site/shell.html", base: "/docs", extra: [home], tag: "atrium" }); return; }
+  const shellPath = join(ROOT, "atrium-site", "shell.html");
+  const stamp = () => siteStamp(ROOT, "atrium-site") + ":" + statSync(shellPath).mtimeMs + ":" + assetsStamp();
+  sendSite(req, res, proto, "atrium:home", path === "/", { stamp: () => stamp() + ":" + siteStamp(ROOT, "docs-dev"),
+    html: () => sitePage(ROOT, "index", readFileSync(shellPath, "utf8"), { dir: "atrium-site", navDir: "docs-dev", base: "/docs", extra: [Object.assign({ active: true }, home)] }) });
 }
 
 createServer((req, res) => {

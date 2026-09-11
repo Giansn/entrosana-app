@@ -1,0 +1,38 @@
+{
+ "groups": [
+  { "title": "Overview", "items": [ { "key": "index", "label": "Overview", "desc": "What the entrosana Hub is, and where to start." } ] },
+  { "title": "Get started", "items": [
+    { "key": "get-started/create-an-account", "label": "Create an account", "desc": "Register with an e-mail address, no password." },
+    { "key": "get-started/set-up-your-profile", "label": "Set up your profile", "desc": "Name, picture, public page." },
+    { "key": "get-started/your-first-project", "label": "Your first project", "desc": "The board, its cards and the three proposed projects." } ] },
+  { "title": "Concepts", "items": [
+    { "key": "concepts/standings-and-roles", "label": "Standings and roles", "desc": "Collector, contributor, reviewer, owner." },
+    { "key": "concepts/modules-and-areas", "label": "Modules and areas", "desc": "What a module is, its state, its contributors." },
+    { "key": "concepts/review-and-publishing", "label": "Review and publishing", "desc": "From proposal to catalogue, and who decides." },
+    { "key": "concepts/services-and-heartbeats", "label": "Services and heartbeats", "desc": "Two directions of a check." },
+    { "key": "concepts/record-trail", "label": "Record trail", "desc": "The chain that proves the history." } ] },
+  { "title": "How to", "items": [
+    { "key": "how-to/propose-a-module", "label": "Propose a module", "desc": "The form, the confirmation, the status page." },
+    { "key": "how-to/edit-a-module", "label": "Edit a published module", "desc": "Text, state, facts and links." },
+    { "key": "how-to/add-contributors", "label": "Add contributors to a module", "desc": "Several people, one module." },
+    { "key": "how-to/watch-a-service", "label": "Watch a service", "desc": "Address, MCP, port or certificate." },
+    { "key": "how-to/report-with-a-heartbeat", "label": "Report with a heartbeat", "desc": "For jobs and machines the Hub cannot reach." },
+    { "key": "how-to/keep-files", "label": "Keep files in your account", "desc": "400 MB per account, public or private." },
+    { "key": "how-to/invite-someone", "label": "Invite someone", "desc": "A link that creates a collector account." },
+    { "key": "how-to/export-or-erase", "label": "Export or erase your data", "desc": "Everything as JSON, or gone." } ] },
+  { "title": "API reference", "items": [
+    { "key": "reference/api-overview", "label": "API overview", "desc": "Base URL, JSON, conventions." },
+    { "key": "reference/authentication", "label": "Authentication", "desc": "Sign-in links, tokens, devices, fresh tokens." },
+    { "key": "reference/accounts-and-profiles", "label": "Accounts and profiles", "desc": "/api/me, profiles, journal, applications, invitations." },
+    { "key": "reference/modules-and-points", "label": "Modules and points", "desc": "Module editing, contributors, points, search." },
+    { "key": "reference/services-and-hooks", "label": "Services and hooks", "desc": "Checks, heartbeats, rotation." },
+    { "key": "reference/files", "label": "Files", "desc": "Upload, list, share, delete." },
+    { "key": "reference/requests-and-proposals", "label": "Requests and proposals", "desc": "The public forms behind the API." },
+    { "key": "reference/team-endpoints", "label": "Team endpoints", "desc": "Queue, decisions, members." },
+    { "key": "reference/errors-and-limits", "label": "Errors and limits", "desc": "Status codes and rate limits in one place." } ] },
+  { "title": "Privacy", "items": [
+    { "key": "privacy/summary", "label": "Privacy summary", "desc": "The short version of the statement." },
+    { "key": "privacy/retention", "label": "What is kept, and for how long", "desc": "Retention in one table." } ] },
+  { "title": "Changelog", "items": [ { "key": "changelog", "label": "Changelog", "desc": "What changed in the Hub, by date." } ] }
+ ]
+}
