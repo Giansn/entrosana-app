@@ -222,8 +222,7 @@ window.__catalogue = {
     "meta":"",
     "facts":[
      ["Who it is for","Administrative responsibilities and process efficiency"],
-     ["What it leaves","A sealed record for every step you tick"],
-     ["Where it lives","On this device, until you say otherwise"]
+     ["What it leaves","A sealed record for every step you tick"]
     ]
    },
    {
@@ -235,8 +234,7 @@ window.__catalogue = {
     "meta":"",
     "facts":[
      ["Who it is for","Payroll runs, contracts, and attestations"],
-     ["What it leaves","A sealed record for every step you tick"],
-     ["Where it lives","On this device, until you say otherwise"]
+     ["What it leaves","A sealed record for every step you tick"]
     ]
    },
    {
@@ -248,8 +246,7 @@ window.__catalogue = {
     "meta":"",
     "facts":[
      ["Who it is for","Second opinions that show their work"],
-     ["What it leaves","A sealed record for every step you tick"],
-     ["Where it lives","On this device, until you say otherwise"]
+     ["What it leaves","A sealed record for every step you tick"]
     ]
    }
   ]
