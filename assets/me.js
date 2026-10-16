@@ -140,7 +140,7 @@
         .catch(function () { go.disabled = false; note(out, "idle", "The Hub's server is not reachable right now."); });
     });
     sec.appendChild(el("p", "fine", "With an account you can keep up to 400 MB of files on the Hub's own server in Switzerland: CVs, reviews, concepts, project papers. Each file is private unless you set it public on your page. Up to 50 MB per file."));
-    var p = el("p", "fine"); p.appendChild(document.createTextNode("Everything you do without an account stays on this device. "));
+    var p = el("p", "fine");   // nur noch der Datenschutz-Verweis; der Gerätehinweis davor ist weg (Eigentümer 2026-09-11: solche Vorspanne verwirren)
     var a = el("a", null, "How the Hub treats your data"); a.href = "https://entrosana.com/privacy/"; a.rel = "noopener"; p.appendChild(a); p.appendChild(document.createTextNode(".")); sec.appendChild(p);
   }
 
