@@ -120,15 +120,22 @@
     var fN = field("Your name", name, "Optional now, needed before you contribute.", true);
     form.appendChild(fE); form.appendChild(fN);
     // Alter (2026-09-10): Urteilsfähigkeit ab etwa 13; jüngere Lernende bringt eine Lehrperson oder ein Elternteil ein. Nichts davon wird gespeichert.
-    var age = el("input"); age.type = "checkbox"; age.id = "age-ok"; var fA = el("div", "field me__age"); var la = el("label", "toggle"); la.htmlFor = "age-ok";
-    la.appendChild(age); la.appendChild(el("span", "toggle__label", "I am 13 or older, or I register on behalf of a younger learner as their teacher or parent.")); fA.appendChild(la);
-    var hg = el("span", "help"); hg.appendChild(document.createTextNode("Required. The Hub stores no age; it only asks. By registering you accept ")); var hga = el("a", null, "the guidelines"); hga.href = "/guidelines"; hg.appendChild(hga); hg.appendChild(document.createTextNode(".")); fA.appendChild(hg); form.appendChild(fA);
+    // Der Schalter braucht seine sichtbare Spur (toggle__track): .toggle input ist per CSS unsichtbar, ohne Spur gab es nichts anzuklicken
+    // und niemand kam hinein (2026-10-16). Gebaut wie der Schalter in submit.js. Der Fehlerhinweis steht in einer eigenen Zeile, weil
+    // bad() ein field()-Feld erwartet (fA.help fehlte: TypeError, nichts geschah) und den Link zu den Richtlinien überschrieben hätte.
+    var age = el("input"); age.type = "checkbox"; age.id = "age-ok"; age.setAttribute("aria-describedby", "age-help");
+    var fA = el("div", "field me__age submit__choice"); var la = el("label", "toggle"); la.htmlFor = "age-ok";
+    var at = el("span", "toggle__track"); at.appendChild(el("span", "toggle__dot"));
+    la.appendChild(age); la.appendChild(at); la.appendChild(el("span", "toggle__label", "I am 13 or older, or I register on behalf of a younger learner as their teacher or parent.")); fA.appendChild(la);
+    var hg = el("span", "help"); hg.id = "age-help"; hg.appendChild(document.createTextNode("Required. The Hub stores no age; it only asks. By registering you accept ")); var hga = el("a", null, "the guidelines"); hga.href = "/guidelines"; hg.appendChild(hga); hg.appendChild(document.createTextNode(".")); fA.appendChild(hg);
+    var ae = el("span", "help"); ae.id = "age-err"; ae.hidden = true; fA.appendChild(ae); form.appendChild(fA);
+    age.addEventListener("change", function () { if (age.checked) { fA.classList.remove("is-bad"); ae.hidden = true; age.removeAttribute("aria-invalid"); age.setAttribute("aria-describedby", "age-help"); } });
     var actions = el("div", "actions"), go = el("button", "btn", "Send me the link"); go.type = "submit"; actions.appendChild(go); form.appendChild(actions);
     var out = live(); form.appendChild(out);
     form.addEventListener("submit", function (ev) {
       ev.preventDefault();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) { bad(fE, "An address we can send the link to."); return; }
-      if (!age.checked) { bad(fA, "Tick the box: 13 or older, or registering on behalf of a younger learner."); return; }
+      if (!age.checked) { fA.classList.add("is-bad"); ae.textContent = "Tick the box: 13 or older, or registering on behalf of a younger learner."; ae.hidden = false; age.setAttribute("aria-invalid", "true"); age.setAttribute("aria-describedby", "age-help age-err"); age.focus(); return; }
       go.disabled = true; note(out, "idle", "Sending…");
       api("/api/verify/request", { method: "POST", body: JSON.stringify({ email: email.value.trim(), name: name.value.trim(), purpose: "login", age_ok: true }) })
         .then(function (r) {
