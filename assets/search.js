@@ -9,7 +9,7 @@
     ["Propose a track", "/contribute/submit", "The proposal form"], ["Request", "/request", "Ask for a module, a track, a tool or a service"], ["Projects", "/projects", "Your projects on this device"],
     ["Record trail", "/records", "Append-only and sealed"], ["Running services", "/services", "What is up"], ["Your account", "/me", "Sign in, profile, journal, data"], ["Contribution status", "/contribute/status", "What you sent and where it stands"]];
   var GROUPS = ["Pages", "Your projects", "Modules", "Tools", "Contribute", "People", "Journal"];
-  var dlg = null, input = null, list = null, hi = -1, rows = [], server = { q: "", people: [], journal: [], modules: [] }, timer = null, lastQ = "";
+  var dlg = null, input = null, list = null, hi = -1, rows = [], server = { q: "", people: [], journal: [], modules: [] }, timer = null;
   function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
   function localIndex() {
     var items = PAGES.map(function (p) { return { group: "Pages", title: p[0], line: p[2] || "", href: p[1] }; });
@@ -74,7 +74,7 @@
     list = el("div", "palette__list"); list.id = "palette-list"; list.setAttribute("role", "listbox"); box.appendChild(list);
     box.appendChild(el("p", "palette__foot", "↑ ↓ move · Enter opens · Esc closes · nothing you type is stored or logged"));
     dlg.appendChild(box); document.body.appendChild(dlg);
-    input.addEventListener("input", function () { lastQ = input.value; render(input.value); askServer(input.value); });
+    input.addEventListener("input", function () { render(input.value); askServer(input.value); });
     input.addEventListener("keydown", function (e) {
       if (e.key === "ArrowDown") { e.preventDefault(); if (rows.length) setHi(Math.min(hi + 1, rows.length - 1)); }
       else if (e.key === "ArrowUp") { e.preventDefault(); if (rows.length) setHi(Math.max(hi - 1, 0)); }
@@ -84,7 +84,7 @@
     dlg.addEventListener("click", function (e) { if (e.target === dlg) close(); });
     dlg.addEventListener("close", function () { input.value = ""; });
   }
-  function open() { build(); ensureCatalogue(function () { if (!dlg.open) dlg.showModal(); input.value = lastQ = ""; render(""); input.focus(); }); }
+  function open() { build(); ensureCatalogue(function () { if (!dlg.open) dlg.showModal(); input.value = ""; render(""); input.focus(); }); }
   function close() { if (dlg && dlg.open) dlg.close(); }
   function toggle() { if (dlg && dlg.open) close(); else open(); }
   document.addEventListener("keydown", function (e) { if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) { e.preventDefault(); toggle(); } });

@@ -15,7 +15,6 @@
   var slug = (location.pathname.match(/^\/contributors\/([a-z0-9_-]{1,80})$/) || [])[1];
   var WORDS = { collector: "collector", contributor: "contributor", reviewer: "team", owner: "owner" };
   var ROLES = { teacher: "Teacher", student: "Student", parent: "Parent", "social-worker": "Social worker", developer: "Developer", researcher: "Researcher", other: "Other" };
-  var STATE = { finished: "finished", available: "finished", development: "in development", idea: "an idea", running: "running" };
   var LANGS = window.__languages || [];
   function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
   function langName(c) { for (var i = 0; i < LANGS.length; i++) if (LANGS[i][0] === c) return LANGS[i][2] || LANGS[i][1]; return c; }
@@ -72,7 +71,7 @@
     // dem Gerät der Person und stehen deshalb nicht hier.
     var fmt = function (b) { return b >= 1048576 ? (b / 1048576).toFixed(b >= 10485760 ? 0 : 1) + " MB" : b >= 1024 ? Math.round(b / 1024) + " KB" : b + " B"; };
     var facts = el("div", "facts2");
-    [[String(p.modules.length), p.modules.length === 1 ? "published" : "published"], [p.since, "on the Hub since"],
+    [[String(p.modules.length), "published"], [p.since, "on the Hub since"],
      pr.langs && pr.langs.length ? [String(pr.langs.length), pr.langs.length === 1 ? "language" : "languages"] : null,
      p.journal.length ? [String(p.journal.length), p.journal.length === 1 ? "public entry" : "public entries"] : null
     ].forEach(function (f) { if (!f) return; var d = el("div", "fact2"); d.appendChild(el("b", null, f[0])); d.appendChild(el("span", null, f[1])); facts.appendChild(d); });
