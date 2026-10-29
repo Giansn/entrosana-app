@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 import { open } from "./db.mjs";
 import { append as auditAppend, verify as auditVerify } from "./audit.mjs";
 import { can, rolesOf } from "./policy.mjs";
-import { validate as validateContribution, actionFor, verifyTrail, publishChecks } from "./contributions.mjs";
+import { validate as validateContribution, actionFor, verifyTrail, publishChecks, EMAIL } from "./contributions.mjs";
 import { appendEntry, removeEntry, updateEntry as updateCatalogueEntry, entryFor, readCatalogue } from "./publish.mjs";
 import { exportActor, dormantSweep } from "./maintenance.mjs";
 import { standingOf, currentApplication, openApplication, listApplications, decideApplication } from "./applications.mjs";
@@ -68,6 +68,8 @@ function send(res, status, body, extra = {}) {
   res.end(data);
 }
 class HttpError extends Error { constructor(status, msg) { super(msg); this.status = status; } }
+// Ein Textfeld aus dem Rumpf: ohne Rand, höchstens max Zeichen; fehlt es, leer.
+const str = (v, max) => String(v == null ? "" : v).trim().slice(0, max);
 
 function readJson(req) {
   return new Promise((resolve, reject) => {
@@ -89,7 +91,6 @@ function limited(key, limit = RATE.limit) {
 }
 setInterval(() => { const now = Date.now(); for (const [k, v] of hits) { const a = v.filter(t => now - t < RATE.windowMs); a.length ? hits.set(k, a) : hits.delete(k); } }, 600e3).unref();
 
-const EMAIL = /^[^@\s]{1,64}@[^@\s]{1,189}\.[A-Za-z]{2,}$/;
 function mail(to, subject, text) {
   return new Promise((resolve) => {
     const p = spawn("python3", [MAIL], { stdio: ["pipe", "pipe", "pipe"] });
@@ -428,7 +429,6 @@ patterns.push([/^\/api\/me\/modules\/([a-z0-9-]{1,80})$/, {
   PATCH: async (ctx, [slug]) => {
     moduleAccess(ctx, slug);
     const body = await readJson(ctx.req), fields = {};
-    const str = (v, max) => String(v == null ? "" : v).trim().slice(0, max);
     if (body.title !== undefined) { const v = str(body.title, 120); if (v.length < 3) throw new HttpError(400, "title too short"); fields.title = v; }
     if (body.who !== undefined) fields.who = str(body.who, 160);
     if (body.lede !== undefined) fields.lede = str(body.lede, 300);
@@ -577,7 +577,6 @@ routes.set("GET /api/me/services", (ctx) => {
 routes.set("POST /api/me/services", async (ctx) => {
   if (!ctx.actor || ctx.actor.kind !== "email") throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
   const body = await readJson(ctx.req);
-  const str = (v, max) => String(v == null ? "" : v).trim().slice(0, max);
   const name = str(body.name, 80); if (name.length < 2) throw new HttpError(400, "name too short");
   const n = db.prepare("SELECT COUNT(*) n FROM services WHERE actor_id = ?").get(ctx.actor.id).n;
   if (n >= SVC_MAX) throw new HttpError(409, `at most ${SVC_MAX} services per account`);
@@ -603,7 +602,6 @@ patterns.push([/^\/api\/me\/services\/(\d{1,12})$/, {
   PATCH: async (ctx, [id]) => {
     if (!ctx.actor || ctx.actor.kind !== "email") throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
     const r = svcOf(ctx, id); const body = await readJson(ctx.req);
-    const str = (v, max) => String(v == null ? "" : v).trim().slice(0, max);
     const name = body.name !== undefined ? str(body.name, 80) : r.name; if (name.length < 2) throw new HttpError(400, "name too short");
     const what = body.what !== undefined ? (str(body.what, 160) || null) : r.what;
     const grp = body.group !== undefined && SVC_GROUPS.includes(body.group) ? body.group : r.grp;
@@ -682,7 +680,6 @@ routes.set("PATCH /api/me", async (ctx) => {
   if (ctx.actor.kind !== "email") throw new HttpError(403, "not for service actors");
   const body = await readJson(ctx.req);
   const sets = [], vals = [], changed = [];
-  const str = (v, max) => String(v == null ? "" : v).trim().slice(0, max);
   if (body.name !== undefined) { const name = str(body.name, 120); if (name.length < 2) throw new HttpError(400, "name too short"); sets.push("name = ?"); vals.push(name); changed.push("name"); }
   if (body.org !== undefined) { sets.push("org = ?"); vals.push(str(body.org, 200) || null); changed.push("org"); }
   if (body.role !== undefined) { const role = str(body.role, 40); if (role && !ROLES.includes(role)) throw new HttpError(400, "role unknown"); sets.push("role = ?"); vals.push(role || null); changed.push("role"); }
