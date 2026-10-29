@@ -7,7 +7,7 @@
  * Endungen; der Typ beim Ausliefern kommt aus dieser Liste, nie aus dem, was
  * der Browser beim Hochladen behauptet hat. Ausgeliefert wird immer als Anhang
  * mit nosniff, damit nichts Hochgeladenes im Ursprung des Hubs als Seite läuft. */
-import { createWriteStream, mkdirSync, statSync, unlinkSync, rmSync, existsSync, renameSync } from "node:fs";
+import { createWriteStream, mkdirSync, unlinkSync, rmSync, existsSync, renameSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 
@@ -103,4 +103,3 @@ export function removeAll(db, root, actorId) {
   db.prepare("DELETE FROM files WHERE actor_id = ?").run(actorId);
   const d = dirFor(root, actorId); if (existsSync(d)) rmSync(d, { recursive: true, force: true });
 }
-export function sizeOnDisk(root, row) { try { return statSync(pathFor(root, row)).size; } catch { return null; } }

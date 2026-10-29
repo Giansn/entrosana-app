@@ -8,7 +8,7 @@
 // Anfrage wird nie ein Pfad oder eine SQL-Anweisung gebaut. Wer was darf,
 // entscheidet allein policy.mjs; jede Handlung wird in audit angehängt.
 import { createServer } from "node:http";
-import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
+import { appendFileSync, createReadStream, mkdirSync, readFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,9 +21,7 @@ import { exportActor, dormantSweep } from "./maintenance.mjs";
 import { standingOf, currentApplication, openApplication, listApplications, decideApplication } from "./applications.mjs";
 import { LANG_CODES, MAX_LANGS } from "./languages.mjs";
 import { listJournal, addEntry, updateEntry, deleteEntry, publicProfile, publicProfileBySlug, slugOf, searchPublic } from "./journal.mjs";
-import { QUOTA, MAX_FILE, checkUpload, safeName, pathFor, usedBytes, listFiles, fileRow, receive, removeFile, removeAll, fmt } from "./files.mjs";
-import { createReadStream } from "node:fs";
-import { dirname as pathDirname } from "node:path";
+import { QUOTA, MAX_FILE, checkUpload, safeName, pathFor, usedBytes, listFiles, fileRow, receive, removeFile, removeAll } from "./files.mjs";
 import { KINDS as SVC_KINDS, GROUPS as SVC_GROUPS, PLACES as SVC_PLACES, INTERVALS as SVC_INTERVALS, MAX_PER_ACTOR as SVC_MAX, parseCheck, guardTarget, runCheck, heartbeatState } from "./services.mjs";
 import { serviceToken, ensureServiceActor, resolveActor, issueToken, withRoles, newToken, sha } from "./auth.mjs";
 
@@ -36,7 +34,7 @@ const PUBLIC = process.env.PUBLIC_ORIGIN || "https://entrosana.app";
 const INBOX = process.env.INBOX || "sygnif@entrosana.com";   // Postfach der Beitragenden, sortiert von sygnif
 const INFO = process.env.INFO_INBOX || "info@entrosana.com";   // Anfragen: Module, Tracks, Werkzeuge, Dienste
 const PHONE = "077 529 73 01";
-const REQUEST_KINDS = ["module", "track", "tool", "service", "report", "contribute", "other"];   // report/contribute (2026-09-09): zu einem Modul, gehen an sygnif@   // report (2026-09-09): Meldung zu einem Modul, geht an sygnif@
+const REQUEST_KINDS = ["module", "track", "tool", "service", "report", "contribute", "other"];   // report/contribute (2026-09-09): zu einem Modul, gehen an sygnif@
 const MAIL = process.env.MAIL_SEND || join(HERE, "..", "tools", "mail-send.py");
 const BODY_CAP = 256 * 1024;  // Kette eines Geräts als Hashes passt hinein
 const RATE = { limit: 5, windowMs: 3600e3 };   // docs/contributions.md, Entscheid 5
@@ -46,7 +44,7 @@ const FOUR_EYES = process.env.FOUR_EYES === "strict";   // strict: veröffentlic
 mkdirSync(dirname(LOG), { recursive: true });
 const { db, migrations } = open(DB_PATH);
 // Dateien der Konten liegen neben der Datenbank: api/db/files/<konto>/ (2026-09-10).
-const FILES_ROOT = DB_PATH === ":memory:" ? "/tmp/entrosana-files" : pathDirname(DB_PATH);
+const FILES_ROOT = DB_PATH === ":memory:" ? "/tmp/entrosana-files" : dirname(DB_PATH);
 const TOKEN = serviceToken();
 ensureServiceActor(db, auditAppend);
 
@@ -225,7 +223,6 @@ routes.set("GET /api/verify", (ctx) => {
       .then(r => auditAppend(db, { kind: "signin.mail", actor_id: actor.id, resource: "actor:" + actor.id, text: r.ok ? "sign-in notice sent" : "sign-in notice failed: " + (r.err || r.code) }));
   }
   const roles = rolesOf(db, actor.id);
-  const a = withRoles(db, actor);
   send(ctx.res, 200, { ok: true, token: t.token, expires: t.expires, confirmed: pending.length, actor: { id: actor.id, email: actor.email, name: actor.name, created: actor.created, roles: [...roles], standing: standingOf(roles) } });
 });
 
