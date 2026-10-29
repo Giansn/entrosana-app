@@ -825,7 +825,6 @@ def build_sidebar_editor() -> str:
             "<p><a href='/'>← All pages</a></p></div>",
             bare=True,
         )
-    fields = "".join(_field_html(st) for st in side)
     # Map form order: data-key s:0..n for sidebar-only save (not page span index list)
     # Re-tag keys as s:ordinal while keeping data-i for preview on index
     # Rebuild fields with s: keys for clear save payload

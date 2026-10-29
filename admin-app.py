@@ -19,7 +19,7 @@ Gebunden wird auf die Tailscale-Adresse, nicht auf 0.0.0.0 — im WLAN ist
 davon nichts zu sehen. Zusätzlich lässt der Quellcheck nur Loopback und
 das Tailnet durch.
 """
-import hashlib, hmac, html, ipaddress, json, os, re, secrets, shutil, subprocess, time
+import hmac, html, ipaddress, json, os, re, secrets, shutil, subprocess, time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
@@ -401,12 +401,6 @@ def page_write(name, neu: list, sizes: dict | None = None):
             if in_wrap and new_size != "md":
                 continue
             if not in_wrap and new_size == "md":
-                continue
-            if not in_wrap and new_size != "md":
-                pass  # need to add wrap
-            elif in_wrap and new_size == "md":
-                pass  # need to unwrap
-            else:
                 continue
 
         new_html = field_sized_html(t, new_size)
@@ -872,8 +866,6 @@ def page_editor(name, msg="", err=""):
         """Die Karten stehen nicht in der Datei, sondern in catalogue.js.
         Sie gehören trotzdem hierher: wer die Seite bearbeitet, will jede
         Zeile ändern können, die er sieht — nicht nur die aus dem Markup."""
-        passend = [e for e in katalog
-                   if e["felder"] and (not gleis or e.get("gleis") in (None, gleis))]
         # Zuordnung über den Abschnitt im Katalog: der Slug der Seite ist die
         # Abteilung (modules, tools), das Gleis unterscheidet fertig von auf Anfrage.
         passend = [e for e in katalog if e["abteilung"] == abteilung
