@@ -143,8 +143,8 @@ async function startVerification(email, name, purpose) {
   const token = newToken(), now = new Date();
   const login = purpose === "login";
   // 2026-09-10 (OWASP): Anmeldelinks 20 Minuten; Bestätigungen zu Vorschlägen bleiben eine Stunde, die Person liest sie später.
-  db.prepare("INSERT INTO verifications(email, token_hash, created, expires) VALUES (?,?,?,?)")
-    .run(email, sha(token), now.toISOString(), new Date(now.getTime() + (login ? 20 * 60e3 : 3600e3)).toISOString());
+  db.prepare("INSERT INTO verifications(email, token_hash, created, expires, name) VALUES (?,?,?,?,?)")
+    .run(email, sha(token), now.toISOString(), new Date(now.getTime() + (login ? 20 * 60e3 : 3600e3)).toISOString(), name || null);
   const link = `${PUBLIC}${login ? "/me" : "/contribute/status"}?verify=${token}`;
   const what = purpose === "contribution" ? "entered a contribution to the entrosana Hub under this address"
              : login ? "asked to sign in to the entrosana Hub with this address" : "entered this address on entrosana.app";
@@ -186,8 +186,12 @@ routes.set("GET /api/verify", (ctx) => {
     actor = db.prepare("SELECT * FROM actors WHERE email = ?").get(row.email);
     existed = !!actor;
     if (!actor) {
-      const id = db.prepare("INSERT INTO actors(kind, email, created) VALUES ('email', ?, ?)").run(row.email, nowIso).lastInsertRowid;
+      const id = db.prepare("INSERT INTO actors(kind, email, name, created) VALUES ('email', ?, ?, ?)").run(row.email, row.name || null, nowIso).lastInsertRowid;
       actor = db.prepare("SELECT * FROM actors WHERE id = ?").get(id);
+    } else if (!actor.name && row.name) {
+      // Ein bestehendes Konto ohne Namen übernimmt den Namen aus dem Formular; einen gesetzten Namen überschreibt der Verweis nie.
+      db.prepare("UPDATE actors SET name = ? WHERE id = ?").run(row.name, actor.id);
+      actor = db.prepare("SELECT * FROM actors WHERE id = ?").get(actor.id);
     }
     db.exec("COMMIT");
   } catch (e) { db.exec("ROLLBACK"); throw e; }

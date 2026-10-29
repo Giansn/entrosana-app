@@ -25,7 +25,7 @@ test("dateien: name, endung, grenzen", () => {
 
 test("dateien: zeilen, kontingent, öffentliche auswahl", () => {
   const { db, migrations } = open(":memory:");
-  assert.equal(migrations.total, 21);
+  assert.equal(migrations.total, 22);
   const now = new Date().toISOString();
   db.prepare("INSERT INTO actors(kind, email, name, created) VALUES ('email', 'a@example.org', 'A', ?)").run(now);
   const id = db.prepare("SELECT id FROM actors WHERE email = 'a@example.org'").get().id;
