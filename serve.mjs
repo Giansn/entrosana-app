@@ -93,8 +93,6 @@ const ROUTES = new Map([
   // Vorschaubild für geteilte Links. Wird nicht von der Seite geladen, sondern
   // von fremden Diensten geholt, deshalb greift die CSP hier nicht.
   ["/assets/share-1200x630.png", { file: "assets/share-1200x630.png", type: "image/png" }],
-  // assets/fonts.css liegt noch auf der Platte, wird aber nicht mehr ausgeliefert:
-  // die neun Schnitte haben keinen Lateinbereich (docs/handoff-design.md §3).
 ]);
 
 // Die Seiten sind eigenständig: kein fremdes Skript, kein fremder Stil, kein
@@ -161,8 +159,7 @@ function load(route) {
 // abgeleiteten gebraucht; deshalb steht sie hier ausdrücklich.
 const DETAIL = { file: "detail.html", type: HTML };
 // /p/<id> und /contributors/<name>: das öffentliche Profil, alleinstehend ohne
-// Leiste und Kopfleiste (2026-09-10). profile.html bleibt auf der Platte, wird
-// aber nicht mehr ausgeliefert.
+// Leiste und Kopfleiste (2026-09-10).
 const PROFILE = { file: "contributor.html", type: HTML };
 const FILES = () => [...ROUTES.values(), DETAIL, PROFILE];
 // Erst die Assets, dann die Seiten: die Seiten brauchen die Hashes der Assets.
