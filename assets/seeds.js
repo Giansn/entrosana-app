@@ -172,7 +172,7 @@ window.__seeds = {
    },
    {
     "t": "Send the checklist to entrosana",
-    "n": "Export the trail and mail it to info@entrosana.com, or use the form on entrosana.com/request-access. The answer comes from a person, not a queue."
+    "n": "Export the trail and mail it to info@entrosana.com, or use the form at entrosana.app/request. The answer comes from a person, not a queue."
    }
   ]
  },
@@ -269,7 +269,7 @@ window.__seeds = {
    },
    {
     "t": "Send the plan to entrosana",
-    "n": "info@entrosana.com, or the form on entrosana.com/request-access. Say the age group, the dates, and what you want us to bring."
+    "n": "info@entrosana.com, or the form at entrosana.app/request. Say the age group, the dates, and what you want us to bring."
    }
   ]
  },

@@ -114,86 +114,50 @@
       </section>
 
 
-      <!-- Vier Wege hinein, nach Personen sortiert und nicht nach Artefakten.
-           Jede Karte nennt den ersten Handgriff und was er ungefaehr kostet. -->
-      <section class="block hair">
-        <span class="eyebrow">Ways in</span>
-        <p class="work__sub measure">Pick the one that matches the hour you actually have. None of
-          them needs an account.</p>
-        <div class="cards cards--2">
-          <a class="mcard" href="/modules">
-            <span class="mcard__head"><span class="chip">teachers</span></span>
-            <p class="mcard__t">Run a module with a real group</p>
-            <p class="mcard__l">Take one of the modules into a lesson and tell us what did not
-              survive contact with the class.</p>
-            <span class="mcard__m"><span>one lesson</span><span class="mcard__go">open ›</span></span>
-          </a>
-          <a class="mcard" href="/contribute/docs-in-plain-language">
-            <span class="mcard__head"><span class="chip">anyone</span></span>
-            <p class="mcard__t">Read something and say where it does not hold</p>
-            <p class="mcard__l">A page, a checklist, a claim on the site. The case that breaks it is
-              worth more than a compliment.</p>
-            <span class="mcard__m"><span>an hour</span><span class="mcard__go">open ›</span></span>
-          </a>
-          <a class="mcard" href="https://github.com/entrosana/hub">
-            <span class="mcard__head"><span class="chip">developers</span></span>
-            <p class="mcard__t">Build or fix something in the open repository</p>
-            <p class="mcard__l">AGPL-3.0 on GitHub. Small and finished beats large and pending.</p>
-            <span class="mcard__m"><span>an evening</span><span class="mcard__go">github ↗</span></span>
-          </a>
-          <a class="mcard" href="/request">
-            <span class="mcard__head"><span class="chip">subject experts</span></span>
-            <p class="mcard__t">Bring a subject we do not have</p>
-            <p class="mcard__l">A subject we cannot teach yet, from someone who can. Students count
-              here too.</p>
-            <span class="mcard__m"><span>a conversation</span><span class="mcard__go">open ›</span></span>
-          </a>
-        </div>
-      </section>
-
       <!-- Offene Bitten. Konkret, klein, mit Aufwand daneben — sonst liest es
            sich wie eine Absichtserklaerung. Hier gepflegt, nicht generiert:
            eine <li> je Bitte, der Aufwand in <span class="ask__w">. Wenn nichts
            offen ist, bleibt nur der leere Zustand darunter stehen. -->
+      <!-- Eine Liste statt «Ways in» plus «Open asks» (2026-10-31, beide trugen dieselben
+           Bitten): fuenf Bitten, jede mit Aufwand und Weg. Oben die konkreten, unten die
+           offenen fuer Entwickler und Fachleute. -->
       <section class="block hair">
         <span class="eyebrow">Open asks</span>
-        <p class="work__sub measure">What would actually help.</p>
+        <p class="work__sub measure">What would actually help, with the hour it takes.</p>
         <ul class="asks">
           <li>
-            <span class="ask__t">Run «Value System» with a class and send back the slide you
-              had to change</span>
+            <a class="ask__t" href="/modules/your-value-system">Run «Value System» with a class and send back the slide you
+              had to change</a>
             <span class="ask__w">one lesson · teachers</span>
           </li>
           <li>
-            <span class="ask__t">Read the privacy page on entrosana.com and mark every sentence a
-              parent would not understand</span>
+            <a class="ask__t" href="https://entrosana.com/privacy/">Read the privacy page on entrosana.com and mark every sentence a
+              parent would not understand</a>
             <span class="ask__w">an hour · anyone</span>
           </li>
           <li>
-            <span class="ask__t">Translate «Value System» into French or Italian, slides and
-              worksheet</span>
+            <a class="ask__t" href="/modules/your-value-system">Translate «Value System» into French or Italian, slides and
+              worksheet</a>
             <span class="ask__w">an evening · anyone bilingual</span>
           </li>
+          <li>
+            <a class="ask__t" href="https://github.com/entrosana/hub">Build or fix something in the open repository. Small and finished beats large and pending</a>
+            <span class="ask__w">an evening · developers</span>
+          </li>
+          <li>
+            <a class="ask__t" href="/request">Bring a subject we cannot teach yet, from someone who can. Students count here too</a>
+            <span class="ask__w">a conversation · subject experts</span>
+          </li>
         </ul>
-        <p class="muted">Nothing here fits? The ways in above are open the whole year.</p>
       </section>
 
-      <!-- Zwei Ebenen (Eigentümer 2026-10-31): was früher vier Textblöcke waren (Ablauf, Formen,
+      <!-- Zwei Ebenen (Eigentümer 2026-10-31): was früher vier Textblöcke waren (Formen,
            Gegenleistung, Regeln) und die Beispiel-Checklisten, je eine Zeile; der Inhalt auf Klick.
-           Die Regeln stehen nur noch kurz hier, ausführlich auf /guidelines. Ablauf = propose.js. -->
+           Die Regeln stehen nur noch kurz hier, ausführlich auf /guidelines. Der Ablauf steht
+           nicht mehr hier: ihn zeigt das Fenster bei «Propose a module» (propose.js). -->
       <section class="block hair">
         <span class="eyebrow">Good to know</span>
         <div class="folds">
-          <details class="fold">
-            <summary><b>How a proposal goes in</b><span>Five steps, from the form to the catalogue.</span></summary>
-            <ol class="propose__steps fold__body">
-              <li><b>Send</b><span>Fill in the form. No account needed.</span></li>
-              <li><b>Confirm</b><span>We mail you a link. Open it within 7 days, or the proposal is deleted.</span></li>
-              <li><b>Review</b><span>entrosana assesses and decides.</span></li>
-              <li><b>Decision</b><span>Admitted or not, by mail, with the reason.</span></li>
-              <li><b>Published</b><span>It goes into the catalogue under your name. For that you need an account the team has approved for contributing; you apply on your account page.</span></li>
-            </ol>
-          </details>
           <details class="fold">
             <summary><b>What a contribution looks like</b><span>A module, an API connector or an MCP tool.</span></summary>
             <div class="fold__body">
@@ -257,23 +221,6 @@
 
 </div>
 
-<dialog class="pick" id="pick">
-  <div class="pick__box">
-    <span class="eyebrow">New project</span>
-    <p class="h3">Start from the Hub, or from nothing.</p>
-    <div id="pick-seeds"></div>
-    <div class="field">
-      <label for="pick-own">Or your own title</label>
-      <input id="pick-own" type="text" placeholder="What is the project called?">
-      <span class="help">An empty file with your name on it. Steps are added as you go, and every
-        one of them leaves the same record as a Hub file does.</span>
-    </div>
-    <div class="actions">
-      <button class="btn" type="button" data-act="new-own">Create</button>
-      <button class="btn btn--ghost" type="button" data-act="pick-close">Cancel</button>
-    </div>
-  </div>
-</dialog>
 
 <script src="/assets/seeds.js"></script>
 <script src="/assets/catalogue.js"></script>

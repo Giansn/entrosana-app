@@ -29,13 +29,10 @@ window.__catalogue = {
     "title":"Value System",
     "who":"social · 9 slides + 2-page worksheet · English and German",
     "lede":"Where do values originate from and how do they change? ",
-    "meta":"still in development · open to build on it",
+    "meta":"open to build on it",
     "about":"It works through why the weight of a value shifts with age, time of day, place and company, why so much of a value system sits below awareness, and the question underneath both: are we led by our value system, or do we build it. Maslow's hierarchy and the World Economic Forum's system-value framework appear as reference models, not as answers.",
     "note":"It closes with an exercise rather than a summary. Learners build a character, invented or real, and map its complete value system including the parts the character is not aware of. Discussion prompts and thinking pauses are written into the slides, so a teacher can run it without preparation from us.",
     "facts":[
-     ["Area","Social"],
-     ["What you get","9 slides and a 2-page worksheet"],
-     ["Languages","English and German"],
      ["What you need from us","Nothing. No account, no request"],
      ["Reference models","Maslow's hierarchy, the World Economic Forum's system-value framework"],
      ["Preparation","None: the prompts and pauses are written into the slides"]
@@ -48,7 +45,6 @@ window.__catalogue = {
     ],
     "gets":[
      "A session a teacher can run as it is",
-     "The same material in English and German",
      "Yours to adapt: read it, run it with your class, change it"
     ]
    },
@@ -63,8 +59,6 @@ window.__catalogue = {
     "meta":"on request",
     "about":"Composed by contributors who do this work: social workers, and practitioners who teach. Scoped and built on request, so the depth matches the class instead of a catalogue.",
     "facts":[
-     ["Scope","Scoped and built on request, matched to the age and size of the group"],
-     ["Who composes it","Contributors: social workers, nature pedagogy, and engineers who teach"],
      ["How it starts","A school or a homeschooling family asks; we scope a priced proposal"],
      ["What stays visible","The plan, the materials, and what was delivered — to learners, parents and teachers"],
      ["Curriculum references","Checked against the source, not trusted"],
@@ -72,8 +66,7 @@ window.__catalogue = {
     ],
     "gets":[
      "The module delivered with its full record",
-     "No catalogue lock-in: modules are built, adapted and retired as classes actually need them",
-     "An audit record that answers the parents who chose the school"
+     "No catalogue lock-in: modules are built, adapted and retired as classes actually need them"
     ]
    },
    {
@@ -87,8 +80,6 @@ window.__catalogue = {
     "meta":"on request",
     "about":"Composed by nature, humans and contributors with a background with wildlife, crafting, science and art. ",
     "facts":[
-     ["Scope","Scoped and built on request, matched to the age and size of the group"],
-     ["Who composes it","Contributors: social workers, nature pedagogy, and engineers who teach"],
      ["How it starts","A school or a homeschooling family asks; we scope a priced proposal"],
      ["What stays visible","The plan, the materials, and what was delivered — to learners, parents and teachers"],
      ["Curriculum references","Checked against the source, not trusted"],
@@ -96,8 +87,7 @@ window.__catalogue = {
     ],
     "gets":[
      "The module delivered with its full record",
-     "No catalogue lock-in: modules are built, adapted and retired as classes actually need them",
-     "An audit record that answers the parents who chose the school"
+     "No catalogue lock-in: modules are built, adapted and retired as classes actually need them"
     ]
    },
    {
@@ -111,8 +101,6 @@ window.__catalogue = {
     "meta":"on request",
     "about":"Composed by engineers who teach and scoped to practical needs. ",
     "facts":[
-     ["Scope","Scoped and built on request, matched to the age and size of the group"],
-     ["Who composes it","Contributors: social workers, nature pedagogy, and engineers who teach"],
      ["How it starts","A school or a homeschooling family asks; we scope a priced proposal"],
      ["What stays visible","The plan, the materials, and what was delivered — to learners, parents and teachers"],
      ["Curriculum references","Checked against the source, not trusted. The Lehrplan 21 citation tool is in development"],
@@ -120,8 +108,7 @@ window.__catalogue = {
     ],
     "gets":[
      "The module delivered with its full record",
-     "No catalogue lock-in: modules are built, adapted and retired as classes actually need them",
-     "An audit record that answers the parents who chose the school"
+     "No catalogue lock-in: modules are built, adapted and retired as classes actually need them"
     ]
    },
    {
