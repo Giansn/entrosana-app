@@ -10,12 +10,15 @@
   "use strict";
   var host = document.getElementById("submit");
   if (!host) return;
-  var q = new URLSearchParams(location.search), seed = q.get("seed") || "contribute/000";
+  // Vorbelegen aus einer Datei nur, wenn ein Projekt ausdrücklich hierher schickt (?seed=…).
+  // Ohne Parameter holte der Rückfall «contribute/000» eine alte lokale Kopie «Propose a track»
+  // mit steifen Vorgaben aus dem Browser (Eigentümer 2026-10-31: «more helping»).
+  var q = new URLSearchParams(location.search), explicit = q.has("seed"), seed = q.get("seed") || "contribute/000";
   var TOKEN_KEY = "entrosana-app:token", SUBS_KEY = "entrosana-app:submissions";
   var AREAS = ["social", "nature-based", "technical", "other"];
   var hub = window.__hub || null;
   var st = hub ? hub.state() : { projects: {}, records: [] };
-  var p = st.projects[seed] || null;
+  var p = explicit ? st.projects[seed] || null : null;
   var seedDef = (window.__seeds || {})[seed] || null;
   var uid = 0, out;
 
@@ -94,9 +97,11 @@
   var title = el("input"); title.type = "text"; title.maxLength = 160; title.required = true; title.value = (p ? p.title : "").slice(0, 160);
   var area = el("select"); AREAS.forEach(function (a) { var o = el("option", null, a); o.value = a; area.appendChild(o); });
   var summary = el("textarea"); summary.maxLength = 4000; summary.required = true; summary.rows = 8; summary.value = TEMPLATE;
+  // Fragen als Platzhalter statt Vorgaben im Feld: verschwinden beim Tippen, nichts muss gelöscht werden.
+  if (!TEMPLATE) summary.placeholder = "Who is it for?\nWhat should they take away?\nIs there something already? A link helps.\nWhere could we help? Review, time, hosting, or someone who knows the subject.";
   var fTitle = field("Title", title, "What you want to build or teach, in one line.");
   var fArea = field("Area", area, null);
-  var fSummary = field("Proposal", summary, null);
+  var fSummary = field("Proposal", summary, "A few lines are enough. Nothing has to be finished; we work it out with you.");
   g2.appendChild(fTitle); g2.appendChild(fArea); g2.appendChild(fSummary); form.appendChild(g2);
 
   var g3 = group("Files and your data");
@@ -128,7 +133,7 @@
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) { bad(fEmail, "An address we can send the confirmation link to."); fails.push(fEmail); }
     if (title.value.trim().length < 3) { bad(fTitle, "A title, at least three characters."); fails.push(fTitle); }
     var s = summary.value.trim();
-    if (!s) { bad(fSummary, "The proposal is what the reviewer reads; it cannot be empty."); fails.push(fSummary); }
+    if (!s) { bad(fSummary, "A few lines about your idea, so we know where to start."); fails.push(fSummary); }
     else if (!p && TEMPLATE && s === TEMPLATE.trim()) { bad(fSummary, "The prompts are still empty. Write after the colons."); fails.push(fSummary); }
     var pf = parseFiles(links.value);
     if (pf.errors.length) { bad(fLinks, pf.errors.join(" ")); fails.push(fLinks); }
