@@ -122,7 +122,12 @@
     // Alter (2026-09-10): Urteilsfähigkeit ab etwa 13; jüngere Lernende bringt eine Lehrperson oder ein Elternteil ein. Nichts davon wird gespeichert.
     var age = el("input"); age.type = "checkbox"; age.id = "age-ok"; var fA = el("div", "field me__age"); var la = el("label", "toggle"); la.htmlFor = "age-ok";
     la.appendChild(age); var atr = el("span", "toggle__track"); atr.appendChild(el("span", "toggle__dot")); la.appendChild(atr); la.appendChild(el("span", "toggle__label", "I am 13 or older, or I register on behalf of a younger learner as their teacher or parent.")); fA.appendChild(la);
-    var hg = el("span", "help"); hg.appendChild(document.createTextNode("Required. The Hub stores no age; it only asks. By registering you accept ")); var hga = el("a", null, "the guidelines"); hga.href = "/guidelines"; hg.appendChild(hga); hg.appendChild(document.createTextNode(".")); fA.appendChild(hg); form.appendChild(fA);
+    var hg = el("span", "help"); hg.id = "age-help"; hg.appendChild(document.createTextNode("Required. The Hub stores no age; it only asks. By registering you accept ")); var hga = el("a", null, "the guidelines"); hga.href = "/guidelines"; hg.appendChild(hga); hg.appendChild(document.createTextNode(".")); fA.appendChild(hg);
+    // Eigene Fehlerzeile statt bad() auf hg: hg trägt den Verweis auf die Richtlinien, der bleiben soll.
+    // help und input machen fA zu einem Feld, wie bad() es erwartet (vorher TypeError, keine Meldung).
+    var ae = el("span", "help me__age-err"); ae.id = "age-err"; ae.hidden = true; fA.appendChild(ae); form.appendChild(fA);
+    fA.help = ae; fA.input = age; age.setAttribute("aria-describedby", "age-help age-err");
+    age.addEventListener("change", function () { if (age.checked && fA.classList.contains("is-bad")) { fA.classList.remove("is-bad"); ae.hidden = true; ae.textContent = ""; age.removeAttribute("aria-invalid"); } });
     var actions = el("div", "actions"), go = el("button", "btn", "Send me the link"); go.type = "submit"; actions.appendChild(go); form.appendChild(actions);
     var out = live(); form.appendChild(out);
     // Gesendet (Eigentümer 2026-10-31, «bemerkbarer»): das Formular weicht einer deutlichen
