@@ -20,18 +20,21 @@ const HOST = process.env.HOST || "127.0.0.1";
 // eigene, leere Kopie aller Daten an. Lokale Zugriffe (127.0.0.1, Proben)
 // tragen einen anderen Host und bleiben unberührt.
 const CANON = "entrosana.app";
+// docs.entrosana.app (2026-09-10): Markdown aus docs-site/, gerendert in docs-render.mjs.
 const DOCS_HOST = process.env.DOCS_HOST || "docs." + CANON;
-const ATRIUM_HOST = process.env.ATRIUM_HOST || "atrium.entrosana.com";   // Atrium (2026-09-10): Landung aus atrium-site/, Docs in Entwicklung aus docs-dev/   // docs.entrosana.app (2026-09-10): Markdown aus docs-site/, gerendert in docs-render.mjs
+// atrium.entrosana.com (2026-09-10): Landung aus atrium-site/, Docs in Entwicklung aus docs-dev/.
+const ATRIUM_HOST = process.env.ATRIUM_HOST || "atrium.entrosana.com";
 // Der einzige Schalter für die Sichtbarkeit in Suchmaschinen. Solange er false
 // ist, geht auf jeder Seite X-Robots-Tag: noindex raus; die Seiten selbst
 // tragen dazu nichts, damit es nur eine Stelle gibt. Auf true setzen, sobald
 // der Hub öffentlich gefunden werden soll — mehr ist nicht zu tun, robots.txt
-// und sitemap.xml richten sich danach.
+// und sitemap.xml richten sich danach. Routen mit private: true (was auf dem
+// Gerät liegt, Konto, Team) behalten den noindex-Kopf auch dann.
 const INDEXABLE = false;
-// Was in die sitemap.xml gehört: die inhaltlichen Seiten. /records, /projects
-// und /services zeigen, was auf dem jeweiligen Gerät liegt, /project ist noch
-// nicht gebaut — nichts davon hat in einem Suchindex etwas verloren.
-const SITEMAP_BASE = ["/start", "/workspace", "/tools", "/modules", "/contribute"];   // /start: Landeseite (2026-09-11)
+// Was in die sitemap.xml gehört: die inhaltlichen Seiten. /project, /records,
+// /projects und /services zeigen, was auf dem jeweiligen Gerät liegt — nichts
+// davon hat in einem Suchindex etwas verloren.
+const SITEMAP_BASE = ["/start", "/workspace", "/tools", "/modules", "/contribute", "/guidelines"];   // /start: Landeseite (2026-09-11)
 // Dazu kommen die abgeleiteten Detailseiten ohne Entwurfsmarke, siehe deriveRoutes().
 const SITEMAP = { get list() { return SITEMAP_BASE.concat([...DERIVED].filter(([, r]) => !r.draft).map(([p]) => p)); } };
 
@@ -44,19 +47,19 @@ const ROUTES = new Map([
   ["/tools",      { file: "tools.html",      type: HTML }],
   ["/modules",    { file: "modules.html",    type: HTML }],
   ["/contribute", { file: "contribute.html", type: HTML }],
-  ["/project",    { file: "project.html",    type: HTML }],
-  ["/records",    { file: "records.html",    type: HTML }],
-  ["/projects",  { file: "projects.html",  type: HTML }],
-  ["/services",   { file: "services.html",   type: HTML }],
+  ["/project",    { file: "project.html",    type: HTML, private: true }],
+  ["/records",    { file: "records.html",    type: HTML, private: true }],
+  ["/projects",   { file: "projects.html",   type: HTML, private: true }],
+  ["/services",   { file: "services.html",   type: HTML, private: true }],
   // Detailseiten (/modules/*, /tools/*, /contribute/*) stehen nicht mehr hier:
   // sie werden aus assets/catalogue.js abgeleitet, siehe deriveRoutes(). Die
   // Allowlist bleibt: ein Slug, der nicht im Katalog steht, ist weiterhin 404.
   // Stand eines Beitrags und Einreichen (Phase 4). Nicht in der Sitemap.
-  ["/contribute/status",               { file: "status.html", type: HTML }],
-  ["/me",                              { file: "me.html", type: HTML }],
+  ["/contribute/status",               { file: "status.html", type: HTML, private: true }],
+  ["/me",                              { file: "me.html", type: HTML, private: true }],
   ["/guidelines",                      { file: "guidelines.html", type: HTML }],   // Regeln in einer Seite (2026-09-10)
-  ["/review",                          { file: "review.html", type: HTML }],   // Team: Schlange, Entscheide, Bewerbungen
-  ["/me/modules",                      { file: "module.html", type: HTML }],   // Beitragende: eigene Module bearbeiten
+  ["/review",                          { file: "review.html", type: HTML, private: true }],   // Team: Schlange, Entscheide, Bewerbungen
+  ["/me/modules",                      { file: "module.html", type: HTML, private: true }],   // Beitragende: eigene Module bearbeiten
   ["/request",                         { file: "request.html", type: HTML }],
   ["/contribute/submit",               { file: "submit.html", type: HTML }],
   ["/assets/catalogue.js",   { file: "assets/catalogue.js",   type: JS }],
@@ -91,12 +94,12 @@ const ROUTES = new Map([
   ["/assets/fonts/glegoo-latin-ext.woff2", { file: "assets/fonts/glegoo-latin-ext.woff2", type: "font/woff2" }],
   ["/assets/fonts/inconsolata-latin.woff2",     { file: "assets/fonts/inconsolata-latin.woff2",     type: "font/woff2" }],
   ["/assets/fonts/inconsolata-latin-ext.woff2", { file: "assets/fonts/inconsolata-latin-ext.woff2", type: "font/woff2" }],
-  // Vorschaubild für geteilte Links. Wird nicht von der Seite geladen, sondern
-  // von fremden Diensten geholt, deshalb greift die CSP hier nicht.
   // Drei Folien aus «Value System» für die Landeseite (Eigentümer erlaubt 2026-10-31).
   ["/assets/vs-slide-1.webp", { file: "assets/vs-slide-1.webp", type: "image/webp" }],
   ["/assets/vs-slide-2.webp", { file: "assets/vs-slide-2.webp", type: "image/webp" }],
   ["/assets/vs-slide-5.webp", { file: "assets/vs-slide-5.webp", type: "image/webp" }],
+  // Vorschaubild für geteilte Links. Wird nicht von der Seite geladen, sondern
+  // von fremden Diensten geholt, deshalb greift die CSP hier nicht.
   ["/assets/share-1200x630.png", { file: "assets/share-1200x630.png", type: "image/png" }],
 ]);
 
@@ -124,13 +127,25 @@ function deriveRoutes() {
   for (const sec of ["modules", "tools", "contribute"]) {
     for (const e of ((cat[sec] || {}).list || [])) {
       if (typeof e.slug === "string" && /^[a-z0-9][a-z0-9-]{0,60}$/.test(e.slug)) {
-        m.set(`/${sec}/${e.slug}`, { file: "detail.html", type: HTML, draft: !!e.draft });
+        const title = oneLine(e.title);
+        m.set(`/${sec}/${e.slug}`, { file: "detail.html", type: HTML, draft: !!e.draft,
+                                     meta: title ? { title, description: clip(e.lede, 200) } : null });
       }
     }
   }
-  DERIVED = m; catalogueTag = tag;
+  DERIVED = m; catalogueTag = tag; metaCache.clear();
   console.log(`entrosana-app derived ${m.size} detail routes from catalogue.js`);
 }
+// Text aus dem Katalog für den Seitenkopf: eine Zeile, höchstens max Zeichen, an
+// einer Wortgrenze gekürzt und dann mit «…».
+function oneLine(s) { return String(s == null ? "" : s).replace(/\s+/g, " ").trim(); }
+function clip(s, max) {
+  const t = oneLine(s);
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max - 1), sp = cut.lastIndexOf(" ");
+  return (sp > max * 0.6 ? cut.slice(0, sp) : cut).replace(/[\s,;:.–-]+$/, "") + "…";
+}
+const metaCache = new Map();
 try { deriveRoutes(); } catch (e) { console.error("catalogue.js not derivable:", e.message); }
 
 const cache = new Map();
@@ -163,6 +178,33 @@ function load(route) {
 // detail.html gehört zu keiner festen Route mehr, wird aber von allen
 // abgeleiteten gebraucht; deshalb steht sie hier ausdrücklich.
 const DETAIL = { file: "detail.html", type: HTML };
+// Eine Datei, aber je Eintrag ein eigener Kopf: Titel, Beschreibung, canonical und
+// og:url des Eintrags stehen schon im ausgelieferten HTML. Link-Vorschauen und
+// Suchmaschinen führen kein JS aus; ohne das zeigten alle Detailseiten, auch die
+// unter /tools und /contribute, den Kopf der Modulübersicht. Gehalten, bis
+// detail.html, ein Asset (neue ?v=) oder der Katalog sich ändert.
+const attr = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+function withMeta(path, route, base) {
+  const hit = metaCache.get(path);
+  if (hit && hit.base === base && hit.meta === route.meta) return hit.entry;
+  const title = attr(route.meta.title + " | entrosana"), desc = attr(route.meta.description), url = attr(`https://${CANON}${path}`);
+  // Ersetzen über Funktionen, damit ein «$» im Katalogtext nicht als Muster gilt.
+  const set = (html, re, value) => html.replace(re, (m, a, b) => a + value + b);
+  let html = base.body.toString("utf8").replace(/<title>[^<]*<\/title>/, () => `<title>${title}</title>`);
+  html = set(html, /(<link rel="canonical" href=")[^"]*(")/, url);
+  html = set(html, /(<meta property="og:url" content=")[^"]*(")/, url);
+  html = set(html, /(<meta property="og:title" content=")[^"]*(")/, title);
+  html = set(html, /(<meta name="twitter:title" content=")[^"]*(")/, title);
+  if (desc) {
+    html = set(html, /(<meta name="description" content=")[^"]*(")/, desc);
+    html = set(html, /(<meta property="og:description" content=")[^"]*(")/, desc);
+    html = set(html, /(<meta name="twitter:description" content=")[^"]*(")/, desc);
+  }
+  const body = Buffer.from(html, "utf8");
+  const entry = { body, etag: `W/"${createHash("sha1").update(body).digest("base64url").slice(0, 16)}"`, type: HTML };
+  metaCache.set(path, { base, meta: route.meta, entry });
+  return entry;
+}
 // /p/<id> und /contributors/<name>: das öffentliche Profil, alleinstehend ohne
 // Leiste und Kopfleiste (2026-09-10).
 const PROFILE = { file: "contributor.html", type: HTML };
@@ -302,7 +344,8 @@ createServer((req, res) => {
 
   const route = ROUTES.get(path) || DERIVED.get(path) || ((/^\/p\/\d{1,12}$/.test(path) || /^\/contributors\/[a-z0-9_-]{1,80}$/.test(path)) ? PROFILE : undefined);
   // Unbekannte Pfade liefern die Startseite mit 404, damit nichts vorgetäuscht wird.
-  const entry = cache.get((route ?? ROUTES.get("/workspace")).file);
+  const base = cache.get((route ?? ROUTES.get("/workspace")).file);
+  const entry = route && route.meta ? withMeta(path, route, base) : base;
   const status = route ? 200 : 404;
 
   if (status === 200 && req.headers["if-none-match"] === entry.etag) {
@@ -321,7 +364,7 @@ createServer((req, res) => {
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Content-Security-Policy": CSP,
   };
-  if (!INDEXABLE) headers["X-Robots-Tag"] = "noindex, nofollow";
+  if (!INDEXABLE || (route && route.private)) headers["X-Robots-Tag"] = "noindex, nofollow";
   // Die .app-Zone ist ohnehin HSTS-vorgeladen; die Kopfzeile macht es explizit.
   if (proto === "https") headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
   res.writeHead(status, headers);
