@@ -4,7 +4,7 @@ The Hub keeps two chains of records. One is yours, in your browser; one is the H
 
 ## Your trail, in the browser
 
-Everything you do on the board is an entry: a card moved, a step done, a project opened. **All records** and **Today** in the rail list them; **Verify chain** recomputes the hashes and tells you whether the chain holds; **Export trail** gives you the whole thing as JSON. Nothing of it reaches the Hub unless you attach it to a proposal.
+Everything you do on the board is an entry: a card moved, a step done, a project opened. **All records** and **Today** in the rail list them; **Verify chain** recomputes the hashes and tells you whether the chain holds; **Export trail** gives you the whole thing as JSON. Nothing of it reaches the Hub, not even with a proposal.
 
 ## The Hub's chain, on the server
 
