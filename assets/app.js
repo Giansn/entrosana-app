@@ -230,19 +230,6 @@
   // Eine eigene Datei ist derselbe Gegenstand wie eine aus dem Hub, nur ohne
   // Saat und ohne vorgegebene Schritte. Deshalb kein fremdes Aufgabenwerkzeug:
   // das Schema trägt beides, und die Ausfuhr ist Markdown mit Ankreuzfeldern.
-  function createOwn(title) {
-    var id = "own/" + Date.now().toString(36);
-    var p = {
-      id: id, seed: id, title: title, own: true,
-      opened: new Date().toISOString(),
-      view_style: "list", sort: "manual", show_completed: true,
-      sections: [], steps: []
-    };
-    state.projects[id] = p;
-    if (!state.created) state.created = p.opened;
-    save(state);
-    return record("open", "Project created — " + title, id).then(function () { return p; });
-  }
 
   function projectList() {
     // Only active hub projects (not archived / soft-deleted).
@@ -1777,36 +1764,11 @@
     });
   }
 
-  function openPicker() {
-    var dlg = document.getElementById("pick");
-    var box = document.getElementById("pick-seeds");
-    if (!dlg || !box) return;
-    box.textContent = "";
-    var bySection = {};
-    Object.keys(seeds).forEach(function (id) {
-      (bySection[seeds[id].section] = bySection[seeds[id].section] || []).push(id);
-    });
-    Object.keys(bySection).forEach(function (sec) {
-      var h = el("p", "pick__sec", sec);
-      box.appendChild(h);
-      bySection[sec].forEach(function (id) { box.appendChild(seedButton(id)); });
-    });
-    dlg.showModal();
-    document.getElementById("pick-own").value = "";
-  }
 
   document.addEventListener("click", function (ev) {
     var t = ev.target.closest("[data-act]");
     if (!t) return;
     var act = t.getAttribute("data-act");
-    if (act === "new") { ev.preventDefault(); openPicker(); }
-    if (act === "pick-close") { ev.preventDefault(); document.getElementById("pick").close(); }
-    if (act === "new-own") {
-      ev.preventDefault();
-      var title = (document.getElementById("pick-own").value || "").trim();
-      if (!title) return say("Give the file a name first.", "idle");
-      createOwn(title).then(function (p) { location.href = "/project?p=" + encodeURIComponent(p.id); });
-    }
     if (act === "verify") {
       ev.preventDefault();
       if (!state.records.length) return say("Nothing to verify yet.", "idle");

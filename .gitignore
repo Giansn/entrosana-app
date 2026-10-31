@@ -9,3 +9,8 @@ api/db/*.sqlite*
 # gesichert je Datei verschlüsselt durch tools/hub-files-backup.sh
 api/db/files/
 docs/production-readiness.md
+
+# Momentaufnahme der Dienste, alle 10 Minuten vom Timer geschrieben (2026-10-31)
+assets/services.js
+# Sicherungen vor jedem Eingriff, Stand in git reicht
+attic/
