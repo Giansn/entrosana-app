@@ -76,7 +76,7 @@ Everything has a deletion date, and you can delete your own data yourself.
 
 **Where your data rests, and where it is processed.** Our residency promise
 covers storage: your data rests on our own server in Switzerland, with one
-encrypted backup copy at Cloudflare R2. Processing is a separate matter.
+encrypted backup copy at Proton Drive (Proton AG, Switzerland). Processing is a separate matter.
 Delivery runs through Cloudflare (USA), our code lives at GitHub (USA), and mail
 to sygnif@entrosana.com is read by Claude, a language model run by Anthropic
 (USA). Where our pages say «Swiss/EU», they mean the residency of stored data,
@@ -187,14 +187,14 @@ counted in memory for one hour and not stored.
 
 Encrypted backups of the database, the site and the Hub are written nightly:
 to our server, to a second disk at the same place, to our own Nextcloud on the
-same server, and one encrypted copy to Cloudflare R2 (Cloudflare, Inc.).
+same server, and one encrypted copy to Proton Drive (Proton AG, Switzerland).
 Encryption happens before anything leaves our server; the providers cannot read
 the copies. Backups are kept without a fixed limit for the time being; a retention period has not been set yet. Once it is, this statement is updated.
 
 ### 9. Who else receives data
 
-Cloudflare, Inc., USA (delivery, security, tunnel, one encrypted backup copy);
-Proton AG, Switzerland (mail); GitHub, Inc., USA (code repository, which
+Cloudflare, Inc., USA (delivery, security, tunnel);
+Proton AG, Switzerland (mail, one encrypted backup copy); GitHub, Inc., USA (code repository, which
 includes the catalogue with published contributors' names); Anthropic, PBC, USA
 (the language model that reads the sygnif@ mailbox). Cloudflare and GitHub state
 in their privacy statements that they are certified under the Swiss-U.S. Data
@@ -245,7 +245,7 @@ Daten löschen Sie selbst.
 
 **Wo Ihre Daten liegen, und wo sie verarbeitet werden.** Unser Versprechen zur
 Datenresidenz betrifft die Ablage: Ihre Daten liegen auf unserem eigenen Server
-in der Schweiz, mit einer verschlüsselten Sicherungskopie bei Cloudflare R2. Die
+in der Schweiz, mit einer verschlüsselten Sicherungskopie bei Proton Drive (Proton AG, Schweiz). Die
 Verarbeitung ist etwas anderes. Die Auslieferung läuft über Cloudflare (USA),
 unser Code liegt bei GitHub (USA), und Mail an sygnif@entrosana.com liest Claude,
 ein Sprachmodell von Anthropic (USA). Wo unsere Seiten «Swiss/EU» sagen, ist die
@@ -361,8 +361,8 @@ IP) werden eine Stunde im Speicher gezählt und nicht gespeichert.
 
 Verschlüsselte Sicherungen von Datenbank, Website und Hub entstehen jede Nacht:
 auf unserem Server, auf einer zweiten Platte am selben Ort, in unserer eigenen
-Nextcloud auf demselben Server und als eine verschlüsselte Kopie bei Cloudflare
-R2 (Cloudflare, Inc.). Verschlüsselt wird, bevor etwas unseren Server verlässt;
+Nextcloud auf demselben Server und als eine verschlüsselte Kopie bei Proton
+Drive (Proton AG, Schweiz). Verschlüsselt wird, bevor etwas unseren Server verlässt;
 die Anbieter können die Kopien nicht lesen. Sicherungen bleiben vorerst ohne feste Frist; eine Löschfrist ist noch nicht festgelegt. Sobald sie steht, wird diese Erklärung angepasst.
 
 ### 9. Wer sonst Daten erhält
@@ -420,4 +420,4 @@ oben nach.
 | Anfrage | Name, Adresse, Organisation, Art, Text | Antwort | Postfach info@ | 180 Tage | `api/server.mjs` |
 | Mail | Absender, Inhalt | Antwort, Sortierung | Proton AG (CH); SYGNIF-Software; Anthropic (USA, Claude) | Postfachregeln | Proton Bridge, Mail-Daemon |
 | Kette | Kontonummer, Handlung, Zeit, gekürzter Adress-Hash | Nachweis | — | dauerhaft | `api/audit.mjs` |
-| Sicherung | alles oben, verschlüsselt | Wiederherstellung | T9, Nextcloud (eigener Server), Cloudflare R2 | vorerst unbefristet, Frist offen | `~/entrosana-wp/backup.sh` |
+| Sicherung | alles oben, verschlüsselt | Wiederherstellung | T9, Nextcloud (eigener Server), Proton Drive (seit 2026-10-27; R2 seit 2026-09-30 aus) | vorerst unbefristet, Frist offen | `~/entrosana-wp/backup.sh` |

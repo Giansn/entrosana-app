@@ -4,7 +4,7 @@ The binding text is the [privacy statement](https://entrosana.com/privacy/) on e
 
 ## Where your data rests
 
-On entrosana's own server in Switzerland, with one encrypted backup copy at Cloudflare R2. Processing is a separate matter: delivery runs through Cloudflare (USA), the code lives at GitHub (USA), and mail to sygnif@entrosana.com is read by Claude, a language model run by Anthropic (USA). Where the pages say «Swiss/EU», they mean where stored data rests, not the seat of every provider that processes it.
+On entrosana's own server in Switzerland, with one encrypted backup copy at Proton Drive (Proton AG, Switzerland). Processing is a separate matter: delivery runs through Cloudflare (USA), the code lives at GitHub (USA), and mail to sygnif@entrosana.com is read by Claude, a language model run by Anthropic (USA). Where the pages say «Swiss/EU», they mean where stored data rests, not the seat of every provider that processes it.
 
 ## What is public
 
@@ -29,4 +29,4 @@ The Hub holds no pupil accounts and no pupil data. Teachers and schools register
 
 ## Who else receives data
 
-Cloudflare, Inc., USA (delivery, security, tunnel, one encrypted backup copy); Proton AG, Switzerland (mail); GitHub, Inc., USA (the code repository, which includes the catalogue with published contributors' names); Anthropic, PBC, USA (the language model that reads the sygnif@ mailbox). Nothing is sold and nothing is shared for advertising. No analytics, no tracking, no cookies of our own.
+Cloudflare, Inc., USA (delivery, security, tunnel); Proton AG, Switzerland (mail, one encrypted backup copy); GitHub, Inc., USA (the code repository, which includes the catalogue with published contributors' names); Anthropic, PBC, USA (the language model that reads the sygnif@ mailbox). Nothing is sold and nothing is shared for advertising. No analytics, no tracking, no cookies of our own.
