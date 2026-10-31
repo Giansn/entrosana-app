@@ -11,13 +11,21 @@ try {
 // Weiche für Erstbesucher, die hier stand, ist damit entfallen.
 
 // Anmeldeknopf im Kopf der Landeseite (2026-10-31): liegt ein gültiger Login auf dem Gerät,
-// führt er als «Your account» auf /me statt zum Anmelden.
+// zeigt er dasselbe wie die Kopfpille im Hub, Kreis mit Initiale oder Bild und Name, und
+// führt auf /me. Abmelden bleibt im Hub und auf /me.
 document.addEventListener("DOMContentLoaded", function () {
   var a = document.querySelector("[data-acct]");
   if (!a) return;
   try {
     var t = JSON.parse(localStorage.getItem("entrosana-app:token") || "null");
-    if (t && t.expires > new Date().toISOString()) a.textContent = "Your account";
+    if (!(t && t.expires > new Date().toISOString())) return;
+    var label = t.name || t.email || "Account";
+    var av = document.createElement("span"); av.className = "rail__avatar";
+    if (t.avatar && t.id) { var im = document.createElement("img"); im.src = "/api/avatars/" + t.id + "?v=" + encodeURIComponent(t.avatar); im.alt = ""; im.className = "rail__avatarimg"; av.appendChild(im); }
+    else av.textContent = label.trim().charAt(0).toUpperCase();
+    var nm = document.createElement("span"); nm.className = "rail__acctname"; nm.textContent = label;
+    a.textContent = ""; a.appendChild(av); a.appendChild(nm);
+    a.className = "rail__acct is-in solo__me"; a.setAttribute("aria-label", "Your account: " + label);
   } catch (e) { /* siehe oben */ }
 });
 

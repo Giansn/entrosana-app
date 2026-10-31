@@ -5,9 +5,12 @@
  * Dienst schreibt nur den Pfad, nie die Frage). Eine Palette, kein eigener Ort. */
 (function () {
   "use strict";
-  var PAGES = [["Workspace", "/workspace", "Start, files and the record"], ["Tools", "/tools", "What actually runs"], ["Modules", "/modules", "Lessons for schools"], ["Contribute", "/contribute", "Ways in, rules, checklists"],
+  // Die ersten sechs zeigt die leere Suche. «Account» heisst überall gleich: Kopfpille, Seitenname,
+  // Suche; Login ist der Knopf dazu (2026-10-31). /start steht drin, seit / dorthin führt.
+  var PAGES = [["Workspace", "/workspace", "Your projects and the record"], ["Modules", "/modules", "Lessons for schools"], ["Tools", "/tools", "What actually runs"], ["Contribute", "/contribute", "Ways in, rules, checklists"],
+    ["Account", "/me", "Login, your page, files, journal"], ["About entrosana", "/start", "What the Hub is, in plain words"],
     ["Propose a module", "/contribute/submit", "The proposal form"], ["Request", "/request", "Ask for a module, a tool or a service"], ["Projects", "/projects", "Your projects on this device"],
-    ["Record trail", "/records", "Append-only and sealed"], ["Running services", "/services", "What is up"], ["Your account", "/me", "Sign in, profile, journal, data"], ["Contribution status", "/contribute/status", "What you sent and where it stands"]];
+    ["Record trail", "/records", "Append-only and sealed"], ["Running services", "/services", "What is up"], ["Contribution status", "/contribute/status", "What you sent and where it stands"]];
   var GROUPS = ["Pages", "Your projects", "Modules", "Tools", "Contribute", "People", "Journal"];
   var dlg = null, input = null, list = null, hi = -1, rows = [], server = { q: "", people: [], journal: [], modules: [] }, timer = null;
   function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
@@ -88,6 +91,9 @@
   function close() { if (dlg && dlg.open) dlg.close(); }
   function toggle() { if (dlg && dlg.open) close(); else open(); }
   document.addEventListener("keydown", function (e) { if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) { e.preventDefault(); toggle(); } });
+  // Die Taste so zeigen, wie sie auf dem Gerät heisst: ⌘K nur auf Apple, sonst Ctrl K.
+  var apple = /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent || "");
+  Array.prototype.forEach.call(document.querySelectorAll("[data-search] kbd"), function (k) { k.textContent = apple ? "⌘K" : "Ctrl K"; });
   Array.prototype.forEach.call(document.querySelectorAll("[data-search]"), function (b) { b.addEventListener("click", function (e) { e.preventDefault(); open(); }); });
   window.__search = { open: open, close: close };
 })();

@@ -1851,6 +1851,7 @@
         if (t.avatar && t.id) { var im = document.createElement("img"); im.src = "/api/avatars/" + t.id + "?v=" + encodeURIComponent(t.avatar); im.alt = ""; im.className = "rail__avatarimg"; av.appendChild(im); }
         else av.textContent = label.trim().charAt(0).toUpperCase();
         a.classList.add("is-in"); a.setAttribute("aria-label", "Your account: " + label);
+        if (location.pathname === "/me") a.setAttribute("aria-current", "page");
       } else {
         name.textContent = "Not signed in"; sub.textContent = "local device only"; av.textContent = "?";
         a.classList.remove("is-in"); a.setAttribute("aria-label", "Sign in or register");
@@ -1869,7 +1870,7 @@
         row.appendChild(out);
       } else {
         // Anmelden und Registrieren sind derselbe Weg (Link per Mail auf /me): ein Knopf (Eigentümer 2026-10-31).
-        var inn = document.createElement("a"); inn.className = "btn rail__authbtn"; inn.href = "/me"; inn.textContent = "Login"; row.appendChild(inn);
+        var inn = document.createElement("a"); inn.className = "btn rail__authbtn"; inn.href = "/me"; inn.textContent = "Login"; if (location.pathname === "/me") inn.setAttribute("aria-current", "page"); row.appendChild(inn);
       }
     });
   }

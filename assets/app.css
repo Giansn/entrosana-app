@@ -2542,3 +2542,41 @@ h1, h2, h3, h4, .h3, .work__h, .work__h2, .view__title, .pf__name, .hero__name, 
 /* Nicht angemeldet: kein «?»-Kreis und kein «Not signed in» mehr, nur der Knopf «Login»
    (Eigentümer 2026-10-31). app.js setzt .is-in, sobald ein Login auf dem Gerät liegt. */
 .rail__acct:not(.is-in){ display:none }
+
+/* Kopfpille aus einem Guss (Eigentümer 2026-10-31, «account and search coherence»):
+   Seitenname in der Grundschrift wie die Überschriften statt Mono; die Suche als Pille,
+   so rund und so hoch wie der Knopf «Login» und die Pille selbst; auf dem Telefon und
+   auf /start derselbe runde Knopf wie der Themenschalter. Auf /me ist der Login-Knopf
+   der aktuelle Ort (aria-current, gesetzt von app.js), keine Rubrik der Leiste. */
+.crumb{ font-family:var(--font-sans); font-size:var(--step-0); letter-spacing:-.01em }
+.crumb b{ font-weight:600 }
+.search{ border-radius:999px; height:2.25rem; padding:0 .45rem 0 .85rem; font-family:var(--font-sans); font-size:var(--step--1) }
+.search kbd{ font-family:var(--font-mono); border-radius:999px; padding:.05rem .45rem }
+.search--round, .solo__top .search{ min-width:0; width:2.25rem; padding:0; justify-content:center; margin-left:auto }
+.solo__top .search + .solo__acct{ margin-left:0 }
+.rail__authbtn[aria-current="page"]{ background:none; color:var(--seal); box-shadow:inset 0 0 0 1px var(--seal); pointer-events:none }
+@media (max-width:759.98px){
+  .search, .search--round, .solo__top .search{ width:2.75rem; height:2.75rem; min-height:0; min-width:0; padding:0 }
+}
+/* Eine Höhe für alles in der Kopfzeile ab 760 px: Suche, Login/Sign out, Konto, Themenschalter 36 px
+   (vorher 36/30/32, auf /start 38). Darunter gelten die 44 px Tippfläche. */
+@media (min-width:760px){
+  .top .iconbtn, .solo__top .iconbtn{ width:2.25rem; height:2.25rem }
+  .top__acct .rail__authbtn, .solo__top .solo__acct{ height:2.25rem; padding:0 .95rem; display:inline-flex; align-items:center; font-size:var(--step--1) }
+  .top__acct .rail__acct{ height:2.25rem }
+}
+.top__acct .rail__acct[aria-current="page"] .rail__avatar{ box-shadow:0 0 0 2px var(--seal) }
+/* /start angemeldet: Konto wie in der Kopfpille des Hubs (Kreis + Name), nicht als zweiter Knopf. */
+.solo__top .solo__me{ height:2.25rem; padding:.25rem .65rem .25rem .3rem; border-radius:999px; gap:.5rem; max-width:15rem; border:1px solid transparent }
+.solo__top .solo__me:hover{ border-color:var(--line-ui) }
+.solo__top .solo__me .rail__acctname{ color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+/* Runde Suche und Themenschalter: gleiche Fläche, kein Feldgrund, schrumpfen nie. */
+.search--round, .solo__top .search{ background:none; color:var(--muted); border-color:var(--line-ui) }
+.solo__top .search, .solo__top .iconbtn, .solo__top .solo__acct, .top .search, .top .iconbtn{ flex:none }
+@media (max-width:759.98px){
+  .top .search{ background:none }
+  .solo__top .solo__me .rail__acctname{ display:none }
+  .solo__top .solo__me{ padding:.25rem; height:2.75rem }
+  .solo__top .solo__me .rail__avatar{ width:2.1rem; height:2.1rem }
+}
+.solo__top .solo__me + .iconbtn{ margin-left:0 }
