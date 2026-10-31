@@ -19,6 +19,17 @@ try {
   }
 } catch (e) { /* Speicher gesperrt: dann bleibt / die Arbeitsfläche */ }
 
+// Anmeldeknopf im Kopf der Landeseite (2026-10-31): liegt ein gültiger Login auf dem Gerät,
+// führt er als «Your account» auf /me statt zum Anmelden.
+document.addEventListener("DOMContentLoaded", function () {
+  var a = document.querySelector("[data-acct]");
+  if (!a) return;
+  try {
+    var t = JSON.parse(localStorage.getItem("entrosana-app:token") || "null");
+    if (t && t.expires > new Date().toISOString()) a.textContent = "Your account";
+  } catch (e) { /* siehe oben */ }
+});
+
 document.addEventListener("DOMContentLoaded", function () {
   document.querySelectorAll("[data-theme-toggle]").forEach(function (b) {
     b.addEventListener("click", function () {

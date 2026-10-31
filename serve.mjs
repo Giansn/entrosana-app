@@ -41,7 +41,6 @@ const JS = "text/javascript; charset=utf-8";
 const ROUTES = new Map([
   ["/",           { file: "index.html",      type: HTML }],
   ["/start",      { file: "start.html",      type: HTML }],   // Landeseite (2026-09-11)
-  ["/start-v2",   { file: "start-v2.html",   type: HTML }],   // Landeseite Entwurf 2, Vorschau (2026-10-31), nicht in der Sitemap
   ["/tools",      { file: "tools.html",      type: HTML }],
   ["/modules",    { file: "modules.html",    type: HTML }],
   ["/contribute", { file: "contribute.html", type: HTML }],

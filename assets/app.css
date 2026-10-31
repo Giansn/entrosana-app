@@ -2534,3 +2534,7 @@ h1, h2, h3, h4, .h3, .work__h, .work__h2, .view__title, .pf__name, .hero__name, 
 .fact2 b, .lp-hero__h, .lp-sec__h, .lp-way__t{
   font-family:var(--font-sans); font-weight:600; font-synthesis:weight; letter-spacing:-.02em }
 .lp-hero__h, .work__h{ letter-spacing:-.028em }
+
+/* Landeseite: Anmeldeknopf im Kopf (2026-10-31), rechts vor dem Themenschalter. */
+.solo__top .solo__acct{ margin-left:auto; padding:.45rem .95rem; font-size:var(--step--1) }
+.solo__top .solo__acct + .iconbtn{ margin-left:0 }
