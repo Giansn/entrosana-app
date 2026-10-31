@@ -27,11 +27,12 @@
   var sec = el("section", "block hair");
   sec.appendChild(el("span", "eyebrow", "Ask entrosana"));
   sec.appendChild(el("h1", "work__h", "Request a module, a track, a tool or a service"));
-  var sub = el("p", "work__sub work__sub--wide", "Say what you need and for whom. The request goes to info@entrosana.com and gets an answer within a few days. You can also call ");
-  var tel = el("a", null, PHONE); tel.href = TEL; sub.appendChild(tel); sub.appendChild(document.createTextNode(".")); sec.appendChild(sub);
+  // Kein Vorspann unter dem Titel (Eigentümer 2026-09-11: «confusing»). Die Telefonnummer
+  // wandert in die Regelzeile des Formulars, wo sie auf /contribute/submit auch steht.
   var card = el("div", "card submit"); sec.appendChild(card); host.appendChild(sec);
   var form = el("form"); form.noValidate = true; card.appendChild(form);
-  form.appendChild(el("p", "submit__rule", "Everything is required except the organisation. No account needed."));
+  var rule = el("p", "submit__rule", "Everything is required except the organisation. No account needed. Replies come from info@entrosana.com, or call ");
+  var tel = el("a", null, PHONE); tel.href = TEL; rule.appendChild(tel); rule.appendChild(document.createTextNode(".")); form.appendChild(rule);
 
   var name = el("input"); name.type = "text"; name.maxLength = 120; name.autocomplete = "name"; name.required = true;
   var email = el("input"); email.type = "email"; email.maxLength = 254; email.autocomplete = "email"; email.inputMode = "email"; email.required = true;

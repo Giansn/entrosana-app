@@ -183,10 +183,7 @@
   ask.href = section === "modules" ? "https://entrosana.com/request-access" : "/contribute";
   act.appendChild(ask);
   b6.appendChild(act);
-  if (e.seed) {
-    b6.appendChild(el("p", "muted",
-      "Opening the checklist makes a copy that is yours, on this device."));
-  }
+  // Kein Hinweis «makes a copy … on this device» mehr (Eigentümer 2026-09-11: solche Vorspanne verwirren).
 
   // Nachbarn
   var others = data.list.filter(function (x) { return x.slug !== e.slug; }).slice(0, 3);

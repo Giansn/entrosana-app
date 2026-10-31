@@ -1703,6 +1703,41 @@
   }
 
   // ---------------------------------------------------------------- Handlungen
+  // Ein Knopf je Startdatei: Titel, Schritte, Kennung, «already open». Vorher stand
+  // die Schleife nur im Dialog «New project»; seit die Startdateien auch auf
+  // /contribute genannt werden, hängt beides an dieser einen Form.
+  function seedButton(id) {
+    var b = el("button", "pick__seed");
+    b.type = "button";
+    b.innerHTML = '<span class="pick__t"></span><span class="pick__m"></span>';
+    b.querySelector(".pick__t").textContent = seeds[id].title;
+    b.querySelector(".pick__m").textContent =
+      seeds[id].steps.length + " steps · " + id + (state.projects[id] ? " · already open" : "");
+    b.addEventListener("click", function () {
+      if (state.projects[id]) { location.href = "/project?p=" + encodeURIComponent(id); return; }
+      openProject(id).then(function () { location.href = "/project?p=" + encodeURIComponent(id); });
+    });
+    return b;
+  }
+
+  // Startdateien auf /contribute (Eigentümer 2026-09-11: «take the examples in project
+  // and mention them in the contribute section»). Dieselbe Quelle und dieselbe
+  // Gruppierung wie der Dialog; data-seed-list nennt die Abschnitte, die drei
+  // Hub-Vorhaben stehen darüber schon als Karten.
+  function paintSeedList() {
+    Array.prototype.forEach.call(document.querySelectorAll("[data-seed-list]"), function (box) {
+      var want = (box.getAttribute("data-seed-list") || "").split(",")
+        .map(function (s) { return s.trim(); }).filter(Boolean);
+      box.textContent = "";
+      want.forEach(function (sec) {
+        var ids = Object.keys(seeds).filter(function (id) { return seeds[id].section === sec; });
+        if (!ids.length) return;
+        box.appendChild(el("p", "pick__sec", sec));
+        ids.forEach(function (id) { box.appendChild(seedButton(id)); });
+      });
+    });
+  }
+
   function openPicker() {
     var dlg = document.getElementById("pick");
     var box = document.getElementById("pick-seeds");
@@ -1715,19 +1750,7 @@
     Object.keys(bySection).forEach(function (sec) {
       var h = el("p", "pick__sec", sec);
       box.appendChild(h);
-      bySection[sec].forEach(function (id) {
-        var b = el("button", "pick__seed");
-        b.type = "button";
-        b.innerHTML = '<span class="pick__t"></span><span class="pick__m"></span>';
-        b.querySelector(".pick__t").textContent = seeds[id].title;
-        b.querySelector(".pick__m").textContent =
-          seeds[id].steps.length + " steps · " + id + (state.projects[id] ? " · already open" : "");
-        b.addEventListener("click", function () {
-          if (state.projects[id]) { location.href = "/project?p=" + encodeURIComponent(id); return; }
-          openProject(id).then(function () { location.href = "/project?p=" + encodeURIComponent(id); });
-        });
-        box.appendChild(b);
-      });
+      bySection[sec].forEach(function (id) { box.appendChild(seedButton(id)); });
     });
     dlg.showModal();
     document.getElementById("pick-own").value = "";
@@ -1793,6 +1816,7 @@
   // ---------------------------------------------------------------- Start
   paintRail();
   paintWorkspace();
+  paintSeedList();
   paintProject();
   paintTrail();
   paintServices();

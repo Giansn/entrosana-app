@@ -126,10 +126,35 @@ if [ "$REMOTE" = 1 ]; then
         . "$NC_ENV"
         ship "$MIRROR/.shipped-nc" nc_put nc_del && echo "hub-files: nextcloud ok" || true
     fi
-    if [ -f "$R2_ENV_FILE" ] && [ -x "$R2_PUT" ] && [ -x "$R2_DELETE" ]; then
+    # R2 meldet seit 2026-09-30 «NotEntitled» (im Cloudflare-Dashboard abgeschaltet).
+    # Offsite ist jetzt Proton Drive: der ganze Spiegel (Dateien schon einzeln
+    # verschluesselt) als ein Paket pro Lauf, die neuesten 14 bleiben.
+    # R2 wieder zuschalten: ENTROSANA_R2=1 in der Unit, sobald R2 freigegeben ist.
+    if [ "${ENTROSANA_R2:-0}" = 1 ] && [ -f "$R2_ENV_FILE" ] && [ -x "$R2_PUT" ] && [ -x "$R2_DELETE" ]; then
         ship "$MIRROR/.shipped-r2" r2_put r2_del && echo "hub-files: r2 ok" || true
+    fi
+    if command -v proton-drive >/dev/null 2>&1; then
+        pparent="/my-files/Sygnif Local"; pdest="$pparent/entrosana-hub-files"
+        pkg="$(mktemp -d)/entrosana-hub-files-$(date +%Y%m%d-%H%M%S).tar"
+        tar cf "$pkg" -C "$MIRROR" current || fail "packing the mirror"
+        proton-drive filesystem create-folder "$pparent" "entrosana-hub-files" >/dev/null 2>&1 || true
+        if [ -s "$pkg" ] && proton-drive filesystem upload -c skip "$pkg" "$pdest" >/dev/null 2>&1; then
+            echo "hub-files: proton ok"
+            proton-drive filesystem list -j "$pdest" 2>/dev/null | python3 -c "
+import json, sys
+names = sorted(n['name']['value'] for n in json.load(sys.stdin)
+               if n['type'] == 'file' and n['name']['value'].startswith('entrosana-hub-files-'))
+print('\n'.join(names[:-14]))
+" | while IFS= read -r old; do
+                [ -n "$old" ] || continue
+                proton-drive filesystem trash "$pdest/$old" >/dev/null || true
+            done || true
+        else
+            fail "Proton Drive upload"
+        fi
+        rm -rf "$(dirname "$pkg")"
     else
-        echo "WARNING: hub-files: no R2, the mirror has no copy outside this house" >&2
+        fail "proton-drive missing — the mirror has no copy outside this house"
     fi
 fi
 

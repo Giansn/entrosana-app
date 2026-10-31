@@ -72,9 +72,10 @@
   var sec = el("section", "block hair");
   sec.appendChild(el("span", "eyebrow", "Submit to the Hub"));
   sec.appendChild(el("h1", "work__h", seedDef ? seedDef.title : "Propose a module"));
-  sec.appendChild(el("p", "work__sub work__sub--wide", p
-    ? "Prefilled from your file «" + p.title + "» on this device, with its " + st.records.filter(function (r) { return r.project === seed; }).length + " records."
-    : "No file for this on this device; the form works on its own. You get a mail with a link, and the proposal counts once you open it."));
+  // Ohne Datei kein Vorspann (Eigentümer 2026-09-11: «remove this text, its confusing»).
+  // Der Absatz entfällt ganz statt leer zu bleiben, sonst stünde sein 1.6rem-Abstand als Loch unter dem Titel.
+  if (p) sec.appendChild(el("p", "work__sub work__sub--wide",
+    "Prefilled from your file «" + p.title + "» on this device, with its " + st.records.filter(function (r) { return r.project === seed; }).length + " records."));
   var card = el("div", "card submit"); sec.appendChild(card); host.appendChild(sec);
 
   var form = el("form"); form.noValidate = true; card.appendChild(form);
