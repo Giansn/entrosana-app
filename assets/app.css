@@ -2524,3 +2524,13 @@ h1, h2, h3, h4, .h3, .work__h, .work__h2, .view__title, .pf__name, .hero__name, 
   .lp-stack{ max-width:34rem; width:100% }
   .lp-ways, .lp-faq{ grid-template-columns:1fr }
 }
+
+/* Überschriften wieder in der Grundschrift (Eigentümer 2026-10-31, «this font I don't like»):
+   Glegoo raus, Überschriften wie auf entrosana.com in Calibri/Carlito, Schnitt 600, leicht
+   unterschnitten. Ersetzt die Glegoo-Regel vom 2026-09-10; steht am Ende, damit sie über ihr liegt. */
+:root{ --font-head:var(--font-sans) }
+h1, h2, h3, h4, .h3, .work__h, .work__h2, .view__title, .pf__name, .hero__name, .psect__h h2, .modal__title, .dlg__title,
+.mcard__t, .piece__t, .step--empty .step__t, .doc h1, .doc h2, .doc h3, .solo .hero__name, .solo .psect__h h2,
+.fact2 b, .lp-hero__h, .lp-sec__h, .lp-way__t{
+  font-family:var(--font-sans); font-weight:600; font-synthesis:weight; letter-spacing:-.02em }
+.lp-hero__h, .work__h{ letter-spacing:-.028em }
