@@ -2473,3 +2473,10 @@ h1, h2, h3, h4, .h3, .work__h, .work__h2, .view__title, .pf__name, .hero__name, 
 }
 @media (max-width:759.98px){ .docsearch{ flex-basis:100%; max-width:none; margin:0; order:5 } .doc__pn{ grid-template-columns:1fr } .doc__pn-a--next{ text-align:left; align-items:flex-start } }
 
+
+/* Landeseite, drei kurze Antworten (2026-10-31): Frage fett, Antwort darunter, Abstand
+   zwischen den Paaren wie die Karten darunter; Breite wie der Kettensatz. */
+.landing__qa{ margin:.6rem 0 0; max-width:62ch }
+.landing__qa dt{ font-weight:600; margin-top:1rem }
+.landing__qa dt:first-child{ margin-top:0 }
+.landing__qa dd{ margin:.2rem 0 0 }
