@@ -90,8 +90,6 @@ const ROUTES = new Map([
   ["/assets/search.js",   { file: "assets/search.js",   type: JS }],
   ["/assets/submit.js",   { file: "assets/submit.js",   type: JS }],
   ["/assets/mark.svg",    { file: "assets/mark.svg",    type: "image/svg+xml" }],
-  ["/assets/fonts/glegoo-latin.woff2",     { file: "assets/fonts/glegoo-latin.woff2",     type: "font/woff2" }],
-  ["/assets/fonts/glegoo-latin-ext.woff2", { file: "assets/fonts/glegoo-latin-ext.woff2", type: "font/woff2" }],
   ["/assets/fonts/inconsolata-latin.woff2",     { file: "assets/fonts/inconsolata-latin.woff2",     type: "font/woff2" }],
   ["/assets/fonts/inconsolata-latin-ext.woff2", { file: "assets/fonts/inconsolata-latin-ext.woff2", type: "font/woff2" }],
   // Drei Folien aus «Value System» für die Landeseite (Eigentümer erlaubt 2026-10-31).
