@@ -2480,3 +2480,6 @@ h1, h2, h3, h4, .h3, .work__h, .work__h2, .view__title, .pf__name, .hero__name, 
 .landing__qa dt{ font-weight:600; margin-top:1rem }
 .landing__qa dt:first-child{ margin-top:0 }
 .landing__qa dd{ margin:.2rem 0 0 }
+
+/* Landeseite, Knöpfe am Ende wiederholt (2026-10-31): Abstand zum Kettensatz darüber. */
+.landing__again{ margin-top:1.6rem }
