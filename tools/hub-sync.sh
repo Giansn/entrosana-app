@@ -44,17 +44,28 @@ if [ "$ahead" -gt 0 ]; then
 fi
 
 # 4) Neustarts
-if [ "$before" != "$after" ]; then
-  files=$(git diff --name-only "$before" "$after")
-  if echo "$files" | grep -qE '^api/'; then
-    if node --test api/test/*.test.mjs >/dev/null 2>&1; then systemctl --user restart entrosana-api.service && log restart true "api neu gestartet"
-    else log restart false "api: tests fehlgeschlagen, kein neustart"; fi
-  fi
-  if echo "$files" | grep -qE '^(serve\.mjs|docs-render\.mjs)$'; then systemctl --user restart entrosana-app.service && log restart true "app neu gestartet"; fi
-  if echo "$files" | grep -qE '^admin-app\.py$'; then
-    if [ "$(ss -Htn state established '( sport = :8396 )' | wc -l)" = "0" ]; then systemctl --user restart entrosana-admin-app.service && log restart true "konsole neu gestartet"
-    else log restart false "konsole in gebrauch, neustart verschoben"; fi
-  fi
-fi
+# Verglichen wird mit dem Commit, auf dem jeder Dienst zuletzt gestartet wurde
+# (~/.sygnif/entrosana-deployed-<dienst>), nicht nur mit dem Stand vor dem Pull:
+# sonst laufen lokal committete Änderungen nie (Fund 2026-10-30, API lief ohne
+# 59042ca/43e7fc6). Ohne Zustandsdatei gilt der Stand vor dem Pull wie bisher.
+DEPLOYED="$HOME/.sygnif/entrosana-deployed"
+seit() { local f="$DEPLOYED-$1"; [ -s "$f" ] && git cat-file -e "$(cat "$f")^{commit}" 2>/dev/null && cat "$f" || echo "$before"; }
+gestartet() { echo "$after" > "$DEPLOYED-$1"; }
+files_api=$(git diff --name-only "$(seit api)" "$after")
+if echo "$files_api" | grep -qE '^api/'; then
+  if node --test api/test/*.test.mjs >/dev/null 2>&1; then
+    systemctl --user restart entrosana-api.service && log restart true "api neu gestartet" && gestartet api
+  else log restart false "api: tests fehlgeschlagen, kein neustart"; fi
+else gestartet api; fi
+files_app=$(git diff --name-only "$(seit app)" "$after")
+if echo "$files_app" | grep -qE '^(serve\.mjs|docs-render\.mjs)$'; then
+  systemctl --user restart entrosana-app.service && log restart true "app neu gestartet" && gestartet app
+else gestartet app; fi
+files_konsole=$(git diff --name-only "$(seit konsole)" "$after")
+if echo "$files_konsole" | grep -qE '^admin-app\.py$'; then
+  if [ "$(ss -Htn state established '( sport = :8396 )' | wc -l)" = "0" ]; then
+    systemctl --user restart entrosana-admin-app.service && log restart true "konsole neu gestartet" && gestartet konsole
+  else log restart false "konsole in gebrauch, neustart verschoben"; fi
+else gestartet konsole; fi
 log done true "fertig auf $(git log -1 --format=%h)"
 beat "ok, $(git log -1 --format=%h), $n new"
