@@ -12,15 +12,27 @@
   var seeds = window.__seeds || {};
 
   // ---------------------------------------------------------------- Speicher
+  // Spur ohne Anmeldung (Eigentümer 2026-10-31, «when you reload its gone, if not logged in»):
+  // die Zeilen leben nur im Speicher dieser Seite. Was früher schon gespeichert wurde, bleibt
+  // unangetastet in localStorage liegen (stored) und erscheint wieder, sobald man angemeldet ist.
+  function signedIn() {
+    try { var t = JSON.parse(localStorage.getItem("entrosana-app:token") || "null"); return !!(t && t.expires > new Date().toISOString()); }
+    catch (e) { return false; }
+  }
+  var KEEP = signedIn(), stored = [];
   function load() {
+    var s = null;
     try {
       var raw = localStorage.getItem(KEY);
-      if (raw) return JSON.parse(raw);
+      if (raw) s = JSON.parse(raw);
     } catch (e) { /* Speicher gesperrt: dann eben nur diese Sitzung */ }
-    return { created: null, projects: {}, records: [] };
+    s = s || { created: null, projects: {}, records: [] };
+    if (!KEEP) { stored = s.records || []; s.records = []; }
+    return s;
   }
   function save(s) {
-    try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {}
+    var out = KEEP ? s : Object.assign({}, s, { records: stored });
+    try { localStorage.setItem(KEY, JSON.stringify(out)); } catch (e) {}
   }
   var state = load();
 
@@ -474,9 +486,13 @@
         resume.appendChild(card);
       }
     }
-    // Kette und Quittung
+    paintChain();
+  }
+  // Kette und Quittung; eigene Funktion, damit die Zeile «Page opened» sie nachzeichnen kann.
+  function paintChain() {
     var note = document.getElementById("chain-note"), box = document.getElementById("chain-receipt");
     if (!note || !box) return;   // nur der Arbeitsplatz hat die Kettenzeile; andere Seiten rufen paintWorkspace ebenfalls
+    box.textContent = "";
     if (!state.records.length) return;
     verifyChain().then(function (ok) {
       if (ok == null) {
@@ -1638,12 +1654,13 @@
   function paintTrail() {
     var host = document.getElementById("trail");
     if (!host) return;
+    host.textContent = "";
     var when = new URLSearchParams(location.search).get("when");
     var rows = state.records.slice().reverse();
     if (when === "today") rows = rows.filter(function (r) { return isToday(r.t); });
     if (!rows.length) {
       host.innerHTML = '<div class="card empty"><span class="eyebrow">Empty</span>' +
-        "<h4>Nothing recorded yet.</h4><p>A record appears the moment you finish a step.</p>" +
+        "<h4>Nothing recorded yet.</h4><p>Each page you open and each step you take leaves a record.</p>" +
         '<a class="btn" href="/workspace">Back to the workspace</a></div>';
       return;
     }
@@ -1842,6 +1859,11 @@
   paintProject();
   paintTrail();
   paintServices();
+  // Jeder Seitenaufruf ist eine Zeile der Spur (Eigentümer 2026-10-31, «record the page loaded»).
+  // Ohne HTTPS kein Siegel: dann still keine Zeile statt einer Warnung bei jedem Aufruf.
+  if (sealable()) record("view", "Page opened — " + location.pathname).then(function (r) {
+    if (r) { paintRail(); paintChain(); paintTrail(); }
+  });
 
   // Schmale Nahtstelle für submit.js (Phase 4). Ändert hier nichts, gibt nur
   // die vorhandenen Helfer heraus.
