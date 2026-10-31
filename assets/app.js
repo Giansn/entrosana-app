@@ -1622,7 +1622,7 @@
     if (!rows.length) {
       host.innerHTML = '<div class="card empty"><span class="eyebrow">Empty</span>' +
         "<h4>Nothing recorded yet.</h4><p>A record appears the moment you finish a step.</p>" +
-        '<a class="btn" href="/">Back to the workspace</a></div>';
+        '<a class="btn" href="/workspace">Back to the workspace</a></div>';
       return;
     }
     var card = el("div", "card"); card.style.padding = "0";

@@ -7,17 +7,8 @@ try {
   }
 } catch (e) { /* Speicher gesperrt: dann eben ohne Erinnerung */ }
 
-// Erstbesuch (2026-10-31): wer ohne Anmeldung zum ersten Mal auf / landet, sieht zuerst
-// /start, wo erklärt wird, was entrosana ist. /start setzt die Marke, danach führt / wie
-// bisher auf die Arbeitsfläche. Läuft vor dem ersten Bild, damit / nicht aufblitzt.
-try {
-  if (location.pathname === "/start") {
-    localStorage.setItem("entrosana-app:seen-start", "1");
-  } else if (location.pathname === "/" && !localStorage.getItem("entrosana-app:seen-start")
-             && !localStorage.getItem("entrosana-app:token")) {
-    location.replace("/start");
-  }
-} catch (e) { /* Speicher gesperrt: dann bleibt / die Arbeitsfläche */ }
+// "/" führt seit 2026-10-31 serverseitig auf /start (serve.mjs); die einmalige
+// Weiche für Erstbesucher, die hier stand, ist damit entfallen.
 
 // Anmeldeknopf im Kopf der Landeseite (2026-10-31): liegt ein gültiger Login auf dem Gerät,
 // führt er als «Your account» auf /me statt zum Anmelden.

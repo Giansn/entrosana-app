@@ -33,7 +33,7 @@
     b.appendChild(el("span", "eyebrow", "Not found"));
     b.appendChild(el("h1", "work__h", "Nothing here under that name."));
     var back = el("a", "btn", "Back to " + (data ? data.title : "the workspace"));
-    back.href = data ? "/" + section : "/";
+    back.href = data ? "/" + section : "/workspace";
     b.appendChild(back);
     return;
   }

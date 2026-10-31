@@ -5,7 +5,7 @@
  * Dienst schreibt nur den Pfad, nie die Frage). Eine Palette, kein eigener Ort. */
 (function () {
   "use strict";
-  var PAGES = [["Workspace", "/", "Start, files and the record"], ["Tools", "/tools", "What actually runs"], ["Modules", "/modules", "Lessons for schools"], ["Contribute", "/contribute", "Ways in, rules, checklists"],
+  var PAGES = [["Workspace", "/workspace", "Start, files and the record"], ["Tools", "/tools", "What actually runs"], ["Modules", "/modules", "Lessons for schools"], ["Contribute", "/contribute", "Ways in, rules, checklists"],
     ["Propose a module", "/contribute/submit", "The proposal form"], ["Request", "/request", "Ask for a module, a tool or a service"], ["Projects", "/projects", "Your projects on this device"],
     ["Record trail", "/records", "Append-only and sealed"], ["Running services", "/services", "What is up"], ["Your account", "/me", "Sign in, profile, journal, data"], ["Contribution status", "/contribute/status", "What you sent and where it stands"]];
   var GROUPS = ["Pages", "Your projects", "Modules", "Tools", "Contribute", "People", "Journal"];

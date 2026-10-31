@@ -31,7 +31,7 @@ const INDEXABLE = false;
 // Was in die sitemap.xml gehört: die inhaltlichen Seiten. /records, /projects
 // und /services zeigen, was auf dem jeweiligen Gerät liegt, /project ist noch
 // nicht gebaut — nichts davon hat in einem Suchindex etwas verloren.
-const SITEMAP_BASE = ["/", "/start", "/tools", "/modules", "/contribute"];   // /start: Landeseite (2026-09-11)
+const SITEMAP_BASE = ["/start", "/workspace", "/tools", "/modules", "/contribute"];   // /start: Landeseite (2026-09-11)
 // Dazu kommen die abgeleiteten Detailseiten ohne Entwurfsmarke, siehe deriveRoutes().
 const SITEMAP = { get list() { return SITEMAP_BASE.concat([...DERIVED].filter(([, r]) => !r.draft).map(([p]) => p)); } };
 
@@ -39,7 +39,7 @@ const HTML = "text/html; charset=utf-8";
 const CSS = "text/css; charset=utf-8";
 const JS = "text/javascript; charset=utf-8";
 const ROUTES = new Map([
-  ["/",           { file: "index.html",      type: HTML }],
+  ["/workspace",  { file: "index.html",      type: HTML }],   // Arbeitsfläche, bis 2026-10-31 auf "/"
   ["/start",      { file: "start.html",      type: HTML }],   // Landeseite (2026-09-11)
   ["/tools",      { file: "tools.html",      type: HTML }],
   ["/modules",    { file: "modules.html",    type: HTML }],
@@ -290,9 +290,18 @@ createServer((req, res) => {
     return;
   }
 
+  // "/" führt auf die Landeseite (Eigentümer 2026-10-31), serverseitig, damit auch
+  // Link-Vorschauen (Telegram, Mail) die Karte von /start zeigen. 302, nicht 301:
+  // Browser merken sich keinen dauerhaften Umweg, falls "/" später wieder etwas wird.
+  if (path === "/") {
+    const q = req.url.indexOf("?");
+    res.writeHead(302, { "Location": "/start" + (q >= 0 ? req.url.slice(q) : ""), "Cache-Control": "no-cache", "Content-Length": 0 }).end();
+    return;
+  }
+
   const route = ROUTES.get(path) || DERIVED.get(path) || ((/^\/p\/\d{1,12}$/.test(path) || /^\/contributors\/[a-z0-9_-]{1,80}$/.test(path)) ? PROFILE : undefined);
   // Unbekannte Pfade liefern die Startseite mit 404, damit nichts vorgetäuscht wird.
-  const entry = cache.get((route ?? ROUTES.get("/")).file);
+  const entry = cache.get((route ?? ROUTES.get("/workspace")).file);
   const status = route ? 200 : 404;
 
   if (status === 200 && req.headers["if-none-match"] === entry.etag) {
