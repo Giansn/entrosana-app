@@ -2580,3 +2580,12 @@ h1, h2, h3, h4, .h3, .work__h, .work__h2, .view__title, .pf__name, .hero__name, 
   .solo__top .solo__me .rail__avatar{ width:2.1rem; height:2.1rem }
 }
 .solo__top .solo__me + .iconbtn{ margin-left:0 }
+
+/* Login: Mail gesendet (Eigentümer 2026-10-31, «bemerkbarer»). Ersetzt das Formular in der Karte. */
+.me__sent{ display:flex; gap:1rem; align-items:flex-start; padding:.4rem 0; outline:none }
+.me__sent-i{ flex:none; width:2.6rem; height:2.6rem; border-radius:999px; display:grid; place-items:center;
+  font-size:1.3rem; font-weight:700; color:var(--paper); background:var(--seal) }
+.me__sent-t{ margin:.15rem 0 .3rem; font-size:var(--step-1); font-weight:600; letter-spacing:-.01em; color:var(--ink) }
+.me__sent-l{ margin:0 0 1rem; font-family:var(--font-mono); font-size:var(--step--1); color:var(--muted); overflow-wrap:anywhere }
+.me__sent .actions{ display:flex; flex-wrap:wrap; gap:.6rem }
+.card.submit:has(.me__sent){ border-color:var(--seal); box-shadow:0 0 0 1px var(--seal) inset }

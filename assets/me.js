@@ -125,19 +125,40 @@
     var hg = el("span", "help"); hg.appendChild(document.createTextNode("Required. The Hub stores no age; it only asks. By registering you accept ")); var hga = el("a", null, "the guidelines"); hga.href = "/guidelines"; hg.appendChild(hga); hg.appendChild(document.createTextNode(".")); fA.appendChild(hg); form.appendChild(fA);
     var actions = el("div", "actions"), go = el("button", "btn", "Send me the link"); go.type = "submit"; actions.appendChild(go); form.appendChild(actions);
     var out = live(); form.appendChild(out);
+    // Gesendet (Eigentümer 2026-10-31, «bemerkbarer»): das Formular weicht einer deutlichen
+    // Bestätigung in derselben Karte; «Send again» schickt nochmals, «Other address» holt das Formular zurück.
+    var sent = null;
+    function showSent(addr) {
+      if (sent) sent.remove();
+      sent = el("div", "me__sent"); sent.setAttribute("role", "status"); sent.tabIndex = -1;
+      sent.appendChild(el("span", "me__sent-i", "✓"));
+      var body = el("div", "me__sent-b");
+      body.appendChild(el("p", "me__sent-t", "Mail sent. Check your Inbox or Spam."));
+      body.appendChild(el("p", "me__sent-l", "to " + addr));
+      var row = el("div", "actions"), again = el("button", "btn btn--ghost", "Send again"), other = el("button", "btn btn--ghost", "Other address");
+      again.type = "button"; other.type = "button"; row.appendChild(again); row.appendChild(other); body.appendChild(row);
+      var aout = live(); body.appendChild(aout); sent.appendChild(body);
+      again.addEventListener("click", function () { send(again, aout); });
+      other.addEventListener("click", function () { sent.remove(); sent = null; form.hidden = false; out.textContent = ""; email.focus(); });
+      form.hidden = true; card.appendChild(sent);
+      sent.scrollIntoView({ block: "center", behavior: "smooth" }); sent.focus({ preventScroll: true });
+    }
+    function send(btn, where) {
+      btn.disabled = true; note(where, "idle", "Sending…");
+      api("/api/verify/request", { method: "POST", body: JSON.stringify({ email: email.value.trim(), name: name.value.trim(), purpose: "login", age_ok: true }) })
+        .then(function (r) {
+          btn.disabled = false;
+          if (r.s === 202) { if (where === out) { out.textContent = ""; showSent(email.value.trim()); } else note(where, "ok", "Sent again."); }
+          else if (r.s === 429) note(where, "warn", "Too many attempts from here; try again in an hour.");
+          else note(where, "warn", "Not sent (" + r.s + "). Nothing was stored.");
+        })
+        .catch(function () { btn.disabled = false; note(where, "idle", "The Hub's server is not reachable right now."); });
+    }
     form.addEventListener("submit", function (ev) {
       ev.preventDefault();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) { bad(fE, "An address we can send the link to."); return; }
       if (!age.checked) { bad(fA, "Tick the box: 13 or older, or registering on behalf of a younger learner."); return; }
-      go.disabled = true; note(out, "idle", "Sending…");
-      api("/api/verify/request", { method: "POST", body: JSON.stringify({ email: email.value.trim(), name: name.value.trim(), purpose: "login", age_ok: true }) })
-        .then(function (r) {
-          go.disabled = false;
-          if (r.s === 202) note(out, "ok", "Sent to " + email.value.trim() + ". Open the link from that mail on this device; it signs you in here.");
-          else if (r.s === 429) note(out, "warn", "Too many attempts from here; try again in an hour.");
-          else note(out, "warn", "Not sent (" + r.s + "). Nothing was stored.");
-        })
-        .catch(function () { go.disabled = false; note(out, "idle", "The Hub's server is not reachable right now."); });
+      send(go, out);
     });
     sec.appendChild(el("p", "fine", "With an account you can keep up to 400 MB of files on the Hub's own server in Switzerland: CVs, reviews, concepts, project papers. Each file is private unless you set it public on your page. Up to 50 MB per file."));
     var p = el("p", "fine");   // nur noch der Datenschutz-Verweis; der Gerätehinweis davor ist weg (Eigentümer 2026-09-11: solche Vorspanne verwirren)
