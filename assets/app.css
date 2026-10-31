@@ -2599,3 +2599,11 @@ details.more[open] > summary::before{ transform:rotate(90deg) }
 details.more > summary::-webkit-details-marker{ display:none }
 details.more[open] > summary{ margin-bottom:1rem }
 #join{ scroll-margin-top:96px }
+
+/* Ablauf vor dem Vorschlagsformular (2026-10-31, propose.js). */
+.propose{ width:min(34rem, calc(100vw - 1.5rem)); max-width:none }
+.propose__steps{ list-style:none; counter-reset:st; margin:0 0 1.4rem; padding:0; display:grid; gap:.85rem }
+.propose__steps li{ counter-increment:st; display:grid; grid-template-columns:1.9rem 1fr; column-gap:.75rem; color:var(--ink-2) }
+.propose__steps li::before{ content:counter(st); grid-row:span 2; width:1.9rem; height:1.9rem; border-radius:999px; display:grid; place-items:center;
+  border:1px solid var(--seal); color:var(--seal); font-family:var(--font-mono); font-size:.8rem }
+.propose__steps b{ color:var(--ink); font-weight:600 }

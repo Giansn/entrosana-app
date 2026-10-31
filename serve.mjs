@@ -69,6 +69,7 @@ const ROUTES = new Map([
   ["/assets/app.js",      { file: "assets/app.js",      type: JS }],
   ["/assets/overview.js", { file: "assets/overview.js", type: JS }],
   ["/assets/dialog.js",   { file: "assets/dialog.js",   type: JS }],
+  ["/assets/propose.js",  { file: "assets/propose.js",  type: JS }],   // Ablauf vor dem Vorschlagsformular (2026-10-31)
   ["/assets/rail-projects.js", { file: "assets/rail-projects.js", type: JS }],
   ["/assets/project.js",  { file: "assets/project.js",  type: JS }],
   ["/assets/project-head.js", { file: "assets/project-head.js", type: JS }],
