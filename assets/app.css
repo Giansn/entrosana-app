@@ -2622,3 +2622,9 @@ ul.fold__body{ padding-left:1.1rem } ul.fold__body li + li{ margin-top:.35rem }
   .fold > summary span{ grid-column:2 }
   .fold__body{ margin-left:1.4rem }
 }
+
+/* Leere Gebietsreiter (2026-10-31): sichtbar mit ihrer 0, aber kein Ziel. */
+.tabs__b.is-empty, .tabs__b:disabled{ opacity:.45; cursor:default }
+.tabs__b.is-empty:hover{ background:none; color:var(--ink-2) }
+/* Offene Bitten als Wege (2026-10-31): die Zeile ist der Link. */
+a.ask__t{ color:inherit; text-decoration:none } a.ask__t:hover, a.ask__t:focus-visible{ color:var(--seal) }

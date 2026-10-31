@@ -78,11 +78,14 @@
       "Draft page — the wording below is a placeholder until it is replaced."));
   }
 
-  // Was es ist
-  var b2 = block();
-  b2.appendChild(el("span", "eyebrow", "What it is"));
-  b2.appendChild(el("p", "measure" + (e.draft ? " draft" : "") + fsClass("about"), e.about));
-  if (e.note) b2.appendChild(el("p", "hint" + fsClass("note"), e.note));
+  // Was es ist. Nur, wenn es Text gibt: die drei Checklisten unter /tools tragen keinen,
+  // und eine Zwischenüberschrift über nichts ist ein Fehler (2026-10-31).
+  if ((e.about && e.about.trim()) || e.note) {
+    var b2 = block();
+    b2.appendChild(el("span", "eyebrow", "What it is"));
+    if (e.about && e.about.trim()) b2.appendChild(el("p", "measure" + (e.draft ? " draft" : "") + fsClass("about"), e.about));
+    if (e.note) b2.appendChild(el("p", "hint" + fsClass("note"), e.note));
+  }
 
   // Eckdaten
   if (e.facts && e.facts.length) {
@@ -100,18 +103,22 @@
 
   // Ablauf aus dem Seed — keine zweite Fassung derselben Schritte
   if (seed && seed.steps && seed.steps.length) {
+    // Zwei Ebenen (2026-10-31, wie /guidelines): erster Schritt und Zahl stehen da,
+    // die ganze Liste auf Klick. «Open the checklist» unten zeigt sie ohnehin.
     var b4 = block();
     b4.appendChild(el("span", "eyebrow", "How it is prepared"));
-    b4.appendChild(el("p", "work__sub",
-      "The same checklist you can open below. Every tick leaves a record."));
-    var ol = el("ol", "steps");
+    var folds = el("div", "folds"), fold = el("details", "fold"), sm = el("summary");
+    sm.appendChild(el("b", null, "1. " + seed.steps[0].t));
+    sm.appendChild(el("span", null, seed.steps.length === 1 ? "one step · every tick leaves a record" : seed.steps.length + " steps · every tick leaves a record"));
+    fold.appendChild(sm);
+    var ol = el("ol", "steps fold__body");
     seed.steps.forEach(function (s) {
       var li = el("li");
       li.appendChild(el("b", null, s.t));
       li.appendChild(el("span", null, s.n));
       ol.appendChild(li);
     });
-    b4.appendChild(ol);
+    fold.appendChild(ol); folds.appendChild(fold); b4.appendChild(folds);
   }
 
   // Zum Mitnehmen. Steht vor «was bleibt», weil es der Grund ist, warum
@@ -182,7 +189,8 @@
                  ? (e.downloads ? "Ask us to run it with you" : "Request this module")
                  : "Ask about this " + NOUN);
   // Vorher zeigte «Ask about this tool» auf /contribute, auf einer Contribute-Seite also im Kreis.
-  ask.href = section === "modules" ? "https://entrosana.com/request-access" : "/request?kind=" + (section === "tools" ? "tool" : section === "contribute" ? "contribute" : "other") + "&module=" + encodeURIComponent(e.slug);
+  // Alles über /request des Hubs (2026-10-31); das Formular auf entrosana.com bleibt für Aussenstehende.
+  ask.href = "/request?kind=" + (section === "modules" ? "module" : section === "tools" ? "tool" : section === "contribute" ? "contribute" : "other") + "&module=" + encodeURIComponent(e.slug);
   act.appendChild(ask);
   b6.appendChild(act);
   // Kein Hinweis «makes a copy … on this device» mehr (Eigentümer 2026-09-11: solche Vorspanne verwirren).
@@ -197,7 +205,8 @@
       var a = el("a", "mcard");
       a.href = "/" + section + "/" + o.slug;
       a.appendChild(el("p", "mcard__t", o.title));
-      a.appendChild(el("p", "mcard__l", o.lede));
+      // Die kurze Kennzeile, nicht die lange Einleitung (2026-10-31: die drei Gebietsabsätze standen sonst auf jeder Seite nochmals).
+      if (o.who || o.meta) a.appendChild(el("p", "mcard__who", o.who || o.meta));
       grid.appendChild(a);
     });
     b7.appendChild(grid);

@@ -215,9 +215,8 @@
       head.innerHTML = ring(k.done, k.total);
       var titel = el("div", "ov__titel");
       titel.appendChild(el("p", "h3", k.p.name || "Untitled"));
-      titel.appendChild(el("p", "ov__m", k.fertig
-        ? "all done · last activity " + when(k.letzte)
-        : (k.total - k.done) + " open · last activity " + when(k.letzte)));
+      // Der Zähler steht im Ring und je Bahn; hier nur Stand und Datum (2026-10-31).
+      titel.appendChild(el("p", "ov__m", (k.fertig ? "all done" : "in progress") + (k.letzte ? " · last activity " + when(k.letzte) : " · not started yet")));
       head.appendChild(titel);
       head.appendChild(dreiPunkte(k));
       a.appendChild(head);

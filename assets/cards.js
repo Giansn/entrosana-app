@@ -51,6 +51,8 @@
     var wrap = document.createElement("div");
     wrap.className = "mitem";
     wrap.appendChild(card(section, e));
+    // Die Kontaktzeile darunter nennt die Beitragenden; die Autorzeile der Karte stünde doppelt (2026-10-31).
+    var byLine = wrap.querySelector(".mcard__by"); if (byLine) byLine.remove();
     var c = document.createElement("p");
     c.className = "mcard__contact";
     function paintContact(meta) {
@@ -206,11 +208,16 @@
       b.setAttribute("role", "tab"); b.setAttribute("aria-controls", "panel-areas");
       b.appendChild(document.createTextNode(a.name));
       var n = document.createElement("span"); n.className = "tabs__n"; n.textContent = String(a.mods.length); b.appendChild(n);
+      // Ein leeres Gebiet ist kein Reiter (Eigentümer 2026-10-31): ausgegraut, nicht klickbar, die 0 bleibt sichtbar.
+      if (!a.mods.length) { b.disabled = true; b.classList.add("is-empty"); b.title = "No module in this area yet"; }
       b.addEventListener("click", function () { show(i, true); });
       b.addEventListener("keydown", function (ev) {
         var to = ev.key === "ArrowRight" ? i + 1 : ev.key === "ArrowLeft" ? i - 1 : ev.key === "Home" ? 0 : ev.key === "End" ? areas.length - 1 : -1;
         if (to < 0 && ev.key !== "ArrowLeft") return;
-        ev.preventDefault(); to = (to + areas.length) % areas.length; show(to, true); btns[to].focus();
+        ev.preventDefault(); to = (to + areas.length) % areas.length;
+        var guard = 0; while (!areas[to].mods.length && guard++ < areas.length) to = (to + (ev.key === "ArrowLeft" ? -1 : 1) + areas.length) % areas.length;
+        if (!areas[to].mods.length) return;
+        show(to, true); btns[to].focus();
       });
       btns.push(b); strip.appendChild(b);
     });
