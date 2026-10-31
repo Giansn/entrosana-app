@@ -981,13 +981,13 @@ routes.set("GET /api/me/export", (ctx) => {
 // Löschung eines Kontos (2026-09-10 als Funktion): Selbstlöschung und ruhende Konten gehen denselben Weg.
 function eraseActor(actor, keepIds = new Set(), removeIds = new Set(), why = "personal data erased") {
   const mine = db.prepare("SELECT * FROM contributions WHERE actor_id = ?").all(actor.id);
-  let kept = 0, unpublished = 0, deleted = 0;
+  let kept = 0, unpublished = 0, deleted = 0; const gone = [];
   db.exec("BEGIN IMMEDIATE");
   try {
     for (const c of mine) {
       const keep = c.status === "published" && (keepIds.has(c.id) || (c.attribution === "keep" && !removeIds.has(c.id)));
       if (keep) { kept++; continue; }
-      if (c.status === "published" && c.slug) { try { removeEntry("modules", c.slug); unpublished++; } catch {} }
+      if (c.status === "published" && c.slug) { try { removeEntry("modules", c.slug); unpublished++; } catch {} gone.push(c.slug); }
       db.prepare("DELETE FROM contributions WHERE id = ?").run(c.id); deleted++;
     }
     db.prepare("DELETE FROM actor_tokens WHERE actor_id = ?").run(actor.id);
@@ -998,6 +998,9 @@ function eraseActor(actor, keepIds = new Set(), removeIds = new Set(), why = "pe
     if (actor.email) db.prepare("DELETE FROM requests WHERE email = ?").run(actor.email);   // Anfragen unter derselben Adresse
     db.prepare("DELETE FROM invites WHERE inviter_id = ?").run(actor.id);              // eigene Einladungen gehen mit
     db.prepare("DELETE FROM services WHERE actor_id = ?").run(actor.id);              // eigene Dienste gehen mit
+    db.prepare("DELETE FROM points WHERE actor_id = ?").run(actor.id);                // gesetzte Punkte gehen mit (Gap 1.7)
+    for (const s of gone) { db.prepare("DELETE FROM module_contributors WHERE slug = ?").run(s); db.prepare("DELETE FROM points WHERE slug = ?").run(s); }   // aus dem Katalog genommen
+    db.prepare(`DELETE FROM module_contributors WHERE actor_id = ? AND slug NOT IN (SELECT slug FROM contributions WHERE actor_id = ? AND slug IS NOT NULL)`).run(actor.id, actor.id);   // Mitarbeit an fremden Modulen; eigene behaltene bleiben
     if (actor.email) db.prepare("UPDATE invites SET email = '(erased)' WHERE email = ?").run(actor.email);   // erhaltene: Adresse weg
     // Name bleibt nur, wenn ein Modul unter ihm stehen bleibt; die Adresse geht immer.
     removeAll(db, FILES_ROOT, actor.id);   // Dateien des Kontos, Zeilen und Ordner (2026-09-10)

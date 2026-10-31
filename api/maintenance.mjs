@@ -56,8 +56,16 @@ export function exportActor(db, actor) {
   const journal = db.prepare("SELECT id, text, public, created, updated FROM journal WHERE actor_id = ? ORDER BY id").all(actor.id);
   const invites = db.prepare("SELECT id, email, message, created, accepted FROM invites WHERE inviter_id = ? ORDER BY id").all(actor.id);
   const services = db.prepare("SELECT id, name, what, grp, place, kind, target, interval_min, created, last_state, last_status, last_checked, last_beat FROM services WHERE actor_id = ? ORDER BY id").all(actor.id);
-  return { exported: new Date().toISOString(), actor: { id: actor.id, kind: actor.kind, email: actor.email, name: actor.name, created: actor.created, org: actor.org || null, role: actor.role || null, about: actor.about || null, website: actor.website || null, langs: actor.langs || [], roles: [...(actor.roles || [])] },
-           contributions, applications, requests, journal, invites, services, audit, tokens };
+  // 2026-10-31 (Gap 1.6): Profilfelder aus der Zeile, nicht aus dem mitgegebenen Objekt; dazu Bild, Dateien, Punkte, Module.
+  const row = db.prepare("SELECT * FROM actors WHERE id = ?").get(actor.id) || actor;
+  const langs = String(row.langs || "").split(",").filter(Boolean);   // gespeichert als «de,fr»
+  const avatar = row.avatar ? { type: row.avatar_type, updated: row.avatar_updated, base64: Buffer.from(row.avatar).toString("base64") } : null;
+  const files = db.prepare("SELECT id, name, label, type, size, sha256, public, created FROM files WHERE actor_id = ? ORDER BY id").all(actor.id)
+    .map(f => ({ ...f, public: !!f.public, download: `/api/files/${actor.id}/${f.id}/${encodeURIComponent(f.name)}` }));
+  const points = db.prepare("SELECT slug, created FROM points WHERE actor_id = ? ORDER BY created").all(actor.id);
+  const modules = db.prepare("SELECT slug, added FROM module_contributors WHERE actor_id = ? ORDER BY added").all(actor.id);
+  return { exported: new Date().toISOString(), actor: { id: actor.id, kind: row.kind, email: row.email, name: row.name, created: row.created, org: row.org || null, role: row.role || null, about: row.about || null, bio: row.bio || null, place: row.place || null, contact_email: row.contact_email || null, website: row.website || null, langs, roles: [...(actor.roles || [])], avatar },
+           contributions, applications, requests, journal, invites, services, files, points, modules, audit, tokens };
 }
 
 // Ruhende Konten (2026-09-10): letzte Regung = jüngste Marke (last_used oder created) oder das Konto selbst.
