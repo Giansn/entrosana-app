@@ -2589,3 +2589,13 @@ h1, h2, h3, h4, .h3, .work__h, .work__h2, .view__title, .pf__name, .hero__name, 
 .me__sent-l{ margin:0 0 1rem; font-family:var(--font-mono); font-size:var(--step--1); color:var(--muted); overflow-wrap:anywhere }
 .me__sent .actions{ display:flex; flex-wrap:wrap; gap:.6rem }
 .card.submit:has(.me__sent){ border-color:var(--seal); box-shadow:0 0 0 1px var(--seal) inset }
+
+/* Einstieg ohne Verwirrung (2026-10-31): Vorschläge auf der Arbeitsfläche stehen untereinander;
+   die Beispiel-Checklisten auf /contribute sind eingeklappt. */
+#resume .resume + .resume{ margin-top:.75rem }
+details.more > summary{ cursor:pointer; color:var(--ink-2); font-family:var(--font-mono); font-size:var(--step--1); letter-spacing:.04em; list-style:none }
+details.more > summary::before{ content:"›"; display:inline-block; margin-right:.5rem; color:var(--seal); transition:transform .15s }
+details.more[open] > summary::before{ transform:rotate(90deg) }
+details.more > summary::-webkit-details-marker{ display:none }
+details.more[open] > summary{ margin-bottom:1rem }
+#join{ scroll-margin-top:96px }

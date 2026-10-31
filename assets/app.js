@@ -259,6 +259,8 @@
         var p = board.projects[id];
         var tasks = p.tasks || [];
         return {
+          // unberührter Vorschlag des Hubs: alle Schritte noch in «Pending», keiner abgehakt
+          fresh: PROPOSED.indexOf(id) >= 0 && tasks.every(function (t) { return !t.checked && (t.section_id || "pending") === "pending"; }),
           id: id,
           seed: id,
           title: p.name || "Untitled",
@@ -411,7 +413,27 @@
     if (emptyBox) emptyBox.hidden = !!list.length;
     if (resumeBox) resumeBox.hidden = !list.length;
     if (resume) resume.textContent = "";
-    if (list.length && resumeBox) {
+    var gr = document.getElementById("greeting-resume");
+    if (gr && gr.dataset.own == null) gr.dataset.own = gr.textContent;
+    if (list.length && resumeBox && list.every(function (p) { return p.fresh; })) {
+      // Nur Vorschläge: alle zeigen, als Angebote, nicht als «your projects».
+      var gs = document.getElementById("greeting-suggest"), ls = document.getElementById("lede-suggest"), lr = document.getElementById("lede-resume");
+      if (gr) gr.textContent = (gs && gs.textContent.trim()) || "Projects you can join";
+      if (lr) lr.textContent = (ls && ls.textContent.trim()) || "";
+      list.sort(function (a, b) { return PROPOSED.indexOf(a.id) - PROPOSED.indexOf(b.id); }).forEach(function (p) {
+        var first = (p.steps[0] || {}).content || "";
+        var card = el("div", "card resume");
+        card.innerHTML = ring(0, p.steps.length) + '<div><p class="h3"></p><p class="resume__m"></p></div><a class="btn btn--ghost" href="/project">Open</a>';
+        card.querySelector(".h3").textContent = p.title;
+        card.querySelector(".resume__m").textContent = p.steps.length + " steps" + (first ? " · first: " + first.toLowerCase() : "");
+        card.querySelector("a.btn").addEventListener("click", function () {
+          try { var s = JSON.parse(localStorage.getItem("entrosana-todo-demo:v3") || "null"); if (s) { s.active = p.id; localStorage.setItem("entrosana-todo-demo:v3", JSON.stringify(s)); } } catch (e) {}
+        });
+        resume.appendChild(card);
+      });
+    } else if (list.length && resumeBox) {
+      if (gr) gr.textContent = gr.dataset.own;
+      list = list.filter(function (p) { return !p.fresh; });   // gezählt und fortgesetzt wird nur, was man angefangen hat
       var one = document.getElementById("lede-resume-one");
       var many = document.getElementById("lede-resume-many");
       var lede = document.getElementById("lede-resume");
