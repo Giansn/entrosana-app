@@ -80,7 +80,11 @@
 
   api("/api/me/modules").then(function (r) {
     out.textContent = "";
-    if (r.s !== 200) { out.appendChild(el("p", "note note--warn", r.j.error || ("HTTP " + r.s))); return; }
+    if (r.s === 401) {   // 2026-10-31: abgelaufen oder abgemeldet, wie /me: Marke weg, Anmeldung anbieten
+      try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} if (window.__account && window.__account.paint) window.__account.paint();
+      host.textContent = ""; var s1 = block("Your modules", "Sign in again", "Your sign-in on this device has expired. Ask for a new link."); var a1 = el("a", "btn", "Sign in"); a1.href = "/me"; s1.appendChild(a1); return;
+    }
+    if (r.s !== 200) { out.appendChild(el("p", "note note--warn", "Your modules could not be loaded. Try again in a moment.")); return; }
     var items = r.j.items || [];
     if (r.j.team) out.appendChild(el("p", "fine", "You are on the team: every module of the catalogue is listed, not only your own. Area descriptions are edited in the console."));
     if (!items.length) { var p = el("p", "fine"); p.appendChild(document.createTextNode("No published module under your name yet. ")); var a = el("a", null, "Propose a track"); a.href = "/contribute/submit"; p.appendChild(a); p.appendChild(document.createTextNode(" to start one.")); out.appendChild(p); return; }

@@ -28,7 +28,7 @@ window.__catalogue = {
     "state":"development",
     "title":"Value System",
     "who":"social · 9 slides + 2-page worksheet · English and German",
-    "lede":"Whre do values originate from and how do they change? ",
+    "lede":"Where do values originate from and how do they change? ",
     "meta":"still in development · open to build on it",
     "about":"It works through why the weight of a value shifts with age, time of day, place and company, why so much of a value system sits below awareness, and the question underneath both: are we led by our value system, or do we build it. Maslow's hierarchy and the World Economic Forum's system-value framework appear as reference models, not as answers.",
     "note":"It closes with an exercise rather than a summary. Learners build a character, invented or real, and map its complete value system including the parts the character is not aware of. Discussion prompts and thinking pauses are written into the slides, so a teacher can run it without preparation from us.",

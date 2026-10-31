@@ -121,7 +121,7 @@
     form.appendChild(fE); form.appendChild(fN);
     // Alter (2026-09-10): Urteilsfähigkeit ab etwa 13; jüngere Lernende bringt eine Lehrperson oder ein Elternteil ein. Nichts davon wird gespeichert.
     var age = el("input"); age.type = "checkbox"; age.id = "age-ok"; var fA = el("div", "field me__age"); var la = el("label", "toggle"); la.htmlFor = "age-ok";
-    la.appendChild(age); la.appendChild(el("span", "toggle__label", "I am 13 or older, or I register on behalf of a younger learner as their teacher or parent.")); fA.appendChild(la);
+    la.appendChild(age); var atr = el("span", "toggle__track"); atr.appendChild(el("span", "toggle__dot")); la.appendChild(atr); la.appendChild(el("span", "toggle__label", "I am 13 or older, or I register on behalf of a younger learner as their teacher or parent.")); fA.appendChild(la);
     var hg = el("span", "help"); hg.appendChild(document.createTextNode("Required. The Hub stores no age; it only asks. By registering you accept ")); var hga = el("a", null, "the guidelines"); hga.href = "/guidelines"; hg.appendChild(hga); hg.appendChild(document.createTextNode(".")); fA.appendChild(hg); form.appendChild(fA);
     var actions = el("div", "actions"), go = el("button", "btn", "Send me the link"); go.type = "submit"; actions.appendChild(go); form.appendChild(actions);
     var out = live(); form.appendChild(out);

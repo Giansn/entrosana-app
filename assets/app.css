@@ -517,7 +517,7 @@ p{ margin:0 0 var(--pad-para) }
 .rail__burger{ display:none }
 
 @media (max-width:759.98px){
-  .app{ grid-template-columns:1fr }
+  .app{ grid-template-columns:1fr; grid-template-rows:auto 1fr }   /* 2026-10-31: sonst streckt min-height die Leistenzeile, Pille rutscht auf kurzen Seiten nach unten */
   .rail{ flex-direction:row; flex-wrap:wrap; align-items:center; gap:.15rem .5rem; padding:.55rem .8rem }
   .rail .seam::before, .rail__rule{ display:none }
   .rail__brand{ padding:.2rem .5rem .2rem .3rem; margin-right:auto }
