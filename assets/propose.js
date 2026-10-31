@@ -10,7 +10,7 @@
   var STEPS = [
     ["Send", "Fill in the form. No account needed."],
     ["Confirm", "We mail you a link. Open it within 7 days, or the proposal is deleted."],
-    ["Review", "The team reads it. Claude, a language model by Anthropic in the USA, helps sort; a person decides."],
+    ["Review", "entrosana assesses and decides."],
     ["Decision", "Admitted or not, by mail, with the reason."],
     ["Published", "It goes into the catalogue under your name. For that you need an account the team has approved for contributing; you apply on your account page."]
   ];
