@@ -48,7 +48,8 @@ export function decideApplication(db, id, decider, outcome, reason) {
       db.prepare("INSERT INTO roles(actor_id, role, granted_by, granted) VALUES (?, 'contributor', ?, ?)").run(a.actor_id, decider.id, now);
     db.exec("COMMIT");
   } catch (e) { db.exec("ROLLBACK"); throw e; }
-  append(db, { kind: "application." + outcome, actor_id: decider.id, resource: "application:" + a.id, text: `${outcome} — ${reason}` });
+  // Kette pseudonym (2026-10-31): die Begründung bleibt auf der Bewerbung (Spalte reason), nicht in der Kette.
+  append(db, { kind: "application." + outcome, actor_id: decider.id, resource: "application:" + a.id, text: outcome + " (reason on the application)" });
   return { application: db.prepare("SELECT * FROM applications WHERE id = ?").get(a.id), applicant: db.prepare("SELECT * FROM actors WHERE id = ?").get(a.actor_id) };
 }
 function err(status, message) { const e = new Error(message); e.status = status; return e; }

@@ -49,6 +49,20 @@ kommt.
    wp-cli (`docs/handoff.md` von entrosana-wp); danach die englische Fassung
    dort, die deutsche als Unterseite oder Umschalter. Datum «8 September 2026»
    stehen lassen, bei Änderungen nachführen.
+6. **Kette pseudonym seit 2026-10-31** (Commit «kette: neue zeilen ohne adresse, titel und
+   begruendung …», Gap-Analyse 1.2). Neue Zeilen in `audit` tragen nur noch Kontonummer
+   (`actor:<id>`), Handlung, Zeit, Modul-Slug und den gekürzten Adress-Hash aus
+   `api/server.mjs` (`email:<hash>`); Adressen, Titel, Begründungen und Dienstnamen stehen
+   auf Konto, Beitrag, Bewerbung oder Dienst (`api/admin.mjs`, `api/applications.mjs`,
+   `api/server.mjs`; Test `api/test/audit.test.mjs`). Ältere Zeilen bleiben unverändert,
+   weil ein Umschreiben die Hash-Verkettung und damit die Prüfbarkeit bräche. Stand
+   2026-10-31 (gezählt mit `sqlite3 -readonly api/db/hub.sqlite`, nur gelesen): 31 von 226
+   Zeilen enthalten eine Klartext-Adresse (seq 2 bis 189, geschrieben 2026-09-08 bis
+   2026-09-10 vom Admin-CLI: actor 2, grant 20, revoke 5, token.cli 4); rund 54 weitere
+   tragen Titel, Begründung oder Dienstnamen. Für diese Zeilen stimmt Abschnitt 7 nicht
+   wörtlich; die Kette ist nicht öffentlich lesbar (`/api/audit/verify` liefert nur
+   Prüfergebnis und Anzahl) und geht nur im Export an das eigene Konto
+   (`api/maintenance.mjs`). Bei der Löschung eines Kontos bleiben die alten Zeilen stehen.
 
 Was die Zahlen belegt: `api/maintenance.mjs` (Fristen), `api/server.mjs`
 (Protokoll, Drosseln, Marken), `api/auth.mjs` (30 Tage, 365 Tage für SYGNIF),

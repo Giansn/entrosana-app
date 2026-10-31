@@ -26,7 +26,8 @@ function actorByEmail(email, create) {
   if (!row && create) {
     const id = db.prepare("INSERT INTO actors(kind, email, created) VALUES ('email', ?, ?)").run(e, now()).lastInsertRowid;
     row = db.prepare("SELECT * FROM actors WHERE id = ?").get(id);
-    append(db, { kind: "actor", actor_id: null, resource: "actor:" + id, text: "actor created by admin cli: " + e });
+    // Kette pseudonym (2026-10-31): die Adresse steht in actors, nicht in der Kette; actor:<id> genügt.
+    append(db, { kind: "actor", actor_id: null, resource: "actor:" + id, text: "actor created by admin cli" });
   }
   if (!row) throw new Error("unbekannter Akteur: " + e);
   return row;
@@ -39,10 +40,10 @@ try {
     const by = flag === "--by" && byEmail ? actorByEmail(byEmail, false).id : null;
     if (cmd === "grant") {
       db.prepare("INSERT OR IGNORE INTO roles(actor_id, role, granted_by, granted) VALUES (?,?,?,?)").run(target.id, b, by, now());
-      append(db, { kind: "grant", actor_id: by, resource: "actor:" + target.id, text: `role ${b} granted to ${target.email}` });
+      append(db, { kind: "grant", actor_id: by, resource: "actor:" + target.id, text: `role ${b} granted to actor ${target.id}` });
     } else {
       db.prepare("DELETE FROM roles WHERE actor_id = ? AND role = ?").run(target.id, b);
-      append(db, { kind: "revoke", actor_id: by, resource: "actor:" + target.id, text: `role ${b} revoked from ${target.email}` });
+      append(db, { kind: "revoke", actor_id: by, resource: "actor:" + target.id, text: `role ${b} revoked from actor ${target.id}` });
     }
     console.log(`${cmd}: ${b} ${cmd === "grant" ? "→" : "←"} ${target.email}`);
   } else if (cmd === "token") {
@@ -50,7 +51,7 @@ try {
     const target = actorByEmail(a, false);
     const days = Number(b) > 0 ? Number(b) : 30;
     const t = issueToken(db, target.id, days);
-    append(db, { kind: "token.cli", actor_id: null, resource: "actor:" + target.id, text: `token issued on the machine for ${target.email}, ${days} days` });
+    append(db, { kind: "token.cli", actor_id: null, resource: "actor:" + target.id, text: `token issued on the machine for actor ${target.id}, ${days} days` });
     console.log(t.token);
   } else if (cmd === "publish" || cmd === "unpublish") {
     const c = db.prepare("SELECT * FROM contributions WHERE id = ?").get(Number(a));

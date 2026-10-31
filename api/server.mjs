@@ -283,7 +283,8 @@ routes.set("POST /api/contributions", async (ctx) => {
   const id = Number(db.prepare(`INSERT INTO contributions(kind, status, actor_id, org_id, title, area, summary, files_json, trail_md, trail_json, trail_ok, created, confirmed, attribution)
     VALUES ('module', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .run(known ? "confirmed" : "received", actor.id, org_id, title, area, summary, JSON.stringify(files), trail, trailJson, trailOk, now, known ? now : null, attribution).lastInsertRowid);
-  auditAppend(db, { kind: known ? "contribution.confirmed" : "contribution.received", actor_id: actor.id, resource: "contribution:" + id, text: `${area}: ${title}` });
+  // Kette pseudonym (2026-10-31): kein Titel, keine Begründung in audit.text; beides steht auf der Beitragszeile.
+  auditAppend(db, { kind: known ? "contribution.confirmed" : "contribution.received", actor_id: actor.id, resource: "contribution:" + id, text: `module contribution (${area})` });
   // Mit Marke eingereicht heisst sofort bestätigt: das Postfach erfährt es hier, nicht erst über den Verweis.
   if (known && !limited("mail:global", MAIL_CAP)) mail(INBOX, `entrosana Hub: contribution #${id} «${title}» waits for review`,
     `${actor.name || name || "(no name yet)"} <${email}> submitted contribution #${id} «${title}» (${area}) from a signed-in device.\n\n` +
@@ -359,9 +360,9 @@ patterns.push([/^\/api\/contributions\/(\d{1,12})$/, {
                   decided = COALESCE(decided, ?), decided_by = COALESCE(decided_by, ?) WHERE id = ?`)
         .run(now, ctx.actor.id, r.slug, reason, now, ctx.actor.id, c.id);
       db.prepare("INSERT OR IGNORE INTO module_contributors(slug, actor_id, added, added_by) VALUES (?,?,?,?)").run(r.slug, c.actor_id, now, ctx.actor.id);
-      if (oneStep) auditAppend(db, { kind: "contribution.admitted", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: "admitted and published in one step — " + reason });
+      if (oneStep) auditAppend(db, { kind: "contribution.admitted", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: "admitted and published in one step (reason on the contribution)" });
       auditAppend(db, { kind: "publish", actor_id: ctx.actor.id, resource: "contribution:" + c.id,
-        text: `published as modules/${r.slug}` + (sameReviewer ? " (no second reading: same actor admitted and published)" : "") + " — " + reason });
+        text: `published as modules/${r.slug}` + (sameReviewer ? " (no second reading: same actor admitted and published)" : "") + " (reason on the contribution)" });
       notify(submitter, c, "published", reason, `${PUBLIC}/modules/${r.slug}`);
       return send(ctx.res, 200, { ok: true, second_reading: !sameReviewer, item: publicRow(getContribution(c.id), true) });
     }
@@ -372,7 +373,7 @@ patterns.push([/^\/api\/contributions\/(\d{1,12})$/, {
       if (c.slug) { try { removeEntry("modules", c.slug); } catch (e) { auditAppend(db, { kind: "unpublish.failed", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: String(e.message).slice(0, 200) }); } }
       if (c.slug) { db.prepare("DELETE FROM module_contributors WHERE slug = ?").run(c.slug); db.prepare("DELETE FROM points WHERE slug = ?").run(c.slug); }
       db.prepare("UPDATE contributions SET status = 'admitted', published = NULL, published_by = NULL, slug = NULL, reason = ? WHERE id = ?").run(reason, c.id);
-      auditAppend(db, { kind: "unpublish", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: `taken back from the catalogue — ${reason}` });
+      auditAppend(db, { kind: "unpublish", actor_id: ctx.actor.id, resource: "contribution:" + c.id, text: "taken back from the catalogue (reason on the contribution)" });
       return send(ctx.res, 200, { ok: true, item: publicRow(getContribution(c.id), true) });
     }
 
@@ -380,7 +381,7 @@ patterns.push([/^\/api\/contributions\/(\d{1,12})$/, {
     db.prepare(`UPDATE contributions SET status = ?, decided = COALESCE(?, decided), decided_by = COALESCE(?, decided_by),
                 reason = COALESCE(?, reason) WHERE id = ?`).run(target, final ? now : null, final ? ctx.actor.id : null, reason || null, c.id);
     auditAppend(db, { kind: "contribution." + target, actor_id: ctx.actor.id, resource: "contribution:" + c.id,
-      text: reason || (action === "withdraw" ? "withdrawn by submitter" : target) });
+      text: (action === "withdraw" ? "withdrawn by submitter" : target) + (reason ? " (reason on the contribution)" : "") });
     if (target === "admitted" || target === "rejected") notify(submitter, c, target, reason, null);
     send(ctx.res, 200, { ok: true, item: publicRow(getContribution(c.id), true) });
   },
@@ -591,7 +592,7 @@ routes.set("POST /api/me/services", async (ctx) => {
   if (p.kind === "webhook") { hook = newToken(); hookHash = sha(hook); }
   const id = db.prepare(`INSERT INTO services(actor_id, name, what, grp, place, kind, target, hook_hash, interval_min, created, updated)
                          VALUES (?,?,?,?,?,?,?,?,?,?,?)`).run(ctx.actor.id, name, str(body.what, 160) || null, grp, place, p.kind, p.target, hookHash, interval, now, now).lastInsertRowid;
-  auditAppend(db, { kind: "service.add", actor_id: ctx.actor.id, resource: "service:" + id, text: `${p.kind} service «${name}» added` });
+  auditAppend(db, { kind: "service.add", actor_id: ctx.actor.id, resource: "service:" + id, text: `${p.kind} service added` });   // Kette pseudonym (2026-10-31): kein Dienstname (Freitext) in der Kette
   const r = db.prepare("SELECT * FROM services WHERE id = ?").get(id);
   await svcCheckAndStore(r);
   const out = { ok: true, item: svcRow(db.prepare("SELECT * FROM services WHERE id = ?").get(id)) };
@@ -614,7 +615,7 @@ patterns.push([/^\/api\/me\/services\/(\d{1,12})$/, {
     if (!ctx.actor || ctx.actor.kind !== "email") throw new HttpError(ctx.actor ? 403 : 401, "not allowed");
     const r = svcOf(ctx, id);
     db.prepare("DELETE FROM services WHERE id = ?").run(r.id);
-    auditAppend(db, { kind: "service.remove", actor_id: ctx.actor.id, resource: "service:" + r.id, text: `service «${r.name}» removed` });
+    auditAppend(db, { kind: "service.remove", actor_id: ctx.actor.id, resource: "service:" + r.id, text: "service removed" });
     send(ctx.res, 200, { ok: true });
   },
 }]);
