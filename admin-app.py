@@ -55,6 +55,24 @@ if not TOKEN_FILE.exists():
     TOKEN_FILE.chmod(0o600)
 TOKEN = TOKEN_FILE.read_text().strip()
 TAILNET_OPEN = True   # Konsole im Tailnet ohne Schlüssel; _src_ok() lässt nur Loopback und 100.64.0.0/10 durch
+# 2026-10-31 (Gap 2.1): im Tailnet nur Geräte des eigenen Kontos, nicht geteilte oder getaggte Knoten.
+TAILNET_LOGINS = {x.strip() for x in os.environ.get("ADMIN_TAILNET_LOGINS", "Giansn@github").split(",") if x.strip()}
+_WHOIS = {}   # ip -> (zeit, erlaubt)
+
+
+def _tailnet_owner(ip: str) -> bool:
+    hit = _WHOIS.get(ip)
+    if hit and time.time() - hit[0] < 300:
+        return hit[1]
+    ok = False
+    try:
+        r = subprocess.run(["tailscale", "whois", "--json", ip], capture_output=True, text=True, timeout=5)
+        w = json.loads(r.stdout) if r.returncode == 0 else {}
+        ok = (w.get("UserProfile") or {}).get("LoginName") in TAILNET_LOGINS and not (w.get("Node") or {}).get("Tags")
+    except Exception:
+        ok = False
+    _WHOIS[ip] = (time.time(), ok)
+    return ok
 
 
 def backup(p: Path) -> str:
@@ -1696,7 +1714,7 @@ class H(BaseHTTPRequestHandler):
         if ip in ("127.0.0.1", "::1"):
             return True
         try:
-            return ipaddress.ip_address(ip) in ipaddress.ip_network("100.64.0.0/10")
+            return ipaddress.ip_address(ip) in ipaddress.ip_network("100.64.0.0/10") and _tailnet_owner(ip)
         except ValueError:
             return False
 
