@@ -73,7 +73,7 @@
       c.appendChild(contact);
       var join = document.createElement("a"); join.href = "/request?kind=contribute&module=" + encodeURIComponent(e.slug); join.textContent = "offer your part ›"; c.appendChild(join);
       c.appendChild(document.createTextNode(" · "));
-      var mail = document.createElement("a"); mail.href = "mailto:sygnif@entrosana.com?subject=" + encodeURIComponent("Contribution to " + (e.title || e.slug)); mail.textContent = "sygnif@entrosana.com"; c.appendChild(mail);
+      var mail = document.createElement("a"); mail.href = "mailto:info@entrosana.com?subject=" + encodeURIComponent("Contribution to " + (e.title || e.slug)); mail.textContent = "info@entrosana.com"; c.appendChild(mail);
       c.appendChild(document.createTextNode(" · "));
       var tel = document.createElement("a"); tel.href = "tel:+41775297301"; tel.textContent = "077 529 73 01"; c.appendChild(tel);
     }

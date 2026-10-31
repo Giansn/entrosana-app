@@ -47,7 +47,7 @@ window.__catalogue = {
                                  ["Arbeitsblatt","https://entrosana.com/wp-content/uploads/2026/08/value-system-worksheet-de.pdf"]]}
     ],
     "gets":[
-     "A session a teacher can run without preparation from us",
+     "A session a teacher can run as it is",
      "The same material in English and German",
      "Yours to adapt: read it, run it with your class, change it"
     ]

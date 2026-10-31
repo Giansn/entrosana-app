@@ -22,7 +22,7 @@
                 admitted: "admitted, waiting for publication", published: "published as a draft", rejected: "rejected", withdrawn: "withdrawn" };
 
   function offline(sec) {
-    var n = el("p", "note note--idle", "The Hub's server is not reachable right now. Your files are safe on this device; export one from its project page and mail it to sygnif@entrosana.com.");
+    var n = el("p", "note note--idle", "The Hub's server is not reachable right now. Your files are safe on this device; export one from its project page and mail it to info@entrosana.com.");
     sec.appendChild(n);
   }
 

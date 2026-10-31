@@ -435,7 +435,7 @@
           '<a class="btn" href="' + openHref + '">Open project</a>';
         card.querySelector(".h3").textContent = p.title;
         card.querySelector(".resume__m").textContent =
-          (p.board ? p.title : p.seed) + " · " + pr.done + "/" + pr.total + " done" +
+          (p.board ? "" : p.seed + " · ") + pr.done + "/" + pr.total + " done" +   // Titel steht schon darüber (2026-10-31)
           (next ? " · next: " + (next.content || "").toLowerCase() : " · finished");
         if (p.board) {
           card.querySelector("a.btn").addEventListener("click", function () {

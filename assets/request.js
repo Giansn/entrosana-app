@@ -7,7 +7,7 @@
   var host = document.getElementById("request");
   if (!host) return;
   var q = new URLSearchParams(location.search), uid = 0, PHONE = "077 529 73 01", TEL = "tel:+41775297301";
-  var KINDS = [["module", "A module for my class or school"], ["track", "A track that does not exist yet"], ["tool", "A tool or connector"], ["service", "A service: run it with us, train us, advise us"], ["contribute", "Contribute to a module (goes to sygnif@entrosana.com)"], ["report", "Report a module (goes to sygnif@entrosana.com)"], ["other", "Something else"]];
+  var KINDS = [["module", "A module for my class or school"], ["track", "A subject we do not offer yet"], ["tool", "A tool or connector"], ["service", "A service: run it with us, train us, advise us"], ["contribute", "Contribute to a module"], ["report", "Report a module or tool"], ["other", "Something else"]];
   function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
   function field(label, input, help, optional) {
     var id = "rq-" + (++uid), f = el("div", "field"), l = el("label", null, label);
@@ -26,7 +26,7 @@
 
   var sec = el("section", "block hair");
   sec.appendChild(el("span", "eyebrow", "Ask entrosana"));
-  sec.appendChild(el("h1", "work__h", "Request a module, a track, a tool or a service"));
+  sec.appendChild(el("h1", "work__h", "Request a module, a tool or a service"));
   // Kein Vorspann unter dem Titel (Eigentümer 2026-09-11: «confusing»). Die Telefonnummer
   // wandert in die Regelzeile des Formulars, wo sie auf /contribute/submit auch steht.
   var card = el("div", "card submit"); sec.appendChild(card); host.appendChild(sec);

@@ -79,7 +79,7 @@
   var card = el("div", "card submit"); sec.appendChild(card); host.appendChild(sec);
 
   var form = el("form"); form.noValidate = true; card.appendChild(form);
-  var rule = el("p", "submit__rule", "Everything is required except the links. Replies come from sygnif@entrosana.com, or call ");
+  var rule = el("p", "submit__rule", "Everything is required except the links. Questions: info@entrosana.com, or call ");
   var tel = el("a", null, "077 529 73 01"); tel.href = "tel:+41775297301"; rule.appendChild(tel); rule.appendChild(document.createTextNode(".")); form.appendChild(rule);
 
   var g1 = group("Who you are");
@@ -167,7 +167,7 @@
       .catch(function () {
         go.disabled = false;
         say("idle", "The Hub's server is not reachable right now." + (p ? " Your file is safe on this device." : ""));
-        link("mailto:sygnif@entrosana.com?subject=" + encodeURIComponent("Proposal: " + title.value.trim()), "Mail it instead");
+        link("mailto:info@entrosana.com?subject=" + encodeURIComponent("Proposal: " + title.value.trim()), "Mail it instead");
       });
   });
 })();

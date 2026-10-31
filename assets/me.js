@@ -111,13 +111,13 @@
   // Abgemeldet: die Adresse nennen, der Verweis kommt per Mail und meldet dieses Gerät an.
   function signedOut(msg) {
     host.textContent = ""; target = host;
-    var sec = block("Your account", "Sign in with a link by mail", "No password. Anyone can register as a collector; contributing is approved by the team.");
+    var sec = block("Your account", "Sign in with a link by mail", "No password. Anyone can register; publishing under your name is approved by the team.");
     if (msg) sec.appendChild(el("p", "note note--" + msg.kind, msg.text));
     var card = el("div", "card submit"), form = el("form"); form.noValidate = true; card.appendChild(form); sec.appendChild(card);
     var email = el("input"); email.type = "email"; email.autocomplete = "email"; email.inputMode = "email"; email.maxLength = 254; email.required = true;
     var name = el("input"); name.type = "text"; name.autocomplete = "name"; name.maxLength = 120;
     var fE = field("Your e-mail", email, "We send the link there. Open it on the device you want to use; it works for 20 minutes.");
-    var fN = field("Your name", name, "Optional now, needed before you contribute.", true);
+    var fN = field("Your name", name, "Needed before you contribute.", true);
     form.appendChild(fE); form.appendChild(fN);
     // Alter (2026-09-10): Urteilsfähigkeit ab etwa 13; jüngere Lernende bringt eine Lehrperson oder ein Elternteil ein. Nichts davon wird gespeichert.
     var age = el("input"); age.type = "checkbox"; age.id = "age-ok"; var fA = el("div", "field me__age"); var la = el("label", "toggle"); la.htmlFor = "age-ok";
@@ -299,7 +299,7 @@
       api("/api/me/modules").then(function (r) {
         ml.textContent = ""; var items = r.s === 200 ? (r.j.items || []) : [];
         if (r.s === 200 && r.j.team) sm.insertBefore(el("p", "quiet", "As team you may edit every module of the catalogue."), ml);
-        if (!items.length) { var np = el("p", "quiet"); np.appendChild(document.createTextNode("No published module under your name yet. ")); var npa = el("a", null, "Propose a track"); npa.href = "/contribute/submit"; np.appendChild(npa); np.appendChild(document.createTextNode(" to start one.")); ml.appendChild(np); return; }
+        if (!items.length) { var np = el("p", "quiet"); np.appendChild(document.createTextNode("No published module under your name yet. ")); var npa = el("a", null, "Propose a module"); npa.href = "/contribute/submit"; np.appendChild(npa); np.appendChild(document.createTextNode(" to start one.")); ml.appendChild(np); return; }
         items.forEach(function (m) { ml.appendChild(row(m.url, m.title, [m.area, m.points === 1 ? "1 point" : m.points + " points"].filter(Boolean).join(" · "), STATE[m.state] || m.state || "", /finished|available|running/.test(m.state || ""))); });
       }).catch(function () { ml.textContent = ""; ml.appendChild(el("p", "quiet", "The Hub's server is not reachable; the list waits.")); });
     }
@@ -445,7 +445,7 @@
           api("/api/me/apply", { method: "POST", body: JSON.stringify({ text: v }) }).then(function (r) { ab.disabled = false; if (r.s === 202) refresh(); else note(aout, "warn", "Not sent: " + (r.j.error || r.s) + "."); }).catch(function () { ab.disabled = false; note(aout, "warn", "The Hub's server is not reachable right now."); });
         });
       }
-    } else sc.appendChild(el("p", "quiet", (EXPLAIN[me.standing] || "") + " Propose a track under /contribute/submit."));
+    } else sc.appendChild(el("p", "quiet", (EXPLAIN[me.standing] || "") + " Propose a module under /contribute/submit."));
 
 
     // ---------------------------------------------------------------- Review

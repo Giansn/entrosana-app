@@ -87,7 +87,7 @@
     if (r.s !== 200) { out.appendChild(el("p", "note note--warn", "Your modules could not be loaded. Try again in a moment.")); return; }
     var items = r.j.items || [];
     if (r.j.team) out.appendChild(el("p", "fine", "You are on the team: every module of the catalogue is listed, not only your own. Area descriptions are edited in the console."));
-    if (!items.length) { var p = el("p", "fine"); p.appendChild(document.createTextNode("No published module under your name yet. ")); var a = el("a", null, "Propose a track"); a.href = "/contribute/submit"; p.appendChild(a); p.appendChild(document.createTextNode(" to start one.")); out.appendChild(p); return; }
+    if (!items.length) { var p = el("p", "fine"); p.appendChild(document.createTextNode("No published module under your name yet. ")); var a = el("a", null, "Propose a module"); a.href = "/contribute/submit"; p.appendChild(a); p.appendChild(document.createTextNode(" to start one.")); out.appendChild(p); return; }
     items.forEach(function (m) { render(m, null); });
     if (location.hash) { var target = document.getElementById("m-" + location.hash.slice(1)); if (target) target.scrollIntoView(); }
   }).catch(function () { out.textContent = ""; out.appendChild(el("p", "note note--warn", "The Hub's server is not reachable right now.")); });

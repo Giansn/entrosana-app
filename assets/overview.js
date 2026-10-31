@@ -179,7 +179,7 @@
 
     if (!alles.length) {
       host.innerHTML = '<div class="card empty"><span class="eyebrow">Empty</span>' +
-        "<h4>No projects yet.</h4><p>Open a starting file from one of the three sections, " +
+        "<h4>No projects yet.</h4><p>Open a checklist from one of the three sections, " +
         "or create your own in the project view.</p>" +
         '<a class="btn" href="/project">Go to the project view</a></div>';
       return;
