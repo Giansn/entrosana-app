@@ -1,12 +1,20 @@
 # Hub project management — Claude ingest guide
 
+> **Status 2026-10-31 — read this first.** No page mounts the project view this file
+> describes: `app.js` draws it into `#project-view`, and no HTML page has that element
+> since 2026-09-08. **`/project` is drawn by `assets/project.js`** (board view, state in
+> `localStorage["entrosana-todo-demo:v3"]`, Hub checklists imported by `openFromQuery`).
+> `createOwn` was removed on 2026-10-31. Accounts and proposals go through
+> `api/server.mjs`; only project data stays client-side. Treat the sections below as the
+> record of the unmounted `app.js` implementation, not as the contract for `/project`.
+
 **Purpose:** read this file end-to-end before changing project, section, or task
 behaviour on **entrosana.app**. Do not call the Todoist API. Mirror **structure
 and interaction patterns** only; keep localStorage + sealed record trail.
 
 **Code:** `assets/app.js` · `assets/app.css` · page shell `project.html`  
 **State key:** `localStorage["entrosana-app:v1"]`  
-**Server:** static GET only (`serve.mjs`); all writes are client-side.
+**Server:** `serve.mjs` serves the pages (GET only); project data stays client-side.
 
 ---
 

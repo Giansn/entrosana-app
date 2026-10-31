@@ -4,9 +4,9 @@ You register with an e-mail address. There is no password: a link in a mail sign
 
 ## Steps
 
-1. Open [entrosana.app/me](https://entrosana.app/me) and enter your address.
+1. Press **Login** at the top of any page, or open [entrosana.app/me](https://entrosana.app/me), and enter your address.
 2. Tick the box that says you are 13 or older, or that you register on behalf of a younger learner as a teacher or parent. The Hub stores no age; it only asks.
-3. Press **Register**. The Hub mails you a link. It never says whether the address was known before.
+3. Press **Send me the link**. The Hub mails you a link. It never says whether the address was known before.
 4. Open the link on the device you want to use. It is good for 20 minutes and signs that device in for 30 days.
 
 You are now a **collector**: you can keep a workspace, invite others, give points, report modules, keep files and watch services. Publishing under your name needs contributor standing, see [Standings and roles](/concepts/standings-and-roles).
@@ -21,4 +21,4 @@ Every device signs in the same way, with its own link. When a device signs in to
 
 - **No mail.** The address may be mistyped, or the five-an-hour limit reached. Try again after an hour.
 - **Link expired.** Ask for a new one; a link works only once and only for 20 minutes.
-- **Wrong address registered.** Erase the account under **Export and erase** on the account page and register again.
+- **Wrong address registered.** Erase the account from the **Danger zone** on the account page and register again.

@@ -4,7 +4,7 @@ The Atrium is the coming forum of the entrosana Hub: the place to talk about mod
 
 ## What is here now
 
-- **Docs in development** under [/docs](/docs): the six pages of docs.entrosana.app as a working copy. Changes land here first, get read, and are taken over to the published docs from the console.
+- **Docs in development** under [/docs](/docs): the pages of docs.entrosana.app as a working copy. Changes land here first, get read, and are taken over to the published docs from the console.
 - **Nothing else yet.** No accounts, no posts. The forum arrives when it is ready.
 
 ## What the forum will be
