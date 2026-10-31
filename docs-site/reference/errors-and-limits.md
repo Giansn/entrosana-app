@@ -41,5 +41,5 @@ Counted in memory per hour, not stored.
 | services per account | 30 |
 | files per account | 200, 400 MB in total |
 | journal entry | 2000 characters |
-| proposal summary | 4000 characters; trail 12000; 10 file links |
+| proposal summary | 4000 characters; 10 file links |
 | module text | 4000 characters; 12 facts; 8 links |

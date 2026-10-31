@@ -23,7 +23,7 @@ Nothing enters the catalogue without the owner's step. This page describes the w
 
 ## The gate before publishing
 
-Publishing runs a set of checks and refuses if one fails: the submitter has a name, the submitter is a contributor, the record trail attached to the proposal verifies, area and title are set, the summary is there, and file links are well formed. The console shows the list, and the status page of the proposal shows the same.
+Publishing runs a set of checks and refuses if one fails: the submitter has a name, the submitter is a contributor, area and title are set, the summary is there, and file links are well formed. The console shows the list, and the status page of the proposal shows the same.
 
 ## What publishing does
 

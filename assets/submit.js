@@ -78,7 +78,7 @@
   // Ohne Datei kein Vorspann (Eigentümer 2026-09-11: «remove this text, its confusing»).
   // Der Absatz entfällt ganz statt leer zu bleiben, sonst stünde sein 1.6rem-Abstand als Loch unter dem Titel.
   if (p) sec.appendChild(el("p", "work__sub work__sub--wide",
-    "Prefilled from your file «" + p.title + "» on this device, with its " + st.records.filter(function (r) { return r.project === seed; }).length + " records."));
+    "Prefilled from your file «" + p.title + "» on this device."));
   var card = el("div", "card submit"); sec.appendChild(card); host.appendChild(sec);
 
   var form = el("form"); form.noValidate = true; card.appendChild(form);
@@ -144,12 +144,9 @@
     ev.preventDefault();
     var v = validate();
     if (v.fails.length) { say("warn", v.fails.length === 1 ? "One field needs attention." : v.fails.length + " fields need attention."); v.fails[0].input.focus(); return; }
-    var chain = st.records.map(function (r) { return r.h; });
-    var records = st.records.map(function (r, i) { return { i: i, t: r.t, kind: r.kind, text: r.text, project: r.project, h: r.h }; })
-                            .filter(function (r) { return r.project === seed; });
+    // The device's record trail stays on the device: nothing of it goes with a proposal (owner 2026-11-01).
     var body = { email: email.value.trim(), name: name.value.trim(), title: title.value.trim(), area: area.value,
-                 summary: summary.value.trim(), website: hp.value, files: v.files, attribution: keep.checked ? "keep" : "remove",
-                 trail: p && hub ? hub.markdown(p).slice(0, 12000) : "", records: records, chain: records.length ? chain : [] };
+                 summary: summary.value.trim(), website: hp.value, files: v.files, attribution: keep.checked ? "keep" : "remove" };
     var headers = { "Content-Type": "application/json" }; if (tk) headers["Authorization"] = "Bearer " + tk.token;
     go.disabled = true; say("idle", "Sending…");
     fetch("/api/contributions", { method: "POST", headers: headers, body: JSON.stringify(body) })
@@ -160,8 +157,6 @@
           remember(r.j.id);
           var msg = r.j.status === "confirmed" ? "Received and confirmed as contribution #" + r.j.id + "."
                   : "Received as #" + r.j.id + ". We sent a link to " + email.value.trim() + "; the proposal counts once you open it.";
-          if (r.j.trail_ok === 1) msg += " Your record trail verified on the server.";
-          if (r.j.trail_ok === 0) msg += " The record trail did not verify; it is stored as sent.";
           say("ok", msg); link("/contribute/status?id=" + r.j.id, "Follow its status");
           go.disabled = true; go.textContent = "Sent";
           if (hub) hub.say("Sent to the Hub.", "ok"); markDone();

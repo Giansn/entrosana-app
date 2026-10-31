@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 import { open } from "./db.mjs";
 import { append as auditAppend, verify as auditVerify } from "./audit.mjs";
 import { can, rolesOf } from "./policy.mjs";
-import { validate as validateContribution, actionFor, verifyTrail, publishChecks, EMAIL } from "./contributions.mjs";
+import { validate as validateContribution, actionFor, publishChecks, EMAIL } from "./contributions.mjs";
 import { appendEntry, removeEntry, updateEntry as updateCatalogueEntry, entryFor, readCatalogue } from "./publish.mjs";
 import { exportActor, dormantSweep } from "./maintenance.mjs";
 import { standingOf, currentApplication, openApplication, listApplications, decideApplication } from "./applications.mjs";
@@ -268,13 +268,10 @@ routes.set("POST /api/contributions", async (ctx) => {
     return send(ctx.res, 202, { ok: true, received: true });
   }
   if (!v.ok) throw new HttpError(400, v.error);
-  const { email, name, title, area, summary, trail, files, org_id, records, chain, attribution } = v.value;
-  let trailOk = null, trailJson = "[]";
-  if (records.length || chain.length) {
-    const tv = verifyTrail(chain, records);
-    trailOk = tv.ok ? 1 : 0; trailJson = JSON.stringify(records);
-    if (!tv.ok) auditAppend(db, { kind: "trail.mismatch", actor_id: null, resource: null, text: tv.why });
-  }
+  const { email, name, title, area, summary, files, org_id, attribution } = v.value;
+  // A proposal carries no record trail (owner 2026-11-01): the device's trail stays on the device.
+  // Whatever an older cached page still sends in trail/records/chain is ignored, not stored.
+  const trail = "", trailJson = "[]", trailOk = null;
   if (limited("ip:" + ctx.ip) || limited("email:" + email)) throw new HttpError(429, "too many requests");
   const actor = actorForEmail(email, name);
   // Wer schon eine gültige Marke für dieselbe Adresse trägt, hat sie bestätigt.

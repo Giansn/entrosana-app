@@ -8,7 +8,7 @@ Everything the Hub stores has a deletion rule. The record chain is the one excep
 | Profile | what you add: name, organisation, role, line, biography, place, contact, website, languages, picture | until you change or erase it |
 | Journal | your entries, public or private | until you delete them or the account |
 | Files | the files you upload, with title and public flag | until you delete them; deleted files leave the backups after 14 days |
-| Proposals | name, title, area, summary, links, the record trail you attach | an unconfirmed proposal 7 days; a published module while it is in the catalogue |
+| Proposals | name, title, area, summary, links | an unconfirmed proposal 7 days; a published module while it is in the catalogue |
 | Applications | the text you write to become a contributor | 24 months after the decision |
 | Requests and reports | name, address, organisation, kind, text | 180 days |
 | Invitations | the address you invite and your message | unanswered ones 180 days |

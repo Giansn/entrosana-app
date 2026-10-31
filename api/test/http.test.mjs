@@ -65,3 +65,21 @@ test("export enthält profil, bild, dateien, punkte und module; löschung räumt
   db.close();
   rmSync(dir, { recursive: true, force: true });
 });
+
+test("ein vorschlag speichert keine spur, auch wenn eine alte seite sie mitschickt (2026-11-01)", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "entrosana-http-"));
+  open(join(dir, "hub.sqlite")).db.close();
+  const port = 40000 + Math.floor(Math.random() * 20000);
+  const child = await up(dir, port);
+  try {
+    const body = { email: "neu@x.ch", name: "Neu", title: "A module", area: "social", summary: "What it does.", files: [],
+                   trail: "# alte spur", records: [{ i: 0, t: NOW, kind: "view", text: "Page opened — /x", project: null, h: "ab" }], chain: ["ab"] };
+    const r = await fetch(`http://127.0.0.1:${port}/api/contributions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    assert.equal(r.status, 202);
+    assert.equal((await r.json()).trail_ok, null);
+  } finally { child.kill(); }
+  const { db } = open(join(dir, "hub.sqlite"));
+  const c = db.prepare("SELECT trail_md, trail_json, trail_ok FROM contributions").get();
+  assert.equal(c.trail_md, ""); assert.equal(c.trail_json, "[]"); assert.equal(c.trail_ok, null);
+  db.close(); rmSync(dir, { recursive: true, force: true });
+});

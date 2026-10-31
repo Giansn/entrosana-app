@@ -94,7 +94,7 @@
       if (c.status === "admitted" || c.status === "reviewing") {
         var fails = c.checks || [];
         out.appendChild(el("span", "eyebrow", "Before publication"));
-        out.appendChild(el("p", "note " + (fails.length ? "note--warn" : "note--ok"), fails.length ? "The gate is closed: " + fails.join("; ") : "All checks pass: name, standing, trail, area, title, proposal, file links."));
+        out.appendChild(el("p", "note " + (fails.length ? "note--warn" : "note--ok"), fails.length ? "The gate is closed: " + fails.join("; ") : "All checks pass: name, standing, area, title, proposal, file links."));
         if (fails.some(function (x) { return /not approved as contributor/.test(x); })) { var ap = el("p", "fine"); ap.appendChild(document.createTextNode("The person is a collector. Approve them under ")); var apa = el("a", null, "Applications"); apa.href = "/review?tab=applications"; ap.appendChild(apa); ap.appendChild(document.createTextNode(" if they applied.")); out.appendChild(ap); }
       }
       // Veröffentlichen und Zurücknehmen sind seit 2026-09-10 allein Sache des Eigentümers; Prüfende sehen diese Wege nicht.
