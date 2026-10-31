@@ -178,90 +178,79 @@
         <p class="muted">Nothing here fits? The ways in above are open the whole year.</p>
       </section>
 
+      <!-- Zwei Ebenen (Eigentümer 2026-10-31): was früher vier Textblöcke waren (Ablauf, Formen,
+           Gegenleistung, Regeln) und die Beispiel-Checklisten, je eine Zeile; der Inhalt auf Klick.
+           Die Regeln stehen nur noch kurz hier, ausführlich auf /guidelines. Ablauf = propose.js. -->
       <section class="block hair">
-        <span class="eyebrow">What happens to what you send</span>
-        <ol class="steps">
-          <li><b>It arrives</b><span>Through <a href="/contribute/submit">Propose a module</a>, or at info@entrosana.com. Every
-            submission gets an answer. Proposals from the form are sorted by Claude, a language model run by Anthropic in the USA; a person reads and decides.</span></li>
-          <li><b>It is read against what it claims</b><span>The same standard the site holds
-            itself to: does the thing do what it says, and where does it break.</span></li>
-          <li><b>You get a plain yes, no, or not yet</b><span>With the reason. «Not yet» names
-            what is missing.</span></li>
-          <li><b>It lands with your name on it</b><span>Your name stays on your work, and the
-            record of the decision stays checkable afterwards.</span></li>
-        </ol>
-      </section>
-
-      <!-- Was der Hub heute annimmt. Jede Karte zeigt auf ein Stueck, das es
-           schon gibt — eine Form abzuschauen ist schneller als eine Vorgabe
-           zu lesen. -->
-      <section class="block hair">
-        <span class="eyebrow">What a contribution looks like</span>
-        <p class="work__sub measure">Three shapes the Hub takes today. Each one already exists
-          once, so you can copy the form instead of guessing it.</p>
-        <div class="cards">
-          <a class="mcard" href="/modules/your-value-system">
-            <span class="mcard__head"><span class="chip">module</span></span>
-            <p class="mcard__t">A module</p>
-            <p class="mcard__l">Bring the material, the age group, and one sentence on what the
-              learner can do afterwards. Discussion prompts and thinking pauses belong inside the
-              slides, so a teacher can run it without preparation. «Value System» is the
-              shape: 9 slides, a 2-page worksheet, two languages.</p>
-            <span class="mcard__m"><span>see the shape</span><span class="mcard__go">open ›</span></span>
-          </a>
-          <a class="mcard" href="https://entrosana.com/service">
-            <span class="mcard__head"><span class="chip">api</span></span>
-            <p class="mcard__t">An API connector</p>
-            <p class="mcard__l">Connectors and workflow adapters against the platforms schools
-              already use, built by API engineers with an educative approach. Say which routine it
-              takes over, what a correct result looks like, and where the record of each call
-              lands. Responsibility stays with the person, not with the connector.</p>
-            <span class="mcard__m"><span>service, on entrosana.com</span><span class="mcard__go">open ↗</span></span>
-          </a>
-          <a class="mcard" href="/tools/lehrplan21-citation">
-            <span class="mcard__head"><span class="chip">mcp</span></span>
-            <p class="mcard__t">An MCP tool</p>
-            <p class="mcard__l">A tool an assistant can call, on one condition: it answers from a
-              source that can be checked, never from memory. The Lehrplan 21 tool is the shape — a
-              local index of be.lehrplan.ch, so a citation can be verified instead of trusted.
-              Bring the repository, the tool description, and what it refuses to answer.</p>
-            <span class="mcard__m"><span>see the shape</span><span class="mcard__go">open ›</span></span>
-          </a>
+        <span class="eyebrow">Good to know</span>
+        <div class="folds">
+          <details class="fold">
+            <summary><b>How a proposal goes in</b><span>Five steps, from the form to the catalogue.</span></summary>
+            <ol class="propose__steps fold__body">
+              <li><b>Send</b><span>Fill in the form. No account needed.</span></li>
+              <li><b>Confirm</b><span>We mail you a link. Open it within 7 days, or the proposal is deleted.</span></li>
+              <li><b>Review</b><span>The team reads it. Claude, a language model by Anthropic in the USA, helps sort; a person decides.</span></li>
+              <li><b>Decision</b><span>Admitted or not, by mail, with the reason.</span></li>
+              <li><b>Published</b><span>It goes into the catalogue under your name. For that you need an account the team has approved for contributing; you apply on your account page.</span></li>
+            </ol>
+          </details>
+          <details class="fold">
+            <summary><b>What a contribution looks like</b><span>A module, an API connector or an MCP tool.</span></summary>
+            <div class="fold__body">
+            <div class="cards">
+              <a class="mcard" href="/modules/your-value-system">
+                <span class="mcard__head"><span class="chip">module</span></span>
+                <p class="mcard__t">A module</p>
+                <p class="mcard__l">Bring the material, the age group, and one sentence on what the
+                  learner can do afterwards. Discussion prompts and thinking pauses belong inside the
+                  slides, so a teacher can run it without preparation. «Value System» is the
+                  shape: 9 slides, a 2-page worksheet, two languages.</p>
+                <span class="mcard__m"><span>see the shape</span><span class="mcard__go">open ›</span></span>
+              </a>
+              <a class="mcard" href="https://entrosana.com/service">
+                <span class="mcard__head"><span class="chip">api</span></span>
+                <p class="mcard__t">An API connector</p>
+                <p class="mcard__l">Connectors and workflow adapters against the platforms schools
+                  already use, built by API engineers with an educative approach. Say which routine it
+                  takes over, what a correct result looks like, and where the record of each call
+                  lands. Responsibility stays with the person, not with the connector.</p>
+                <span class="mcard__m"><span>service, on entrosana.com</span><span class="mcard__go">open ↗</span></span>
+              </a>
+              <a class="mcard" href="/tools/lehrplan21-citation">
+                <span class="mcard__head"><span class="chip">mcp</span></span>
+                <p class="mcard__t">An MCP tool</p>
+                <p class="mcard__l">A tool an assistant can call, on one condition: it answers from a
+                  source that can be checked, never from memory. The Lehrplan 21 tool is the shape — a
+                  local index of be.lehrplan.ch, so a citation can be verified instead of trusted.
+                  Bring the repository, the tool description, and what it refuses to answer.</p>
+                <span class="mcard__m"><span>see the shape</span><span class="mcard__go">open ›</span></span>
+              </a>
+            </div>
+            </div>
+          </details>
+          <details class="fold">
+            <summary><b>What you get back</b><span>A review with reasons, help, and your name on the work.</span></summary>
+            <ul class="fold__body">
+              <li>A review with its reasons written down, that you can argue with</li>
+              <li>Runway: time, machines, or someone who knows the subject</li>
+              <li>Your work carried on under your name, under AGPL-3.0</li>
+            </ul>
+          </details>
+          <details class="fold">
+            <summary><b>The rules</b><span>AGPL-3.0, your name on it, no data about children.</span></summary>
+            <ul class="fold__body">
+              <li>Everything is AGPL-3.0, published under your name.</li>
+              <li>Students are welcome; bring a teacher or a guardian along.</li>
+              <li>Never send personal data of children; name the group, not the child.</li>
+              <li>Disagree with the work, not with the person.</li>
+              <li>All of it in one page: <a href="/guidelines">the guidelines</a>.</li>
+            </ul>
+          </details>
+          <details class="fold">
+            <summary><b>More checklists</b><span>Examples of how a checklist is built.</span></summary>
+            <div class="seedlist fold__body" data-seed-list="tools,modules"></div>
+          </details>
         </div>
-      </section>
-
-
-      <section class="block hair">
-        <span class="eyebrow">What you can ask for in return</span>
-        <ul class="measure">
-          <li>A review with its reasons written down, that you can argue with</li>
-          <li>Runway: time, machines, or someone who knows the subject</li>
-          <li>Your work carried on under your name, under AGPL-3.0</li>
-        </ul>
-      </section>
-
-      <section class="block hair">
-        <span class="eyebrow">The rules, short</span>
-        <ul class="measure">
-          <li>Everything in the Hub is AGPL-3.0. What you send in is published under it too, with
-            your name on it.</li>
-          <li>Students are welcome. If you are at school, bring a teacher or a guardian into the
-            thread — not as a gatekeeper, as a second pair of eyes.</li>
-          <li>Never send us the personal data of children. A module report needs the group, not
-            the names.</li>
-          <li>Disagree with the work, not with the person. That is the whole code of conduct.</li>
-          <li>Schools: the Hub holds no pupil accounts and no pupil data. Teachers and schools register as adults; a module report names the group, never the child. The processing register is available on request at info@entrosana.com.</li>
-          <li>All of it in one page: <a href="/guidelines">the guidelines</a>.</li>
-        </ul>
-      </section>
-
-      <!-- Die übrigen Checklisten aus Projects, als Beispiele; eingeklappt, damit die Seite kurz bleibt (2026-10-31).
-           Gezeichnet von app.js paintSeedList aus seeds.js. -->
-      <section class="block hair">
-        <details class="more">
-          <summary>More checklists, as examples of the shape</summary>
-          <div class="seedlist" data-seed-list="tools,modules"></div>
-        </details>
       </section>
     </div>
   </main>
