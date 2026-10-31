@@ -487,7 +487,8 @@
   function head(p) {
     var h = el("div", "view__head");
     var title = el("h1", "view__title");
-    title.appendChild(el("span", "view__hash", "#"));
+    var hash = el("span", "view__hash", "#"); hash.setAttribute("aria-hidden", "true");   // Zierde: Vorleser sagen sonst «Nummer» vor dem Namen
+    title.appendChild(hash);
     var inp = el("input");
     inp.value = p.name;
     inp.addEventListener("change", function () {
