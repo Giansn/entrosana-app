@@ -381,8 +381,8 @@ die Anbieter können die Kopien nicht lesen. Sicherungen bleiben vorerst ohne fe
 
 ### 9. Wer sonst Daten erhält
 
-Cloudflare, Inc., USA (Auslieferung, Sicherheit, Tunnel, eine verschlüsselte
-Sicherungskopie); Proton AG, Schweiz (Mail); GitHub, Inc., USA (Code-Archiv mit
+Cloudflare, Inc., USA (Auslieferung, Sicherheit, Tunnel); Proton AG, Schweiz (Mail,
+eine verschlüsselte Sicherungskopie); GitHub, Inc., USA (Code-Archiv mit
 dem Katalog, der die Namen veröffentlichter Beitragender enthält); Anthropic,
 PBC, USA (das Sprachmodell, das das Postfach sygnif@ liest). Cloudflare und
 GitHub nennen in ihren Datenschutzerklärungen die Zertifizierung unter dem
