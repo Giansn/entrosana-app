@@ -176,10 +176,20 @@ export function updateEntry(section, slug, fields, path = CATALOGUE) {
 
 // Aus einem Beitrag den Eintrag bauen. Kein Wort wird erfunden: Texte kommen
 // aus der Einreichung, der Rest ist Kennzeichnung.
+// Vorspann: der erste Satz auf einer Zeile. Ist er länger als max, wird er an der
+// letzten Wortgrenze davor gekürzt und mit «…» markiert (vorher hart nach 200
+// Zeichen, mitten im Wort und ohne Zeichen, dass etwas fehlt).
+export function ledeOf(summary, max = 200) {
+  const first = String(summary || "").split(/(?<=[.!?])\s+/)[0].replace(/\s+/g, " ").trim();
+  if (first.length <= max) return first;
+  const cut = first.slice(0, max - 1);
+  const end = /\s/.test(first[max - 1]) ? cut : cut.replace(/\s+\S*$/, "");
+  return (end || cut).replace(/[\s,;:.–-]+$/, "") + "…";
+}
 export function entryFor(c, actor) {
   const by = (actor && actor.name) || "";
   const summary = String(c.summary || "");
-  const lede = summary.split(/(?<=[.!?])\s+/)[0].slice(0, 200);
+  const lede = ledeOf(summary);
   const files = (() => { try { return JSON.parse(c.files_json || "[]"); } catch { return []; } })();
   const entry = {
     // 2026-09-09: veröffentlicht heisst veröffentlicht — keine Entwurfsmarke mehr. Der Stand
