@@ -1868,8 +1868,8 @@
         });
         row.appendChild(out);
       } else {
-        var inn = document.createElement("a"); inn.className = "btn rail__authbtn"; inn.href = "/me"; inn.textContent = "Sign in"; row.appendChild(inn);
-        var reg = document.createElement("a"); reg.className = "btn btn--ghost rail__authbtn"; reg.href = "/me"; reg.textContent = "Register"; row.appendChild(reg);
+        // Anmelden und Registrieren sind derselbe Weg (Link per Mail auf /me): ein Knopf (Eigentümer 2026-10-31).
+        var inn = document.createElement("a"); inn.className = "btn rail__authbtn"; inn.href = "/me"; inn.textContent = "Login"; row.appendChild(inn);
       }
     });
   }
