@@ -2538,3 +2538,7 @@ h1, h2, h3, h4, .h3, .work__h, .work__h2, .view__title, .pf__name, .hero__name, 
 /* Landeseite: Anmeldeknopf im Kopf (2026-10-31), rechts vor dem Themenschalter. */
 .solo__top .solo__acct{ margin-left:auto; padding:.45rem .95rem; font-size:var(--step--1) }
 .solo__top .solo__acct + .iconbtn{ margin-left:0 }
+
+/* Nicht angemeldet: kein «?»-Kreis und kein «Not signed in» mehr, nur der Knopf «Login»
+   (Eigentümer 2026-10-31). app.js setzt .is-in, sobald ein Login auf dem Gerät liegt. */
+.rail__acct:not(.is-in){ display:none }
