@@ -41,6 +41,7 @@ const JS = "text/javascript; charset=utf-8";
 const ROUTES = new Map([
   ["/",           { file: "index.html",      type: HTML }],
   ["/start",      { file: "start.html",      type: HTML }],   // Landeseite (2026-09-11)
+  ["/start-v2",   { file: "start-v2.html",   type: HTML }],   // Landeseite Entwurf 2, Vorschau (2026-10-31), nicht in der Sitemap
   ["/tools",      { file: "tools.html",      type: HTML }],
   ["/modules",    { file: "modules.html",    type: HTML }],
   ["/contribute", { file: "contribute.html", type: HTML }],
@@ -92,6 +93,10 @@ const ROUTES = new Map([
   ["/assets/fonts/inconsolata-latin-ext.woff2", { file: "assets/fonts/inconsolata-latin-ext.woff2", type: "font/woff2" }],
   // Vorschaubild für geteilte Links. Wird nicht von der Seite geladen, sondern
   // von fremden Diensten geholt, deshalb greift die CSP hier nicht.
+  // Drei Folien aus «Value System» für die Landeseite (Eigentümer erlaubt 2026-10-31).
+  ["/assets/vs-slide-1.webp", { file: "assets/vs-slide-1.webp", type: "image/webp" }],
+  ["/assets/vs-slide-2.webp", { file: "assets/vs-slide-2.webp", type: "image/webp" }],
+  ["/assets/vs-slide-5.webp", { file: "assets/vs-slide-5.webp", type: "image/webp" }],
   ["/assets/share-1200x630.png", { file: "assets/share-1200x630.png", type: "image/png" }],
 ]);
 
