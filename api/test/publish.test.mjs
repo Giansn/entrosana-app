@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 
 const dir = mkdtempSync(join(tmpdir(), "cat-"));
 process.env.CATALOGUE_BACKUPS = join(dir, "bak");
-const { appendEntry, removeEntry, readCatalogue, entryFor, slugify } = await import("../publish.mjs");
+const { appendEntry, removeEntry, readCatalogue, entryFor, slugify, ledeOf } = await import("../publish.mjs");
 const SRC = new URL("../../assets/catalogue.js", import.meta.url).pathname;
 const copy = join(dir, "catalogue.js");
 copyFileSync(SRC, copy);
@@ -50,4 +50,19 @@ test("entfernen stellt die Datei wieder her, bis auf das Gleis", () => {
 test("slugify", () => {
   assert.equal(slugify("Über Wälder & Wiesen!"), "uber-walder-wiesen");
   assert.equal(slugify("   "), "contribution");
+});
+
+test("Vorspann: erster Satz; zu lang heisst an der Wortgrenze gekürzt, mit «…»", () => {
+  assert.equal(ledeOf("Ten minutes of looking down. Then a map."), "Ten minutes of looking down.");
+  assert.equal(ledeOf("One line\nover two."), "One line over two.");
+  // Der Fall vom 2026-09-09: ein erster Satz über 200 Zeichen endete auf «… CPU and GPU sh».
+  const long = "An 11-slide deck on the difference between a dedicated GPU (its own VRAM, reached over PCIe) and unified memory " +
+               "(CPU and GPU share one pool): what each looks like in a machine, the two numbers that decide, and the setup each one demands.";
+  const l = ledeOf(long);
+  assert.ok(l.length <= 200, `länger als 200: ${l.length}`);
+  assert.ok(l.endsWith("…"));
+  const words = l.slice(0, -1).split(" "), last = words[words.length - 1];
+  assert.ok(long.split(/[\s]+/).some(w => w === last || w.replace(/[,;:.]+$/, "") === last), `letztes Wort abgeschnitten: «${last}»`);
+  assert.equal(entryFor({ id: 1, title: "T", area: "technical", summary: long, files_json: "[]" }, { name: "N" }).lede, l);
+  assert.equal(ledeOf("x".repeat(250)).length, 200);   // ein einziges langes Wort: hart gekürzt, aber markiert
 });

@@ -155,9 +155,14 @@
         go.disabled = false;
         if (r.s === 202 && r.j.id) {
           remember(r.j.id);
+          // mail === false: gespeichert, aber der Bestätigungsverweis ging nicht hinaus (etwa die
+          // Mailgrenze je Stunde). Nicht «we sent a link» behaupten; eine Anmeldung auf /me mit
+          // derselben Adresse bestätigt offene Vorschläge ebenfalls (GET /api/verify).
+          var unsent = r.j.status !== "confirmed" && r.j.mail === false;
           var msg = r.j.status === "confirmed" ? "Received and confirmed as contribution #" + r.j.id + "."
+                  : unsent ? "Received as #" + r.j.id + ", but the confirmation mail could not be sent just now. Sign in on /me with " + email.value.trim() + " within 7 days to confirm it, or write to info@entrosana.com."
                   : "Received as #" + r.j.id + ". We sent a link to " + email.value.trim() + "; the proposal counts once you open it.";
-          say("ok", msg); link("/contribute/status?id=" + r.j.id, "Follow its status");
+          say(unsent ? "warn" : "ok", msg); link(unsent ? "/me" : "/contribute/status?id=" + r.j.id, unsent ? "Sign in to confirm" : "Follow its status");
           go.disabled = true; go.textContent = "Sent";
           if (hub) hub.say("Sent to the Hub.", "ok"); markDone();
         } else if (r.s === 429) say("warn", "Too many attempts from here; try again in an hour.");
