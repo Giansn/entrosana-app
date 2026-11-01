@@ -111,7 +111,7 @@
   // Abgemeldet: die Adresse nennen, der Verweis kommt per Mail und meldet dieses Gerät an.
   function signedOut(msg) {
     host.textContent = ""; target = host;
-    var sec = block("Your account", "Sign in with a link by mail", "No password. Anyone can register; publishing under your name is approved by the team.");
+    var sec = block("Your account", "Sign in or create an account", "One link by mail does both, no password. Anyone can join; publishing under your name is approved by the team.");
     if (msg) sec.appendChild(el("p", "note note--" + msg.kind, msg.text));
     var card = el("div", "card submit"), form = el("form"); form.noValidate = true; card.appendChild(form); sec.appendChild(card);
     var email = el("input"); email.type = "email"; email.autocomplete = "email"; email.inputMode = "email"; email.maxLength = 254; email.required = true;
