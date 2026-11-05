@@ -299,8 +299,12 @@ createServer((req, res) => {
 
   // Host und Schema kommen durch den Tunnel unverändert an: cloudflared reicht
   // den Host durch, die Cloudflare-Kante setzt X-Forwarded-Proto auf das
-  // Schema des Besuchers.
-  const host = String(req.headers.host || "").split(":")[0].toLowerCase();
+  // Schema des Besuchers. Hinter einem Proxy auf derselben Maschine (Apache
+  // auf Metanet, 2026-11-05) steht im Host nur 127.0.0.1:<port>; der echte
+  // Name kommt dann als X-Forwarded-Host. Nur von 127.0.0.1 geglaubt.
+  const loopback = ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(req.socket.remoteAddress);
+  const fwdHost = loopback ? String(req.headers["x-forwarded-host"] || "").split(",")[0].trim() : "";
+  const host = String(fwdHost || req.headers.host || "").split(":")[0].toLowerCase();
   const proto = String(req.headers["x-forwarded-proto"] || "").toLowerCase();
   if (host === "www." + CANON || (host === CANON && proto === "http")) {
     res.writeHead(301, { "Location": "https://" + CANON + req.url, "Content-Length": 0 }).end();
