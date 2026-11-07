@@ -19,8 +19,33 @@
   function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
   function langName(c) { for (var i = 0; i < LANGS.length; i++) if (LANGS[i][0] === c) return LANGS[i][2] || LANGS[i][1]; return c; }
   function day(iso) { return iso ? String(iso).slice(0, 10) : ""; }
+  // Datum als TT.MM.JJJJ (Eigentümer, 2026-11-07).
+  function dmy(iso) { var d = day(iso); return d ? d.slice(8, 10) + "." + d.slice(5, 7) + "." + d.slice(0, 4) : ""; }
   // Tage wie auf /me: heute, gestern, dann das Datum.
-  function dayLabel(iso) { var d = day(iso), today = new Date().toISOString().slice(0, 10), yest = new Date(Date.now() - 864e5).toISOString().slice(0, 10); return d === today ? "Today" : d === yest ? "Yesterday" : d.slice(5); }
+  function dayLabel(iso) { var d = day(iso), today = new Date().toISOString().slice(0, 10), yest = new Date(Date.now() - 864e5).toISOString().slice(0, 10); return d === today ? "Today" : d === yest ? "Yesterday" : dmy(d); }
+  // Vorschau eines PDF im Rahmen: die API liefert mit ?inline=1 statt als Anhang,
+  // die CSP erlaubt frame-src 'self'. Ein Dialog für die ganze Seite, Inhalt je Klick.
+  var pdfDlg = null;
+  function openPdf(url, title) {
+    if (!pdfDlg) {
+      pdfDlg = el("dialog", "pdfdlg");
+      var box = el("div", "pdfdlg__box");
+      box.appendChild(el("h2", "pdfdlg__title", ""));
+      var frame = el("iframe", "pdfdlg__frame"); frame.title = "PDF preview"; box.appendChild(frame);
+      var foot = el("div", "pdfdlg__foot");
+      var open = el("a", null, "Open in a new tab ↗"); open.target = "_blank"; open.rel = "noopener"; foot.appendChild(open);
+      foot.appendChild(el("a", null, "Download"));
+      var close = el("button", null, "Close"); close.type = "button"; close.addEventListener("click", function () { pdfDlg.close(); }); foot.appendChild(close);
+      box.appendChild(foot); pdfDlg.appendChild(box);
+      pdfDlg.addEventListener("click", function (ev) { if (ev.target === pdfDlg) pdfDlg.close(); });
+      pdfDlg.addEventListener("close", function () { frame.src = "about:blank"; });
+      document.body.appendChild(pdfDlg);
+    }
+    pdfDlg.querySelector(".pdfdlg__title").textContent = title;
+    pdfDlg.querySelector(".pdfdlg__frame").src = url + "?inline=1";
+    var links = pdfDlg.querySelectorAll(".pdfdlg__foot a"); links[0].href = url + "?inline=1"; links[1].href = url;
+    pdfDlg.showModal();
+  }
   function block(eyebrow, h, sub) { var s = el("section", "block"); if (eyebrow) s.appendChild(el("span", "eyebrow", eyebrow)); if (h) s.appendChild(el("h1", "work__h", h)); if (sub) s.appendChild(el("p", "work__sub work__sub--wide", sub)); host.appendChild(s); return s; }
   // Der Katalog liefert Bereich, Vorspann, Umfang und Stand zu einem Slug.
   function catalogue(slug) {
@@ -56,32 +81,41 @@
     if (line) mid.appendChild(el("p", "hero__line", line));
     var meta = el("div", "hero__meta");
     meta.appendChild(el("span", "tag", WORDS[p.standing] || p.standing));
-    meta.appendChild(el("span", null, "on the Hub since " + p.since));
+    meta.appendChild(el("span", null, "on the Hub since " + dmy(p.since)));
     if (pr.place) meta.appendChild(el("span", null, pr.place));
     if (pr.about && role) meta.appendChild(el("span", null, [role, pr.org].filter(Boolean).join(" · ")));
     if (pr.langs && pr.langs.length) meta.appendChild(el("span", null, pr.langs.map(langName).join(" · ")));
     mid.appendChild(meta); hero.appendChild(mid);
     var act = el("div", "hero__act");
-    if (p.contact) { var mw = el("a", "btn", "Write to " + p.name.split(" ")[0]); mw.href = "mailto:" + p.contact; act.appendChild(mw); act.appendChild(el("span", "hero__contact muted", p.contact)); }
-    if (pr.website) { var w = el("a", "btn" + (p.contact ? " btn--ghost" : ""), pr.website.replace(/^https:\/\//, "") + " ↗"); w.href = pr.website; w.rel = "noopener"; act.appendChild(w); }
-    if (!p.contact) { var wr = el("a", "btn btn--ghost", "Write to the Hub"); wr.href = "/request"; act.appendChild(wr); }
+    // Ein Knopf «Contact contributor» (Eigentümer, 2026-11-07). Mit öffentlicher
+    // Adresse aus /me geht die Mail direkt an die Person; ohne läuft sie über die
+    // Hub-Adresse, denn die Anmeldeadresse bleibt privat, wie auf /me versprochen.
+    var cb = el("a", "btn", "Contact contributor");
+    if (p.contact) { cb.href = "mailto:" + p.contact + "?subject=" + encodeURIComponent("Via the entrosana Hub"); act.appendChild(cb); act.appendChild(el("span", "hero__contact muted", p.contact)); }
+    else { cb.href = "mailto:info@entrosana.com?subject=" + encodeURIComponent("For " + p.name + " (entrosana Hub)"); act.appendChild(cb); act.appendChild(el("span", "hero__contact muted", "via info@entrosana.com")); }
+    if (pr.website) { var w = el("a", "btn btn--ghost", pr.website.replace(/^https:\/\//, "") + " ↗"); w.href = pr.website; w.rel = "noopener"; act.appendChild(w); }
     hero.appendChild(act); sec.appendChild(hero);
 
     // Zahlenband: nur, was öffentlich belegbar ist. Aufzeichnungen liegen auf
     // dem Gerät der Person und stehen deshalb nicht hier.
     var fmt = function (b) { return b >= 1048576 ? (b / 1048576).toFixed(b >= 10485760 ? 0 : 1) + " MB" : b >= 1024 ? Math.round(b / 1024) + " KB" : b + " B"; };
     var facts = el("div", "facts2");
-    [[String(p.modules.length), "published"], [p.since, "on the Hub since"],
-     pr.langs && pr.langs.length ? [String(pr.langs.length), pr.langs.length === 1 ? "language" : "languages"] : null,
+    // Die Sprachen stehen schon im Kopf; ihre Zahl hier nicht nochmals (Eigentümer, 2026-11-07).
+    [[String(p.modules.length), "published"], [dmy(p.since), "on the Hub since"],
      p.journal.length ? [String(p.journal.length), p.journal.length === 1 ? "public entry" : "public entries"] : null
     ].forEach(function (f) { if (!f) return; var d = el("div", "fact2"); d.appendChild(el("b", null, f[0])); d.appendChild(el("span", null, f[1])); facts.appendChild(d); });
     // Öffentliche Dateien stehen im Band neben den Sprachen (Wunsch des Eigentümers,
     // 2026-09-10): oben die Beschriftung, die die Person gesetzt hat, sonst der Name
     // ohne Endung; unten Art und Grösse. Ohne Dateien steht hier nichts.
     (p.files || []).forEach(function (f) {
-      var a = el("a", "fact2 fact2--file"); a.href = "/api/files/" + p.id + "/" + f.id + "/" + encodeURIComponent(f.name); a.title = f.name + " · " + fmt(f.size) + " · download";
+      var url = "/api/files/" + p.id + "/" + f.id + "/" + encodeURIComponent(f.name);
+      var ext = f.name.indexOf(".") > 0 ? f.name.split(".").pop() : "file", pdf = f.type === "application/pdf";
+      var a = el("a", "fact2 fact2--file"); a.href = url; a.title = f.name + " · " + fmt(f.size) + (pdf ? " · preview" : " · download");
       a.appendChild(el("b", null, f.label || f.name.replace(/\.[a-z0-9]{1,8}$/i, "").replace(/[_-]+/g, " ")));
-      a.appendChild(el("span", null, (f.name.indexOf(".") > 0 ? f.name.split(".").pop() : "file") + " · " + fmt(f.size)));
+      a.appendChild(el("span", null, ext + " · " + fmt(f.size) + (pdf ? " · preview" : "")));
+      // PDF (Eigentümer, 2026-11-07): ein Klick öffnet die Vorschau im Rahmen. Der
+      // Verweis bleibt der Download, für Mittel- und Strg-Klick und ohne Skript.
+      if (pdf) a.addEventListener("click", function (ev) { if (ev.button !== 0 || ev.ctrlKey || ev.metaKey || ev.shiftKey) return; ev.preventDefault(); openPdf(url, f.label || f.name); });
       facts.appendChild(a);
     });
     sec.appendChild(facts);

@@ -2268,6 +2268,28 @@ button.chip{ cursor:pointer; background:none; font:inherit; font-size:inherit }
 .solo__foot a{ color:var(--muted); text-decoration:none } .solo__foot a:hover{ color:var(--seal) }
 .hero__contact{ font-family:var(--font-mono); font-size:var(--step--1) }
 
+/* PDF-Vorschau auf der Profilseite (2026-11-07): ein <dialog> im obersten Layer,
+   Rahmen über ?inline=1 der API; auf dem Telefon füllt er den Bildschirm. */
+.pdfdlg{
+  width:min(96vw, 62rem); max-width:none; max-height:none; margin:auto; padding:0;
+  border:1px solid var(--line-ui); border-radius:16px; background:var(--card-bg); color:var(--ink);
+  box-shadow:var(--shadow-2);
+}
+.pdfdlg::backdrop{ background:color-mix(in srgb, #000 52%, transparent) }
+.pdfdlg__box{ padding:var(--pad-card) }
+.pdfdlg__title{ font-size:var(--step-1); margin:0 0 .7rem; line-height:1.25 }
+.pdfdlg__frame{ display:block; width:100%; height:min(72vh, 60rem); border:1px solid var(--line); border-radius:10px; background:#525659 }
+.pdfdlg__foot{ display:flex; flex-wrap:wrap; justify-content:flex-end; gap:.6rem; margin-top:1rem }
+.pdfdlg__foot a, .pdfdlg__foot button{
+  font:inherit; font-size:.88rem; cursor:pointer; padding:.45rem .9rem; min-height:44px; display:inline-flex; align-items:center;
+  border-radius:var(--radius); border:1px solid var(--line-ui); background:none; color:var(--ink-2); text-decoration:none;
+}
+.pdfdlg__foot a:hover, .pdfdlg__foot button:hover{ color:var(--ink); border-color:var(--ink-2) }
+@media (max-width:640px){
+  .pdfdlg{ width:100vw; height:100dvh; border-radius:0; border:0 }
+  .pdfdlg__frame{ height:calc(100dvh - 10rem) }
+}
+
 /* docs.entrosana.app (2026-09-10): Prosa aus Markdown, gleiche Hülle wie der Hub. */
 .doc{ max-width:70ch; color:var(--ink-2); line-height:1.6 }
 .doc h2{ font-size:var(--step-1); color:var(--ink); letter-spacing:-.015em; margin:2rem 0 .6rem }

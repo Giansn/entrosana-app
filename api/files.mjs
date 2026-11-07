@@ -29,6 +29,16 @@ export const TYPES = {
   zip: "application/zip",
 };
 
+// Vorschau (2026-11-07): PDF und Bilder dürfen auf Wunsch (?inline=1) im Rahmen
+// der Profilseite angezeigt werden statt heruntergeladen. Alles andere bleibt
+// Anhang; der Typ kommt weiter aus der Zulassungsliste, nosniff bleibt.
+export const INLINE_TYPES = new Set(["application/pdf", "image/png", "image/jpeg", "image/webp", "image/gif"]);
+export function disposition(row, inline) {
+  const fname = String(row.name).replace(/["\r\n]/g, "");
+  const kind = inline && INLINE_TYPES.has(row.type) ? "inline" : "attachment";
+  return { "Content-Disposition": kind + "; filename=\"" + fname.replace(/[^\x20-\x7e]/g, "_") + "\"; filename*=UTF-8''" + encodeURIComponent(fname) };
+}
+
 // Dateiname: nur das Blatt, keine Pfade, keine Steuerzeichen, höchstens 120 Zeichen.
 export function safeName(name) {
   let n = String(name || "").split(/[\\/]/).pop().replace(/[\x00-\x1f\x7f]/g, "").trim();

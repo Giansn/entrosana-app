@@ -21,7 +21,7 @@ import { exportActor, dormantSweep } from "./maintenance.mjs";
 import { standingOf, currentApplication, openApplication, listApplications, decideApplication } from "./applications.mjs";
 import { LANG_CODES, MAX_LANGS } from "./languages.mjs";
 import { listJournal, addEntry, updateEntry, deleteEntry, publicProfile, publicProfileBySlug, slugOf, searchPublic } from "./journal.mjs";
-import { QUOTA, MAX_FILE, checkUpload, safeName, pathFor, usedBytes, listFiles, fileRow, receive, removeFile, removeAll } from "./files.mjs";
+import { QUOTA, MAX_FILE, checkUpload, safeName, pathFor, usedBytes, listFiles, fileRow, receive, removeFile, removeAll, disposition } from "./files.mjs";
 import { KINDS as SVC_KINDS, GROUPS as SVC_GROUPS, PLACES as SVC_PLACES, INTERVALS as SVC_INTERVALS, MAX_PER_ACTOR as SVC_MAX, parseCheck, guardTarget, runCheck, heartbeatState } from "./services.mjs";
 import { serviceToken, ensureServiceActor, resolveActor, issueToken, withRoles, newToken, sha } from "./auth.mjs";
 
@@ -908,16 +908,17 @@ patterns.push([/^\/api\/me\/files\/(\d{1,12})$/, {
   },
 }]);
 // Ausliefern: öffentliche Dateien für alle, private nur für das Konto und das Team.
-// Immer als Anhang, immer nosniff, Typ aus der Zulassungsliste und nie aus dem Upload.
+// Als Anhang; PDF und Bilder mit ?inline=1 im Rahmen (Vorschau auf der Profilseite).
+// Immer nosniff, Typ aus der Zulassungsliste und nie aus dem Upload.
 patterns.push([/^\/api\/files\/(\d{1,12})\/(\d{1,12})\/([^/]{1,200})$/, {
   GET: (ctx, [actorId, id]) => {
     const row = fileRow(db, Number(actorId), id);
     const mine = ctx.actor && (ctx.actor.id === Number(actorId) || isTeam(ctx.actor));
     if (!row || (!row.public && !mine)) throw new HttpError(404, "no such file");
     const path = pathFor(FILES_ROOT, row);
-    const fname = row.name.replace(/["\r\n]/g, "");
+    const inline = new URL(ctx.req.url || "/", "http://x").searchParams.get("inline") === "1";
     ctx.res.writeHead(200, { "Content-Type": row.type, "Content-Length": row.size, "X-Content-Type-Options": "nosniff",
-      "Content-Disposition": "attachment; filename=\"" + fname.replace(/[^\x20-\x7e]/g, "_") + "\"; filename*=UTF-8''" + encodeURIComponent(fname),
+      ...disposition(row, inline),
       "Cache-Control": row.public ? "public, max-age=300" : "private, no-store", "Referrer-Policy": "no-referrer" });
     if (ctx.req.method === "HEAD") return ctx.res.end();
     createReadStream(path).on("error", () => { try { ctx.res.destroy(); } catch {} }).pipe(ctx.res);

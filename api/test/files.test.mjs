@@ -1,7 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { open } from "../db.mjs";
-import { checkUpload, safeName, extOf, QUOTA, MAX_FILE, MAX_FILES, fmt, usedBytes, listFiles, publicFiles } from "../files.mjs";
+import { checkUpload, safeName, extOf, QUOTA, MAX_FILE, MAX_FILES, fmt, usedBytes, listFiles, publicFiles, disposition } from "../files.mjs";
+
+test("dateien: vorschau im rahmen nur für pdf und bilder, sonst anhang", () => {
+  const pdf = { name: "Lebenslauf Kühne.pdf", type: "application/pdf" };
+  assert.equal(disposition(pdf, true)["Content-Disposition"], "inline; filename=\"Lebenslauf K_hne.pdf\"; filename*=UTF-8''Lebenslauf%20K%C3%BChne.pdf");
+  assert.match(disposition(pdf, false)["Content-Disposition"], /^attachment; /);
+  assert.match(disposition({ name: "n.zip", type: "application/zip" }, true)["Content-Disposition"], /^attachment; /);
+  assert.match(disposition({ name: "a\"b\r\n.png", type: "image/png" }, true)["Content-Disposition"], /^inline; filename="ab.png"/);
+});
 
 test("dateien: name, endung, grenzen", () => {
   assert.equal(safeName("../../etc/passwd"), "passwd");
