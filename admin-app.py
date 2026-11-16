@@ -127,6 +127,12 @@ def aenderungen_schreiben(quelle: str, eintraege: list) -> str:
 TAG_RE = re.compile(
     r"<!--.*?-->|<![^>]*>|<(/?)([a-zA-Z][\w:-]*)((?:\"[^\"]*\"|'[^']*'|[^>\"'])*)(/?)>", re.S)
 SKIP = {"script", "style", "svg", "noscript", "template"}
+# Geleertes Feld (2026-11-16): an der Stelle bleibt diese Marke stehen. So behält die Seite ihre Zahl
+# von Textstellen (ein offener Editor passt weiter zur Datei), und der Text lässt sich später wieder
+# hineinschreiben. Steht die Marke allein in ihrem Element, bekommt es LEER_ATTR und erscheint nicht
+# auf der Seite (assets/app.css: [data-leer]{display:none}).
+LEER = "<!--leer-->"
+LEER_ATTR = " hidden data-leer"
 
 
 def spans(src):
@@ -144,6 +150,8 @@ def spans(src):
         pos = m.end()
         name = (m.group(2) or "").lower()
         if not name:
+            if skip == 0 and m.group(0) == LEER:      # geleertes Feld: die Marke selbst ist die Stelle
+                out.append((m.start(), m.end(), stack[-1][0] if stack else "?", stack[-1][1] if stack else -1))
             continue
         closing, selfclose = m.group(1) == "/", m.group(4) == "/"
         if name in SKIP:
@@ -226,7 +234,7 @@ def page_read(name):
         stellen.append({
             "i": i,
             "tag": t,
-            "text": glatt(src[a:b]),
+            "text": "" if src[a:b] == LEER else glatt(src[a:b]),
             "size": size,
             "open_start": open_start,
         })
@@ -346,6 +354,7 @@ def preview_html(name):
     # Abfrage (serve.mjs schneidet sie ab), der Browser nicht.
     marke = str(int(time.time()))
     out = re.sub(r'(' + re.escape(LIVE) + r'/assets/[^"?]+)"', r'\1?v=' + marke + '"', out)
+    out = out.replace(LEER_ATTR, "")
     return out.replace("</body>", PREVIEW_JS + "</body>", 1)
 
 
@@ -392,7 +401,9 @@ def page_write(name, neu: list, sizes: dict | None = None):
     src = f.read_text(encoding="utf-8")
     sp = spans(src)
     if len(neu) != len(sp):
-        raise ValueError(f"{len(neu)} Texte für {len(sp)} Stellen — abgelehnt")
+        raise ValueError(f"Die Seite hat {len(sp)} Textstellen, dieser Editor kennt {len(neu)}: sie wurde verändert, "
+                         "seit du ihn geöffnet hast. Öffne den Editor in einem neuen Tab und trage die Änderung "
+                         "dort ein; in diesem Tab bleibt dein Text stehen.")
     sizes = {str(k): v for k, v in (sizes or {}).items()}
     out = src
     geaendert = []
@@ -403,6 +414,9 @@ def page_write(name, neu: list, sizes: dict | None = None):
         text_allows_markup(t)
         t = normalize_breaks(t.strip())
         alt = out[a:b]
+        alt_leer = alt == LEER
+        if alt_leer and not t:
+            continue                      # war leer und bleibt leer
 
         wrap_m = TAG_RE.match(out, open_start) if open_start >= 0 else None
         in_wrap = bool(wrap_m and is_fs_wrap_tag(wrap_m.group(0)))
@@ -412,7 +426,7 @@ def page_write(name, neu: list, sizes: dict | None = None):
         if new_size not in FS_KEYS:
             new_size = "md"
 
-        plain_same = (
+        plain_same = (not alt_leer) and (
             ("<br>" not in t and glatt(alt) == t)
             or normalize_breaks(alt.strip()) == t
             or alt.strip() == t
@@ -424,7 +438,7 @@ def page_write(name, neu: list, sizes: dict | None = None):
             if not in_wrap and new_size == "md":
                 continue
 
-        new_html = field_sized_html(t, new_size)
+        new_html = field_sized_html(t, new_size) if t else LEER
         vor = alt[: len(alt) - len(alt.lstrip())]
         nach = alt[len(alt.rstrip()) :]
 
@@ -448,9 +462,24 @@ def page_write(name, neu: list, sizes: dict | None = None):
                             + out[open_start + len(pm.group(0)) :]
                         )
 
+        # Geleert: steht das Feld allein in seinem Element, wird das Element ausgeblendet (die Zeile
+        # verschwindet von der Seite). Kommt wieder Text hinein, fällt das Ausblenden weg.
+        if not in_wrap and open_start >= 0:
+            pm = TAG_RE.match(out, open_start)
+            if pm and pm.group(2):
+                tag_html, innen = pm.group(0), pm.end()
+                if not t and LEER_ATTR not in tag_html:
+                    wo = out.find(LEER, innen)
+                    allein = (wo >= 0 and not out[innen:wo].strip()
+                              and re.match(r"\s*</" + re.escape(pm.group(2)) + r"\s*>", out[wo + len(LEER):], re.I))
+                    if allein:
+                        out = out[:innen - 1] + LEER_ATTR + out[innen - 1:]
+                elif t and alt_leer and LEER_ATTR in tag_html:
+                    out = out[:open_start] + tag_html.replace(LEER_ATTR, "", 1) + out[innen:]
+
         if not plain_same:
             geaendert.append(
-                (f"Stelle {i + 1} · <{tag}>", glatt(alt), glatt(_BR_TOKEN.sub(" ↵ ", t)))
+                (f"Stelle {i + 1} · <{tag}>", "" if alt_leer else glatt(alt), glatt(_BR_TOKEN.sub(" ↵ ", t)))
             )
         if new_size != cur_size or (in_wrap != (new_size != "md")):
             geaendert.append((f"Stelle {i + 1} · size", cur_size, new_size))
@@ -697,8 +726,8 @@ def _live_gleich(pfad):
         if seite:
             lokal = (APP / pfad).read_text(encoding="utf-8")
             live = _hole_live(LIVE + seite).decode("utf-8", "replace")
-            return (_dicht(lokal[a:b] for a, b, _t, _o in spans(lokal))
-                    == _dicht(live[a:b] for a, b, _t, _o in spans(live)))
+            return (_dicht(lokal[a:b] for a, b, _t, _o in spans(lokal) if lokal[a:b] != LEER)
+                    == _dicht(live[a:b] for a, b, _t, _o in spans(live) if live[a:b] != LEER))
         if pfad.startswith("assets/"):
             # Die Kante hält Assets vier Stunden; die Abfrage mit Marke geht am Zwischenspeicher vorbei.
             return (APP / pfad).read_bytes() == _hole_live(f"{LIVE}/{pfad}?stand={int(time.time())}")
@@ -1016,6 +1045,7 @@ a.btn:hover{text-decoration:none}
 .f{display:block;margin:.65rem 0;padding:0 0 0 .7rem;border-bottom:0;border-left:2px solid transparent}
 .f .k{font-family:inherit;font-size:.82rem;color:#8F95A1;padding:0 0 .22rem}
 .f.is-neu{border-left-color:#E2B04A}
+.f .k .leer{color:#E2B04A}
 .f.is-sel{background:none}
 .f.is-sel .k{color:#2BD4E8}
 /* Jedes Feld zeigt seinen ganzen Text und wächst mit ihm (wachse() im Editor), auch auf dem Telefon. */
@@ -1259,7 +1289,7 @@ def entwurf_js(key: str, sel: str, attr: str) -> str:
         "var GESPEICHERT=JSON.stringify(sammle());"
         "function schmutzig(){return JSON.stringify(sammle())!==GESPEICHERT;}"
         "function entwurfSchreiben(){try{if(schmutzig())"
-        "localStorage.setItem(KEY,JSON.stringify({t:new Date().toISOString(),v:sammle()}));"
+        "localStorage.setItem(KEY,JSON.stringify({t:new Date().toISOString(),n:FELDER().length,v:sammle()}));"
         "else localStorage.removeItem(KEY);}catch(e){}}"
         "function entwurfLoeschen(){try{localStorage.removeItem(KEY)}catch(e){}}"
         "function einsetzen(v){var n=FELDER();for(var i=0;i<n.length;i++){"
@@ -1272,6 +1302,14 @@ def entwurf_js(key: str, sel: str, attr: str) -> str:
         "if(gleich){entwurfLoeschen();return;}"
         "var bar=document.getElementById('entwurf');if(!bar)return;"
         "var wann=d.t?new Date(d.t).toLocaleString():'unbekannt';"
+        # Ein Entwurf merkt sich die Felder nach ihrer Nummer. Hat die Seite inzwischen mehr oder weniger
+        # Felder, träfe er die falschen: dann wird er nicht angeboten.
+        "var zahl=(d.n!==undefined)?d.n:Object.keys(d.v).length;"
+        "if(zahl!==FELDER().length){bar.innerHTML='<b>Ein Entwurf passt nicht mehr zu dieser Seite</b> "
+        "<span class=mono>'+wann+'</span> &mdash; die Seite hat inzwischen eine andere Zahl von Feldern, "
+        "er lässt sich nicht sicher übernehmen.';"
+        "var c=document.createElement('button');c.className='btn ghost';c.textContent='Entwurf verwerfen';"
+        "c.onclick=function(){entwurfLoeschen();bar.hidden=true;};bar.appendChild(c);bar.hidden=false;return;}"
         "bar.innerHTML='<b>Ungesicherter Entwurf gefunden</b> <span class=mono>'+wann+"
         "'</span> &mdash; die Datei zeigt einen anderen Stand.';"
         "var a=document.createElement('button');a.className='btn';a.textContent='Entwurf übernehmen';"
@@ -1284,9 +1322,10 @@ def entwurf_js(key: str, sel: str, attr: str) -> str:
         "n[i].addEventListener('input',entwurfSchreiben);}})();"
         "window.addEventListener('beforeunload',function(e){if(schmutzig()){"
         "entwurfSchreiben();e.preventDefault();e.returnValue='';}});"
-        "function fehlerZeigen(t){var f=document.getElementById('fehler');if(!f)return;"
+        # «Nochmal drücken genügt» stimmt nur, wenn die Konsole nicht erreichbar war. Lehnt sie ab, sagt ihr Grund, was zu tun ist.
+        "function fehlerZeigen(t,nochmal){var f=document.getElementById('fehler');if(!f)return;"
         "f.innerHTML='<b>Nicht gespeichert:</b> '+t+'<br>Der Text steht weiterhin in den Feldern "
-        "und liegt als Entwurf im Browser. Nochmal auf Speichern drücken genügt.';f.hidden=false;}"
+        "und liegt als Entwurf im Browser.'+(nochmal?' Nochmal auf Speichern drücken genügt.':'');f.hidden=false;}"
         "function fehlerWeg(){var f=document.getElementById('fehler');if(f)f.hidden=true;}"
     )
 
@@ -1304,7 +1343,7 @@ def feld_name(tag: str, klassen: list, text: str) -> str:
         return "Titel im Browser-Tab"
     if tag == "kbd":
         return "Tastenkürzel"
-    if len(text) <= 2 and tag not in ("h1", "h2", "h3", "p", "li"):
+    if 0 < len(text) <= 2 and tag not in ("h1", "h2", "h3", "p", "li"):
         return "Zeichen"
     if tag == "button" or hat("btn"):
         return "Knopf"
@@ -1505,10 +1544,12 @@ function speichern(){
     if(schlecht.length){m.textContent='Nicht gespeichert.';
       fehlerZeigen(schlecht.map(function(j){return j.error}).join(' · '));entwurfSchreiben();return;}
     GESPEICHERT=JSON.stringify(sammle());entwurfLoeschen();fehlerWeg();
+    // Hat die Seite jetzt eine andere Zahl von Feldern als dieser Editor, lädt er sich neu statt später abgelehnt zu werden.
+    if(js[0].stellen!==undefined&&js[0].stellen!==document.querySelectorAll('#fs [data-i]').length){location.reload();return;}
     var w=js.filter(function(j){return j.backup&&j.backup.indexOf('keine')<0});
     m.textContent=w.length?'':'Nichts geändert.';
     markiere();pv.src=pv.src;if(window.standNeu)window.standNeu();})
-  .catch(function(e){sb.disabled=false;m.textContent='Nicht gespeichert.';fehlerZeigen(String(e));entwurfSchreiben();});}
+  .catch(function(e){sb.disabled=false;m.textContent='Nicht gespeichert.';fehlerZeigen('Die Konsole ist gerade nicht erreichbar ('+e+').',true);entwurfSchreiben();});}
 document.getElementById('save').onclick=speichern;
 document.addEventListener('keydown',function(e){
   if((e.ctrlKey||e.metaKey)&&(e.key==='s'||e.key==='S')){e.preventDefault();speichern();}});
@@ -1524,17 +1565,20 @@ def page_editor(name, msg="", err=""):
 
     def feld(st):
         text = st["text"]
-        zeichen = len(text) <= 2
+        zeichen = 0 < len(text) <= 2
         m = TAG_RE.match(src, st["open_start"]) if st["open_start"] >= 0 else None
         offen = m.group(0) if m else f"<{st['tag']}>"
         bez = feld_name(st["tag"], _class_list(offen) if m else [], text)
         eingabe = (f"<input type=text data-i='{st['i']}' data-key='p:{st['i']}' aria-label=\"{html.escape(bez, quote=True)}\" "
                    f"value=\"{html.escape(text, quote=True)}\">"
                    if zeichen else
-                   f"<textarea data-i='{st['i']}' data-key='p:{st['i']}' aria-label=\"{html.escape(bez, quote=True)}\" rows='1'>"
+                   f"<textarea data-i='{st['i']}' data-key='p:{st['i']}' aria-label=\"{html.escape(bez, quote=True)}\" rows='1'"
+                   + ("" if text else " placeholder='Leer. Mit Text erscheint die Zeile wieder auf der Seite.'") + ">"
                    f"{html.escape(text)}</textarea>")
         return (f"<div class='f{' zeichen' if zeichen else ''}' id='f{st['i']}'>"
-                f"<div class='k' title=\"{html.escape(offen, quote=True)}\">{html.escape(bez)}</div><div>{eingabe}</div></div>")
+                f"<div class='k' title=\"{html.escape(offen, quote=True)}\">{html.escape(bez)}"
+                + ("" if text else " <span class='leer'>leer, steht nicht auf der Seite</span>")
+                + f"</div><div>{eingabe}</div></div>")
 
     schon_da = set()
     hat_katalog = False
@@ -1666,7 +1710,7 @@ def cat_editor(slug, msg="", err=""):
         "if(j.ok){GESPEICHERT=JSON.stringify(sammle());entwurfLoeschen();fehlerWeg();"
         "m.textContent=String(j.backup).indexOf('keine')<0?'Gespeichert.':'Nichts geändert.';if(window.standNeu)window.standNeu();}"
         "else{m.textContent='nicht gespeichert';fehlerZeigen(j.error);entwurfSchreiben();}})"
-        ".catch(function(e){m.textContent='nicht gespeichert';fehlerZeigen(String(e));entwurfSchreiben();});};</script>")
+        ".catch(function(e){m.textContent='nicht gespeichert';fehlerZeigen('Die Konsole ist gerade nicht erreichbar ('+e+').',true);entwurfSchreiben();});};</script>")
 
 
 def design_editor():
@@ -2465,7 +2509,8 @@ class H(BaseHTTPRequestHandler):
                 if not any(name == p for p, _, _ in PAGES):
                     raise ValueError("unbekannte Seite")
                 b = page_write(name, data.get("texts", []))
-                self._json({"ok": True, "backup": b or "keine Änderung"})
+                self._json({"ok": True, "backup": b or "keine Änderung",
+                            "stellen": len(spans((APP / name).read_text(encoding="utf-8")))})
             elif u.path == "/api/catalogue":
                 b = cat_write(data.get("slug", ""), data.get("values", {}))
                 self._json({"ok": True, "backup": b or "keine Änderung"})

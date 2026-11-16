@@ -2641,3 +2641,7 @@ ul.fold__body{ padding-left:1.1rem } ul.fold__body li + li{ margin-top:.35rem }
 .tabs__b.is-empty:hover{ background:none; color:var(--ink-2) }
 /* Offene Bitten als Wege (2026-10-31): die Zeile ist der Link. */
 a.ask__t{ color:inherit; text-decoration:none } a.ask__t:hover, a.ask__t:focus-visible{ color:var(--seal) }
+
+/* Geleerte Textstelle (Konsole :8396, 2026-11-16): das Element bleibt in der Seite, damit der Text wieder
+   hineingeschrieben werden kann, erscheint aber nicht. */
+[data-leer]{ display:none !important }
