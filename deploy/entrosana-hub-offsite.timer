@@ -1,0 +1,7 @@
+[Unit]
+Description=entrosana.app: Hub-Sicherung ausser Haus täglich 03:50, nach dem Holen der Datenbank um 03:40
+[Timer]
+OnCalendar=*-*-* 03:50:00
+Persistent=true
+[Install]
+WantedBy=timers.target

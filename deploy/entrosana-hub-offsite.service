@@ -1,0 +1,12 @@
+[Unit]
+Description=entrosana.app: Hub-Sicherung ausser Haus (Datenbank und Dateien der Konten, verschlüsselt)
+# Erst wenn die Kopie der Datenbank vom Server geholt ist (03:40).
+After=entrosana-hub-backup.service
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash %h/entrosana-app/tools/hub-offsite.sh
+# Chiffrat und die geholten Kopien nur für den Besitzer lesbar
+UMask=0077
+# Viele neue Dateien bei langsamem Uplink dürfen dauern; was dann noch fehlt, holt
+# die nächste Nacht nach. Jeder Schritt im Netz hat seine eigene, kurze Frist.
+TimeoutStartSec=3h

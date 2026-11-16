@@ -1,22 +1,40 @@
 # Wiederherstellung
 
 Was zu tun ist, wenn der Hub bricht — von der kleinsten Reparatur zur
-grössten. Stand 2. August 2026.
+grössten. Stand 16. November 2026.
+
+**Seit 2026-11-05 läuft der Hub auf Metanet** (`ssh metanet`, Ordner
+`entrosana-app`); dort liegen die Datenbank und die Dateien der Konten. e14
+hält den Arbeitsbaum, holt die Daten jede Nacht und sichert sie verschlüsselt.
+WordPress gibt es nicht mehr. Die Abschnitte 1, 2 und 6 stammen aus der Zeit,
+als der Hub auf e14 lief: ihre Befehle gelten für den Arbeitsbaum auf e14; was
+die laufende Datenbank anfasst (Abschnitt 6), gehört heute auf den Server.
 
 ## Wo überall etwas liegt
 
 | Ort | Was | Wie oft | Verschlüsselt |
 |---|---|---|---|
-| `~/entrosana-app/.git` | jede festgehaltene Fassung des Hubs | bei jedem Commit | nein |
-| `/media/g2thek/t9root/home/g2thek/entrosana-app` | Arbeitsstand im bootfähigen Klon | alle drei Tage, `sygnif-t9-sync.timer` | nein |
-| `~/entrosana-backups/wp/entrosana-wp-*.tar.gz.gpg` | alles: Datenbank, wp-content, Stapel, Hub | täglich 03:30, `entrosana-wp-backup.timer` | ja, AES-256 |
-| `/media/g2thek/t9root/home/g2thek/entrosana-backups/wp/` | dieselbe Datei auf der T9 | täglich, 14 Stück | ja |
-| Nextcloud `Bridge/from-sygnif/` | dieselbe Datei | täglich, 14 Stück | ja |
-| Cloudflare R2 | dieselbe Datei, ausser Haus | täglich | ja |
+| GitHub `Giansn/entrosana-app`, `~/entrosana-app/.git` | jede festgehaltene Fassung des Hubs | bei jedem Commit; e14 gleicht alle fünf Minuten ab, der Server zieht alle zwei | nein |
+| Server, `entrosana-app/api/db/hub.backup.sqlite` | stimmige Kopie der Datenbank | täglich 03:20, Cron | nein |
+| e14, `~/entrosana-app/api/db/hub.backup.sqlite` | dieselbe Kopie, geholt | täglich 03:40, `entrosana-hub-backup.timer` | nein |
+| e14, `~/.cache/entrosana-hub-files/` | die Dateien der Konten, geholt | täglich 03:50 | nein |
+| `~/entrosana-backups/hub-db/hub-<zeit>.sqlite.gpg` | die Datenbank, die neuesten 14 | täglich 03:50, `entrosana-hub-offsite.timer` | ja, AES-256 |
+| `~/entrosana-backups/hub-files/` | die Dateien der Konten, je Datei; Gelöschtes 14 Tage unter `deleted/` | täglich 03:50 | ja |
+| `/media/g2thek/t9root/home/g2thek/entrosana-backups/hub-db/` und `hub-files/` | dasselbe auf der T9 | täglich | ja |
+| Nextcloud `Bridge/from-sygnif/hub-db/` und `hub-files/` | dasselbe; die Nextcloud steht auf e14 | täglich | ja |
+| Proton Drive `/my-files/Sygnif Local/entrosana-hub-db/` und `entrosana-hub-files/current/` | dasselbe, der einzige Ort ausser Haus | täglich | ja |
+| T9 als bootfähiger Klon | der ganze Rechner e14 ohne `~/.cache`: Arbeitsbaum, die geholte Datenbank und der Schlüssel | jede Nacht, `sygnif-t9-full.timer` | nein |
+| `~/entrosana-backups/wp/`, dazu T9, Nextcloud und Proton Drive | Archive aus der WordPress-Zeit, das letzte vom 2026-11-05; darin der Hub, wie er damals auf e14 lief | nicht mehr | ja |
 
 Der Schlüssel steht in `~/.config/entrosana-backup.key`. **Er liegt nur auf
-diesem Rechner.** Ohne ihn ist jede Kopie ausser dem Klon auf der T9 wertlos —
-siehe `~/entrosana-wp/docs/backup-key-escrow.md`.
+diesem Rechner** und mit ihm im Klon auf der T9. Ohne ihn ist jede
+verschlüsselte Kopie wertlos — siehe `~/entrosana-wp/docs/backup-key-escrow.md`.
+
+Die Sicherung um 03:50 ist `tools/hub-offsite.sh`. Den Zeitgeber schaltet der
+Eigentümer ein (`systemctl --user enable --now entrosana-hub-offsite.timer`,
+die Unit steht unter `deploy/`). Ein Lauf, dem ein Ziel fehlt, endet mit einem
+Fehler, meldet sich über `notify-gi` und steht in
+`journalctl --user -u entrosana-hub-offsite`.
 
 ## 1. Eine Datei zurücknehmen
 
@@ -55,96 +73,156 @@ sygnif-doctor t9-check
 
 ## 3. Aus der verschlüsselten Sicherung
 
+Der Code kommt aus git (Abschnitt 1) oder von GitHub. Aus der verschlüsselten
+Sicherung kommen die Daten: die Datenbank und die Dateien der Konten.
+
+Die Datenbank, auf e14 entschlüsselt und geprüft. Der Klartext entsteht unter
+`~/.cache`, das der Klon auf die T9 auslässt:
+
 ```bash
-cd ~/entrosana-backups/wp
-NEU=$(ls -1t entrosana-wp-*.tar.gz.gpg | head -1)
-gpg --batch --decrypt --passphrase-file ~/.config/entrosana-backup.key "$NEU" \
-  | tar xz -C /tmp                       # ergibt vier Bündel
-tar xzf /tmp/extras.tar.gz -C "$HOME" entrosana-app
-systemctl --user restart entrosana-app.service
+cd ~/entrosana-backups/hub-db && NEU=$(ls -1 hub-*.sqlite.gpg | tail -n 1)
+P=$(mktemp -d -p ~/.cache)
+gpg --batch --decrypt --passphrase-file ~/.config/entrosana-backup.key -o "$P/hub.sqlite" "$NEU"
+sqlite3 "$P/hub.sqlite" 'PRAGMA integrity_check'                                  # muss «ok» sagen
+DB_PATH="$P/hub.sqlite" node --no-warnings ~/entrosana-app/api/admin.mjs verify-chain   # die Kette
 ```
 
-`extras.tar.gz` enthält ausserdem `entrosana-todo-demo/` (die Quelle der
-wörtlichen Kopie in `assets/project.js`), die entrosana-Units unter
-`.config/systemd/user/` und die Teile von `entrosana-site`, die in keinem
-git-Baum stehen. Die Pfade sind relativ zu `$HOME`, das Auspacken mit
-`-C "$HOME"` legt sie also an die richtige Stelle.
+Wie sie auf den Server kommt, steht in Abschnitt 5; danach `rm -rf "$P"`.
 
-Die anderen drei Bündel: `wordpress.sql` (Datenbankabzug), `wp-content.tar.gz`
-(Uploads und Erweiterungen), `stack.tar.gz` (docker-compose, .env, Theme).
+Die Dateien der Konten, alle auf einmal:
 
-## 4. Der Rechner ist weg
+```bash
+cd ~/entrosana-backups/hub-files/current
+find . -name '*.gpg' | while read -r f; do o="$HOME/.cache/entrosana-hub-files-zurueck/${f%.gpg}";
+  mkdir -p "$(dirname "$o")"; gpg --batch --decrypt --passphrase-file ~/.config/entrosana-backup.key -o "$o" "$f"; done
+rsync -rt ~/.cache/entrosana-hub-files-zurueck/ metanet:entrosana-app/api/db/files/
+rm -rf ~/.cache/entrosana-hub-files-zurueck
+```
 
-Die T9 ist ein bootfähiger Klon dieses Rechners, siehe
-`~/BOOT-E14-FROM-T9.md`. Anstecken, davon starten, weiterarbeiten. Der Klon
-hinkt höchstens drei Tage hinterher.
+Eine Datei heisst im Spiegel `<konto>/<id>.<endung>.gpg`; Konto, Nummer, Name
+und SHA-256 stehen in der Tabelle `files` der Datenbank. Was vor weniger als
+14 Tagen gelöscht wurde, liegt unter
+`~/entrosana-backups/hub-files/deleted/<JJJJMMTT>/`.
 
-Ist auch die T9 weg, bleibt R2. Dafür braucht es `~/.config/entrosana-r2.env`
-— die liegt selbst im Archiv, also im Zirkelschluss. Deshalb: **den Schlüssel
-und die R2-Zugangsdaten ausserhalb dieses Rechners aufbewahren.**
+Von Proton Drive, wenn e14 und die T9 weg sind:
+
+```bash
+proton-drive filesystem download "/my-files/Sygnif Local/entrosana-hub-db" .
+proton-drive filesystem download "/my-files/Sygnif Local/entrosana-hub-files/current" .
+```
+
+Was grösser ist als 900 KiB, liegt dort als Ordner `<name>.gpg.parts/` und wird
+so wieder eine Datei: `cd <name>.gpg.parts && sha256sum -c SHA256SUMS && cat part-* > ../<name>.gpg`.
+
+Die Archive aus der WordPress-Zeit (`~/entrosana-backups/wp/`, das letzte vom
+2026-11-05) öffnen sich wie bisher mit
+`gpg --batch --decrypt --passphrase-file ~/.config/entrosana-backup.key <archiv> | tar xz -C <ordner>`
+und ergeben vier Bündel: `wordpress.sql`, `wp-content.tar.gz`, `stack.tar.gz`
+und `extras.tar.gz`. Im letzten steht `entrosana-app/`, wie es auf e14 lief,
+samt `api/db/hub.backup.sqlite`, dazu `entrosana-todo-demo/`, die
+entrosana-Units und die Teile von `entrosana-site`, die in keinem git-Baum
+stehen; die Pfade sind relativ zu `$HOME`.
+
+## 4. Ein Rechner ist weg
+
+**Der Server (Metanet).** Der Hub steht still; die Daten auf e14 sind höchstens
+einen Tag alt. Code: `git clone https://github.com/Giansn/entrosana-app.git`.
+Daten: Abschnitte 3 und 5. Wie der Hub dort eingerichtet ist (Node, Cron,
+`~/entrosana-ops/entrosana-ctl`), steht auf e14 in
+`~/entrosana-metanet/PLAN-app.md`.
+
+**e14.** Der Hub läuft weiter; es fehlen die nächtliche Sicherung und die
+Konsolen. Die T9 ist ein bootfähiger Klon dieses Rechners, siehe
+`~/BOOT-E14-FROM-T9.md`: anstecken, davon starten, weiterarbeiten. Der Klon
+ist so alt wie die letzte Nacht, in der die T9 angesteckt war.
+
+**e14 und die T9.** Es bleibt Proton Drive: die Datenbank der letzten 14
+Nächte und jede Datei der Konten, verschlüsselt. Öffnen lässt sich das nur mit
+dem Schlüssel, und der liegt auf e14 und auf der T9. Deshalb: **den Schlüssel
+ausserhalb dieses Hauses aufbewahren.** R2 ist seit 2026-09-30 abgeschaltet
+und kein Ort mehr.
 
 ## Prüfen, ohne etwas kaputtzumachen
 
-Dass die letzte Sicherung sich öffnen lässt:
+Dass die letzte Sicherung der Datenbank sich öffnen lässt und stimmt: der erste
+Block in Abschnitt 3.
+
+Dass eine gespiegelte Datei der Datei auf dem Server gleicht. Dreimal derselbe
+SHA-256: aus der Datenbank, vom Server und aus dem Chiffrat.
 
 ```bash
-cd ~/entrosana-backups/wp && NEU=$(ls -1t entrosana-wp-*.tar.gz.gpg | head -1)
-gpg --batch --quiet --decrypt --passphrase-file ~/.config/entrosana-backup.key "$NEU" | tar tz
+sqlite3 "file:$HOME/entrosana-app/api/db/hub.backup.sqlite?mode=ro&immutable=1" 'SELECT actor_id, id, ext, sha256 FROM files'
+ssh metanet sha256sum entrosana-app/api/db/files/2/1.pdf
+gpg --batch --quiet --decrypt --passphrase-file ~/.config/entrosana-backup.key \
+    ~/entrosana-backups/hub-files/current/2/1.pdf.gpg | sha256sum
 ```
 
-Dass der Hub darin vollständig ist:
+Dass die Zeitgeber laufen und der letzte Lauf durchging:
 
 ```bash
-… | tar tz   # oben; dann im extras-Bündel nach entrosana-app/ sehen
+systemctl --user list-timers 'entrosana-hub-*'
+journalctl --user -u entrosana-hub-offsite -n 30
 ```
 
-Dass die beiden Zeitgeber laufen:
+Die Skripte prüfen sich selbst: jedes Chiffrat wird nach dem Schreiben
+entschlüsselt und mit seiner Quelle verglichen, die Kopie auf der T9 mit der
+Prüfsumme, und was zu Proton Drive ging, muss danach mit Grösse und SHA-1 in
+der Liste stehen. Fehlt ein Ziel, endet der Lauf mit einem Fehler.
 
-```bash
-systemctl --user list-timers entrosana-wp-backup.timer sygnif-t9-sync.timer
-```
-
-`backup.sh` prüft sich selbst: es entschlüsselt das frisch geschriebene Archiv
-und listet es auf, vergleicht die Prüfsumme der Kopie auf der T9 und endet mit
-einem Fehler, sobald ein Ziel nicht erreicht wurde. Ein Lauf, der „success"
-meldet, hat also wirklich überall geschrieben.
+Nachweis 2026-11-16, an den echten Daten (Datenbank vom 2026-11-16 03:20, eine
+Datei `2/1.pdf`): der erste Block aus Abschnitt 3 lief durch, die Kette
+meldete `{"ok":true,"n":243}`, und die entschlüsselte Datenbank hat denselben
+SHA-256 wie die Kopie auf dem Server. Der Dateivergleich ergab überall
+denselben SHA-256: Datenbank, Server, Spiegel auf e14, T9, Nextcloud und das
+letzte Paket alter Form bei Proton Drive (2026-11-03). Die Schleife aus
+Abschnitt 3 lief bis vor das `rsync`; dessen Probelauf (`-n --checksum`)
+meldete andere Zeiten, keinen anderen Inhalt. Nicht geprobt: das Zurückholen
+der neuen Ablage von Proton Drive, dort lag an dem Tag noch nichts in dieser
+Form.
 
 ## 5. Die Hub-Datenbank
 
-Seit Phase 7 (2026-09-08) hält der Hub eine SQLite-Datei `api/db/hub.sqlite` mit
-Beiträgen, Akteuren, Marken und der Kette (`audit`). Sie läuft im WAL-Modus,
-also liegen daneben `hub.sqlite-wal` und `hub.sqlite-shm`; ein tar mitten im
-Schreiben kann die drei uneinheitlich erwischen. Deshalb schreibt
-`tools/hub-backup.sh` täglich um 03:20 (`entrosana-hub-backup.timer`, zehn
-Minuten vor `entrosana-wp-backup.timer` um 03:30) eine für sich stimmige Kopie
-`api/db/hub.backup.sqlite` über die SQLite-Sperre (`.backup`) und prüft sie
-(`PRAGMA integrity_check`). Diese Kopie wandert mit dem Ordner in die
-verschlüsselte Sicherung (Abschnitt 3, Bündel `extras.tar.gz`).
+Der Hub hält eine SQLite-Datei `api/db/hub.sqlite` mit Beiträgen, Akteuren,
+Marken und der Kette (`audit`), seit 2026-11-05 auf dem Server. Sie läuft im
+WAL-Modus, also liegen daneben `hub.sqlite-wal` und `hub.sqlite-shm`; eine
+Kopie der drei mitten im Schreiben kann uneinheitlich sein. Deshalb schreibt
+`tools/hub-backup.sh` dort täglich um 03:20 (Cron) eine für sich stimmige
+Kopie `api/db/hub.backup.sqlite` über die SQLite-Sperre (`.backup`) und prüft
+sie (`PRAGMA integrity_check`). e14 holt sie um 03:40
+(`entrosana-hub-backup.timer`; die Unit steht mit ihren Zusätzen unter
+`deploy/`) und sichert sie um 03:50 verschlüsselt (`tools/hub-offsite.sh`).
 
-Zurückspielen, wenn die laufende Datei kaputt oder falsch ist:
+Zurückspielen, wenn die laufende Datei kaputt oder falsch ist. Die Kopie der
+letzten Nacht liegt schon auf dem Server. Eine ältere kommt aus der
+verschlüsselten Sicherung (Abschnitt 3) und mit
+`scp "$P/hub.sqlite" metanet:entrosana-app/api/db/hub.backup.sqlite` dorthin.
+Dann auf dem Server (`ssh metanet`):
 
 ```bash
-systemctl --user stop entrosana-api.service
+touch ~/run/entrosana.off                      # sonst startet der Wächter die API nach einer Minute wieder
+~/entrosana-ops/entrosana-ctl stop api
 cd ~/entrosana-app/api/db && mv hub.sqlite hub.sqlite.kaputt-$(date +%Y%m%d-%H%M)
 rm -f hub.sqlite-wal hub.sqlite-shm            # gehören zur kaputten Datei
-cp hub.backup.sqlite hub.sqlite                # oder aus extras.tar.gz: entrosana-app/api/db/hub.backup.sqlite
-node --no-warnings admin.mjs verify-chain      # muss "ok" und die Zeilenzahl nennen
-systemctl --user start entrosana-api.service
+cp hub.backup.sqlite hub.sqlite
+~/nodejs/current/bin/node --no-warnings ~/entrosana-app/api/admin.mjs verify-chain   # muss "ok" und die Zeilenzahl nennen
+rm ~/run/entrosana.off && ~/entrosana-ops/entrosana-ctl start api
 ```
+
+Diese Folge ist auf dem Server nicht geprobt, sie hält den laufenden Hub an.
+Geprobt ist alles davor (Abschnitt «Prüfen»).
 
 Der Dienst legt beim Start die Migrationen aus `api/db/*.sql` an, die noch
 fehlen (Tabelle `meta`); eine Kopie vom Vortag braucht davon in der Regel
 keine. Was zwischen Kopie und Ausfall passiert ist, fehlt danach: höchstens
-ein Tag Beiträge. Die Betroffenen stehen in `~/.sygnif/logs/entrosana-api.log`
-(Pfad `/api/contributions`, Status 201), soweit das Protokoll noch reicht
-(zwei Wochen, `entrosana-hub-rotate.timer`).
+ein Tag Beiträge. Die Betroffenen stehen auf dem Server in
+`~/.sygnif/logs/entrosana-api.log` (Pfad `/api/contributions`, Status 201),
+soweit das Protokoll noch reicht (zwei Wochen, `tools/rotate-logs.sh`).
 
-Probe ohne Eingriff, wie oben: die Kopie in einen Nebenordner stellen und
-die Kette dort prüfen. Am 2026-09-08 lief das durch (Abschnitt «Prüfen»
-unten, dritter Block).
+Probe ohne Eingriff: die geholte Kopie auf e14 in einen Nebenordner stellen
+und die Kette dort prüfen.
 
 ```bash
-P=$(mktemp -d) && cp ~/entrosana-app/api/db/hub.backup.sqlite "$P/hub.sqlite"
+P=$(mktemp -d -p ~/.cache) && cp ~/entrosana-app/api/db/hub.backup.sqlite "$P/hub.sqlite"
 DB_PATH="$P/hub.sqlite" node --no-warnings ~/entrosana-app/api/admin.mjs verify-chain
 rm -rf "$P"
 ```
