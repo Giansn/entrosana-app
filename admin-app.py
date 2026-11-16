@@ -39,7 +39,8 @@ HOST = os.environ.get("HOST", "100.115.236.97")
 # gepflegt: sie bestimmt, was die Startseite anbietet, und hält
 # Hilfsdateien wie detail.html (nur eine Hülle für den Katalog) heraus.
 PAGES = [
-    ("index.html", "Workspace", "/"),
+    ("start.html", "Start", "/start"),          # Landeseite (2026-09-11), in der Liste seit 2026-11-16
+    ("index.html", "Workspace", "/workspace"),  # bis 2026-10-31 auf "/", das leitet heute auf /start
     ("tools.html", "Tools", "/tools"),
     ("modules.html", "Modules", "/modules"),
     ("contribute.html", "Contribute", "/contribute"),
