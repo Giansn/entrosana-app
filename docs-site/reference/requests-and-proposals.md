@@ -38,7 +38,7 @@ The form on entrosana.com sends through this call. The message goes to info@entr
 | `msg` | up to 4000, optional |
 | `website` | leave empty; a filled field is treated as spam and answered 200 without effect |
 
-Answers 200 with `{"ok": true}` once the mail has been handed over. Refusals: 400 without a name, an address or an interest, 429 after five messages in an hour from one address or one network, 502 when the mail could not be sent.
+Answers 200 with `{"ok": true}` once the mail has been handed over. Refusals: 400 without a name, an address or an interest, 429 after five messages in an hour from one address or one network, or when the form as a whole has reached its hourly limit, 502 when the mail could not be sent.
 
 ## A proposal
 
