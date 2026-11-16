@@ -492,6 +492,66 @@ def page_write(name, neu: list, sizes: dict | None = None):
     return f"{b_name} · Änderungen: {d_name}" if d_name else b_name
 
 
+def _fruehere_texte(name, n):
+    """Je Stelle die Texte, die sie in den letzten Sicherungen trug (nur Fassungen mit derselben Zahl von Stellen)."""
+    frueher = [set() for _ in range(n)]
+    for f in BACKUPS.glob(f"{name}.*"):
+        if not f.is_file():
+            continue
+        try:
+            src = f.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        sp = spans(src)
+        if len(sp) != n:
+            continue
+        for i, (a, b, _t, _o) in enumerate(sp):
+            frueher[i].add("" if src[a:b] == LEER else glatt(src[a:b]))
+    return frueher
+
+
+def page_abgleich(name, texte=None, aenderungen=None, n=None):
+    """Legt, was ein Editor geändert hat, auf den heutigen Stand der Datei: (alle Texte zum Schreiben, geänderte Nummern).
+
+    Ein Editor-Tab kann lange offen sein. Schickte er beim Speichern alle Felder, schriebe er auch die
+    unberührten zurück und überschriebe damit, was inzwischen an anderer Stelle geändert wurde (2026-11-16:
+    eine Korrektur von Tippfehlern wäre beim nächsten Speichern aus dem offenen Tab verschwunden).
+
+    aenderungen  {Nummer: Text} mit n, der Zahl der Felder im Editor: nur diese Felder werden gesetzt.
+    texte        alle Felder (Tabs von vor dem 2026-11-16, admin-modules-ux): ein Feld gilt als unberührt, wenn sein
+                 Text dem heutigen oder einem früheren Stand dieser Stelle gleicht; nur neuer Text wird gesetzt."""
+    _, stellen = page_read(name)
+    jetzt = [s["text"] for s in stellen]
+
+    def passt(zahl):
+        if int(zahl) != len(jetzt):
+            raise ValueError(f"Die Seite hat {len(jetzt)} Textstellen, dieser Editor kennt {int(zahl)}: sie wurde verändert, "
+                             "seit du ihn geöffnet hast. Öffne den Editor in einem neuen Tab und trage die Änderung "
+                             "dort ein; in diesem Tab bleibt dein Text stehen.")
+    ziel, nummern = list(jetzt), []
+    if aenderungen is not None:
+        if n is not None:
+            passt(n)
+        for k, t in aenderungen.items():
+            i = int(k)
+            if not 0 <= i < len(jetzt):
+                raise ValueError("Feldnummer ausserhalb der Seite")
+            ziel[i] = str(t)
+            nummern.append(i)
+        return ziel, sorted(nummern)
+    if texte is None:
+        raise ValueError("keine Texte geschickt")
+    passt(len(texte))
+    frueher = _fruehere_texte(name, len(jetzt))
+    for i, t in enumerate(texte):
+        g = glatt(normalize_breaks(str(t)))
+        if g == jetzt[i] or g in frueher[i]:
+            continue
+        ziel[i] = str(t)
+        nummern.append(i)
+    return ziel, nummern
+
+
 # ── Katalog ───────────────────────────────────────────────────────────────
 # catalogue.js ist JavaScript mit Kommentaren, also nicht als JSON zu lesen
 # und zurückzuschreiben, ohne die Kommentare zu verlieren. Deshalb dieselbe
@@ -1275,59 +1335,68 @@ def dash():
         "die letzten zwanzig je Datei (<span class='mono'>~/entrosana-app-backups</span>).</p>")
 
 
+ENTWURF_JS = r"""
+var KEY=__KEY__;
+var FELDER=function(){return document.querySelectorAll(__SEL__)};
+function sammle(){var n=FELDER(),v={};for(var i=0;i<n.length;i++)v[n[i].getAttribute(__ATTR__)]=n[i].value;return v;}
+var GESPEICHERT=JSON.stringify(sammle());
+function schmutzig(){return JSON.stringify(sammle())!==GESPEICHERT;}
+// Der Entwurf hält nur, was vom gespeicherten Stand abweicht, je Feld mit dem Text, von dem es ausging.
+// So dreht er später kein Feld zurück, das inzwischen an anderer Stelle geändert wurde.
+function entwurfSchreiben(){try{
+  var alt=JSON.parse(GESPEICHERT),v=sammle(),d={},zahl=0;
+  for(var k in v){if(v[k]!==alt[k]){d[k]=[alt[k],v[k]];zahl++;}}
+  if(zahl)localStorage.setItem(KEY,JSON.stringify({t:new Date().toISOString(),n:FELDER().length,d:d}));
+  else localStorage.removeItem(KEY);}catch(e){}}
+function entwurfLoeschen(){try{localStorage.removeItem(KEY)}catch(e){}}
+function einsetzen(v){var n=FELDER();for(var i=0;i<n.length;i++){var k=n[i].getAttribute(__ATTR__);if(k in v)n[i].value=v[k];}}
+function entwurfAnbieten(wann,neu,uebergangen){
+  var bar=document.getElementById('entwurf');if(!bar)return;
+  var zahl=Object.keys(neu).length;
+  if(!zahl&&!uebergangen){entwurfLoeschen();return;}
+  bar.textContent='';
+  var b=document.createElement('b');b.textContent=zahl?'Ungesicherter Entwurf gefunden':'Ein Entwurf passt nicht mehr zu dieser Seite';bar.appendChild(b);
+  var s=document.createElement('span'),satz=' vom '+wann+(zahl?': '+(zahl===1?'1 Feld':zahl+' Felder')+'.':'.');
+  if(uebergangen)satz+=' '+(uebergangen===1?'1 Feld wurde inzwischen anders gespeichert und bleibt, wie es ist.'
+    :uebergangen+' Felder wurden inzwischen anders gespeichert und bleiben, wie sie sind.');
+  s.textContent=satz;bar.appendChild(s);
+  if(zahl){var a=document.createElement('button');a.className='btn';a.textContent='Entwurf übernehmen';
+    a.onclick=function(){einsetzen(neu);bar.hidden=true;if(window.nachEntwurf)window.nachEntwurf();};bar.appendChild(a);}
+  var c=document.createElement('button');c.className='btn ghost';c.textContent=zahl?'verwerfen':'Entwurf verwerfen';
+  c.onclick=function(){entwurfLoeschen();bar.hidden=true;};bar.appendChild(c);bar.hidden=false;}
+(function(){var roh=null;try{roh=localStorage.getItem(KEY)}catch(e){}
+  if(!roh)return;var d=null;try{d=JSON.parse(roh)}catch(e){entwurfLoeschen();return;}
+  if(!d||(!d.d&&!d.v))return;
+  var wann=d.t?new Date(d.t).toLocaleString('de-CH'):'unbekannter Zeit',jetzt=sammle(),k;
+  if(d.d){var neu={},ueb=0;
+    for(k in d.d){if(!(k in jetzt)){ueb++;continue;}
+      if(jetzt[k]===d.d[k][0])neu[k]=d.d[k][1];else if(jetzt[k]!==d.d[k][1])ueb++;}
+    entwurfAnbieten(wann,neu,ueb);return;}
+  // Entwurf der früheren Fassung: alle Felder nach Nummer, ohne den Text, von dem sie ausgingen.
+  var zahl=(d.n!==undefined)?d.n:Object.keys(d.v).length;
+  if(zahl!==FELDER().length){entwurfAnbieten(wann,{},1);return;}
+  if(window.entwurfAlt){window.entwurfAlt(d.v,function(neu){entwurfAnbieten(wann,neu,0);});return;}
+  var neu2={};for(k in d.v){if(k in jetzt&&d.v[k]!==jetzt[k])neu2[k]=d.v[k];}
+  entwurfAnbieten(wann,neu2,0);})();
+(function(){var n=FELDER();for(var i=0;i<n.length;i++){n[i].addEventListener('input',entwurfSchreiben);}})();
+window.addEventListener('beforeunload',function(e){if(schmutzig()){entwurfSchreiben();e.preventDefault();e.returnValue='';}});
+// «Nochmal drücken genügt» stimmt nur, wenn die Konsole nicht erreichbar war. Lehnt sie ab, sagt ihr Grund, was zu tun ist.
+function fehlerZeigen(t,nochmal){var f=document.getElementById('fehler');if(!f)return;
+  f.innerHTML='<b>Nicht gespeichert:</b> '+t+'<br>Der Text steht weiterhin in den Feldern und liegt als Entwurf im Browser.'
+    +(nochmal?' Nochmal auf Speichern drücken genügt.':'');f.hidden=false;}
+function fehlerWeg(){var f=document.getElementById('fehler');if(f)f.hidden=true;}
+"""
+
+
 def entwurf_js(key: str, sel: str, attr: str) -> str:
     """Entwurf im Browser halten, anbieten, nach erfolgreicher Speicherung löschen.
 
     key  Speicherschlüssel, je Seite oder Katalogeintrag einer.
     sel  Behälter der Felder. attr  das Attribut, das ein Feld kennzeichnet.
-    """
-    return (
-        "var KEY=" + json.dumps("entrosana-admin-draft:" + key) + ";"
-        "var FELDER=function(){return document.querySelectorAll(" + json.dumps(sel + " [" + attr + "]") + ")};"
-        "function sammle(){var n=FELDER(),v={};"
-        "for(var i=0;i<n.length;i++)v[n[i].getAttribute(" + json.dumps(attr) + ")]=n[i].value;return v;}"
-        "var GESPEICHERT=JSON.stringify(sammle());"
-        "function schmutzig(){return JSON.stringify(sammle())!==GESPEICHERT;}"
-        "function entwurfSchreiben(){try{if(schmutzig())"
-        "localStorage.setItem(KEY,JSON.stringify({t:new Date().toISOString(),n:FELDER().length,v:sammle()}));"
-        "else localStorage.removeItem(KEY);}catch(e){}}"
-        "function entwurfLoeschen(){try{localStorage.removeItem(KEY)}catch(e){}}"
-        "function einsetzen(v){var n=FELDER();for(var i=0;i<n.length;i++){"
-        "var k=n[i].getAttribute(" + json.dumps(attr) + ");if(k in v)n[i].value=v[k];}}"
-        # Beim Öffnen: liegt ein Entwurf vor, der von der Datei abweicht, wird er angeboten.
-        "(function(){var roh=null;try{roh=localStorage.getItem(KEY)}catch(e){}"
-        "if(!roh)return;var d=null;try{d=JSON.parse(roh)}catch(e){entwurfLoeschen();return;}"
-        "if(!d||!d.v)return;"
-        "var gleich=JSON.stringify(d.v)===JSON.stringify(sammle());"
-        "if(gleich){entwurfLoeschen();return;}"
-        "var bar=document.getElementById('entwurf');if(!bar)return;"
-        "var wann=d.t?new Date(d.t).toLocaleString():'unbekannt';"
-        # Ein Entwurf merkt sich die Felder nach ihrer Nummer. Hat die Seite inzwischen mehr oder weniger
-        # Felder, träfe er die falschen: dann wird er nicht angeboten.
-        "var zahl=(d.n!==undefined)?d.n:Object.keys(d.v).length;"
-        "if(zahl!==FELDER().length){bar.innerHTML='<b>Ein Entwurf passt nicht mehr zu dieser Seite</b> "
-        "<span class=mono>'+wann+'</span> &mdash; die Seite hat inzwischen eine andere Zahl von Feldern, "
-        "er lässt sich nicht sicher übernehmen.';"
-        "var c=document.createElement('button');c.className='btn ghost';c.textContent='Entwurf verwerfen';"
-        "c.onclick=function(){entwurfLoeschen();bar.hidden=true;};bar.appendChild(c);bar.hidden=false;return;}"
-        "bar.innerHTML='<b>Ungesicherter Entwurf gefunden</b> <span class=mono>'+wann+"
-        "'</span> &mdash; die Datei zeigt einen anderen Stand.';"
-        "var a=document.createElement('button');a.className='btn';a.textContent='Entwurf übernehmen';"
-        "a.onclick=function(){einsetzen(d.v);bar.hidden=true;if(window.nachEntwurf)window.nachEntwurf();};"
-        "var b=document.createElement('button');b.className='btn ghost';b.textContent='verwerfen';"
-        "b.onclick=function(){entwurfLoeschen();bar.hidden=true;};"
-        "bar.appendChild(a);bar.appendChild(b);bar.hidden=false;})();"
-        # Jede Eingabe hält den Entwurf nach.
-        "(function(){var n=FELDER();for(var i=0;i<n.length;i++){"
-        "n[i].addEventListener('input',entwurfSchreiben);}})();"
-        "window.addEventListener('beforeunload',function(e){if(schmutzig()){"
-        "entwurfSchreiben();e.preventDefault();e.returnValue='';}});"
-        # «Nochmal drücken genügt» stimmt nur, wenn die Konsole nicht erreichbar war. Lehnt sie ab, sagt ihr Grund, was zu tun ist.
-        "function fehlerZeigen(t,nochmal){var f=document.getElementById('fehler');if(!f)return;"
-        "f.innerHTML='<b>Nicht gespeichert:</b> '+t+'<br>Der Text steht weiterhin in den Feldern "
-        "und liegt als Entwurf im Browser.'+(nochmal?' Nochmal auf Speichern drücken genügt.':'');f.hidden=false;}"
-        "function fehlerWeg(){var f=document.getElementById('fehler');if(f)f.hidden=true;}"
-    )
+    Seit 2026-11-16 hält der Entwurf nur die geänderten Felder samt ihrem Ausgangstext; die frühere Fassung
+    (alle Felder nach Nummer) wird beim Öffnen noch gelesen und über window.entwurfAlt geprüft."""
+    return (ENTWURF_JS.replace("__KEY__", json.dumps("entrosana-admin-draft:" + key))
+            .replace("__SEL__", json.dumps(sel + " [" + attr + "]")).replace("__ATTR__", json.dumps(attr)))
 
 
 def feld_name(tag: str, klassen: list, text: str) -> str:
@@ -1439,6 +1508,20 @@ def _gruppen_anzeige(src, gruppen):
     return out
 
 
+# Ein Entwurf der früheren Fassung nennt alle Felder. Der Server sagt, welche davon wirklich neuer Text sind
+# (page_abgleich, «probe»); nur die werden angeboten. Steht vor entwurf_js, das den Haken beim Laden ruft.
+ENTWURF_ALT_JS = r"""
+window.entwurfAlt=function(v,cb){
+  var f=document.querySelectorAll('#fs [data-i]'),t=[];
+  for(var i=0;i<f.length;i++){var idx=f[i].getAttribute('data-i');t[+idx]=(('p:'+idx) in v)?v['p:'+idx]:f[i].value;}
+  fetch('/api/page',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:NAME,texts:t,probe:true})})
+  .then(function(r){return r.json()}).then(function(j){
+    var neu={},k;if(j.ok){for(k in j.aenderungen)neu['p:'+k]=j.aenderungen[k];}
+    var kf=document.querySelectorAll('#fs [data-key^="c:"]');
+    for(var q=0;q<kf.length;q++){k=kf[q].getAttribute('data-key');if((k in v)&&v[k]!==kf[q].value)neu[k]=v[k];}
+    cb(neu);}).catch(function(){cb({});});};
+"""
+
 EDITOR_JS = r"""
 var zwei=document.querySelector('.zwei'),kb=document.getElementById('klapp'),m=document.getElementById('m');
 var such=document.getElementById('such'),suchN=document.getElementById('such-n');
@@ -1529,12 +1612,15 @@ for(var i=0;i<alle.length;i++){(function(el){
 function speichern(){
   var sb=document.getElementById('save');if(sb.disabled)return;
   sb.disabled=true;m.textContent='Speichert …';
-  var t=[],kat={},n=document.querySelectorAll('#fs [data-key]');
+  // Nur was hier geändert wurde, geht hinaus. Ein Tab, der länger offen ist, schriebe sonst seine alten
+  // Texte über das, was inzwischen an anderer Stelle gespeichert wurde.
+  var alt=JSON.parse(GESPEICHERT),gesendet=sammle(),aend={},kat={},n=document.querySelectorAll('#fs [data-key]');
   for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-key');
-    if(k.indexOf('p:')===0)t[parseInt(k.slice(2),10)]=n[i].value;
+    if(n[i].value===alt[k])continue;
+    if(k.indexOf('p:')===0)aend[k.slice(2)]=n[i].value;
     else{var teil=k.split(':');(kat[teil[1]]=kat[teil[1]]||{})[teil[2]]=n[i].value;}}
   var auftraege=[fetch('/api/page',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({name:NAME,texts:t})}).then(function(r){return r.json()})];
+    body:JSON.stringify({name:NAME,n:document.querySelectorAll('#fs [data-i]').length,aenderungen:aend})}).then(function(r){return r.json()})];
   for(var slug in kat){(function(sl){auftraege.push(
     fetch('/api/catalogue',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({slug:sl,values:kat[sl]})}).then(function(r){return r.json()}));})(slug);}
@@ -1543,12 +1629,20 @@ function speichern(){
     var schlecht=js.filter(function(j){return !j.ok});
     if(schlecht.length){m.textContent='Nicht gespeichert.';
       fehlerZeigen(schlecht.map(function(j){return j.error}).join(' · '));entwurfSchreiben();return;}
+    // Die Antwort trägt den Stand der Datei. Felder, die seit dem Abschicken nicht weiter getippt wurden,
+    // zeigen ihn: auch das, was inzwischen an anderer Stelle geändert wurde.
+    var t=js[0].texte,geholt=0;
+    if(t){var f=document.querySelectorAll('#fs [data-i]');
+      for(var q=0;q<f.length;q++){var idx=f[q].getAttribute('data-i');
+        if(t[+idx]!==undefined&&f[q].value===gesendet['p:'+idx]&&f[q].value!==t[+idx]){
+          if(!(idx in aend))geholt++;
+          f[q].value=t[+idx];}}}
     GESPEICHERT=JSON.stringify(sammle());entwurfLoeschen();fehlerWeg();
     // Hat die Seite jetzt eine andere Zahl von Feldern als dieser Editor, lädt er sich neu statt später abgelehnt zu werden.
     if(js[0].stellen!==undefined&&js[0].stellen!==document.querySelectorAll('#fs [data-i]').length){location.reload();return;}
     var w=js.filter(function(j){return j.backup&&j.backup.indexOf('keine')<0});
-    m.textContent=w.length?'':'Nichts geändert.';
-    markiere();pv.src=pv.src;if(window.standNeu)window.standNeu();})
+    m.textContent=(w.length?'':'Nichts geändert.')+(geholt?(w.length?'':' ')+(geholt===1?'1 Feld wurde':geholt+' Felder wurden')+' inzwischen an anderer Stelle geändert und '+(geholt===1?'zeigt':'zeigen')+' jetzt den neuen Text.':'');
+    markiere();wachseAlle();pv.src=pv.src;if(window.standNeu)window.standNeu();})
   .catch(function(e){sb.disabled=false;m.textContent='Nicht gespeichert.';fehlerZeigen('Die Konsole ist gerade nicht erreichbar ('+e+').',true);entwurfSchreiben();});}
 document.getElementById('save').onclick=speichern;
 document.addEventListener('keydown',function(e){
@@ -1652,7 +1746,7 @@ def page_editor(name, msg="", err=""):
         f"<a class='btn ghost' href='{LIVE}{pfad}' target='_blank' rel='noopener'><span class='lang'>Live-Seite ansehen</span>"
         "<span class='knapp'>Ansehen</span></a></div></div>"
         "<script>var NAME=" + json.dumps(name) + ";"
-        + entwurf_js(name, "#fs", "data-key")
+        + ENTWURF_ALT_JS + entwurf_js(name, "#fs", "data-key")
         + EDITOR_JS + "</script>", klasse="ed")
 
 
@@ -1701,8 +1795,9 @@ def cat_editor(slug, msg="", err=""):
         "<script>"
         + entwurf_js("cat:" + slug, "#fs", "data-k") +
         "document.getElementById('save').onclick=function(){"
-        "var n=document.querySelectorAll('#fs [data-k]'),v={};"
-        "for(var i=0;i<n.length;i++)v[n[i].getAttribute('data-k')]=n[i].value;"
+        # Nur was hier geändert wurde, geht hinaus; ein länger offener Tab schriebe sonst alte Werte über neuere.
+        "var n=document.querySelectorAll('#fs [data-k]'),v={},alt=JSON.parse(GESPEICHERT);"
+        "for(var i=0;i<n.length;i++){var k=n[i].getAttribute('data-k');if(n[i].value!==alt[k])v[k]=n[i].value;}"
         "var m=document.getElementById('m');m.textContent='speichere…';"
         "fetch('/api/catalogue',{method:'POST',headers:{'Content-Type':'application/json'},"
         "body:JSON.stringify({slug:" + json.dumps(slug) + ",values:v})})"
@@ -2508,9 +2603,14 @@ class H(BaseHTTPRequestHandler):
                 name = data.get("name", "")
                 if not any(name == p for p, _, _ in PAGES):
                     raise ValueError("unbekannte Seite")
-                b = page_write(name, data.get("texts", []))
-                self._json({"ok": True, "backup": b or "keine Änderung",
-                            "stellen": len(spans((APP / name).read_text(encoding="utf-8")))})
+                ziel, nummern = page_abgleich(name, data.get("texts"), data.get("aenderungen"), data.get("n"))
+                if data.get("probe"):       # nur fragen, was ein alter Entwurf wirklich ändern würde
+                    self._json({"ok": True, "aenderungen": {str(i): ziel[i] for i in nummern}})
+                else:
+                    b = page_write(name, ziel)
+                    _, st = page_read(name)
+                    self._json({"ok": True, "backup": b or "keine Änderung", "stellen": len(st),
+                                "texte": [x["text"] for x in st]})
             elif u.path == "/api/catalogue":
                 b = cat_write(data.get("slug", ""), data.get("values", {}))
                 self._json({"ok": True, "backup": b or "keine Änderung"})
