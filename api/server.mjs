@@ -39,6 +39,7 @@ const MAIL = process.env.MAIL_SEND || join(HERE, "..", "tools", "mail-send.py");
 const BODY_CAP = 256 * 1024;  // Kette eines Geräts als Hashes passt hinein
 const RATE = { limit: 5, windowMs: 3600e3 };   // docs/contributions.md, Entscheid 5
 const MAIL_CAP = 60;                            // Briefe je Stunde insgesamt, gegen Verstärkung
+const CONTACT_CAP = Number(process.env.CONTACT_CAP || 20);   // davon höchstens so viele vom Formular auf entrosana.com: die Anmeldung behält ihren Anteil
 const FOUR_EYES = process.env.FOUR_EYES === "strict";   // strict: veröffentlichen darf nicht, wer angenommen hat
 
 mkdirSync(dirname(LOG), { recursive: true });
@@ -813,7 +814,7 @@ routes.set("POST /api/contact", async (ctx) => {
   if (!EMAIL.test(email) || email.length > 254) throw new HttpError(400, "bad email");
   if (!interest) throw new HttpError(400, "interest missing");
   if (limited("ip:" + ctx.ip) || limited("email:" + email)) throw new HttpError(429, "too many requests");
-  if (limited("mail:global", MAIL_CAP)) throw new HttpError(429, "mail cap reached; try again later");
+  if (limited("mail:contact", CONTACT_CAP) || limited("mail:global", MAIL_CAP)) throw new HttpError(429, "mail cap reached; try again later");
   const r = await mail(INFO, `Access request: ${interest}`,
     `Name: ${name}\nOrganisation: ${org || "—"}\nEmail: ${email}\nInterested in: ${interest}\n\n${msg}\n\nReply to ${email}.\n\n(sent by the form on entrosana.com)`, email);
   auditAppend(db, { kind: "contact.mail", actor_id: null, resource: null, text: r.ok ? "website form relayed to the info inbox" : "website form mail failed: " + (r.err || r.code) });

@@ -132,6 +132,26 @@ test("kontaktformular: brief an info@ mit antwort-an, nichts gespeichert, honigf
   db.close(); rmSync(dir, { recursive: true, force: true });
 });
 
+test("kontaktformular: eigene stundengrenze über alle absender, damit es die briefe der anmeldung nicht aufbraucht", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "entrosana-http-"));
+  open(join(dir, "hub.sqlite")).db.close();
+  const stub = join(dir, "mail-stub.py"), out = join(dir, "mails.jsonl");
+  writeFileSync(stub, 'import os, sys\nwith open(os.environ["MAIL_OUT"], "a", encoding="utf-8") as f:\n    f.write(sys.stdin.read().replace("\\n", " ") + "\\n")\n');
+  const port = 40000 + Math.floor(Math.random() * 20000);
+  const child = await up(dir, port, { MAIL_SEND: stub, MAIL_OUT: out, CONTACT_CAP: "2" });
+  // jede Anfrage aus einem anderen Netz und mit anderer Adresse: nur die Gesamtgrenze kann greifen
+  const post = i => fetch(`http://127.0.0.1:${port}/api/contact`, { method: "POST", headers: { "Content-Type": "application/json", "CF-Connecting-IP": `203.0.113.${i}` },
+    body: JSON.stringify({ name: "Person " + i, email: `p${i}@example.org`, interest: "Hub · co-created learning" }) });
+  try {
+    assert.equal((await post(1)).status, 200);
+    assert.equal((await post(2)).status, 200);
+    const r = await post(3);
+    assert.equal(r.status, 429); assert.deepEqual(await r.json(), { error: "mail cap reached; try again later" });
+  } finally { child.kill(); }
+  assert.equal(readFileSync(out, "utf8").split("\n").filter(Boolean).length, 2);
+  rmSync(dir, { recursive: true, force: true });
+});
+
 test("kontaktformular: scheitert der versand, sagt die antwort es und die kette hält es fest", async () => {
   const dir = mkdtempSync(join(tmpdir(), "entrosana-http-"));
   open(join(dir, "hub.sqlite")).db.close();
