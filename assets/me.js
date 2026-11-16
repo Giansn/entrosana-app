@@ -165,7 +165,7 @@
       if (!age.checked) { bad(fA, "Tick the box: 13 or older, or registering on behalf of a younger learner."); return; }
       send(go, out);
     });
-    sec.appendChild(el("p", "fine", "With an account you can keep up to 400 MB of files on the Hub's own server in Switzerland: CVs, reviews, concepts, project papers. Each file is private unless you set it public on your page. Up to 50 MB per file."));
+    sec.appendChild(el("p", "fine", "With an account you can keep up to 400 MB of files on the Hub's server in Switzerland: CVs, reviews, concepts, project papers. Each file is private unless you set it public on your page. Up to 50 MB per file."));
     var p = el("p", "fine");   // nur noch der Datenschutz-Verweis; der Gerätehinweis davor ist weg (Eigentümer 2026-09-11: solche Vorspanne verwirren)
     var a = el("a", null, "How the Hub treats your data"); a.href = "https://entrosana.com/privacy/"; a.rel = "noopener"; p.appendChild(a); p.appendChild(document.createTextNode(".")); sec.appendChild(p);
   }
@@ -565,8 +565,8 @@
     ["Record trail: every page you open and every step you take in a project on this device is written to a list that only grows. Each line is sealed against the one before it, so a change anywhere shows up when the chain is verified. Without an account the trail is gone when you reload; signed in, it stays in this browser; it leaves the device only when you export it. The Hub keeps a chain of its own for decisions, and anyone can verify it.",
      "Public: your profile page with name, place, organisation, role, the one line about you, the biography, the public e-mail if you set one, website, languages, picture and the journal entries you mark public; modules published under your name; points as a count, never by name.",
      "Private: your sign-in e-mail address, private journal entries, the records on this device, proposals until they are published, applications and invitations. The team (owner and reviewers) sees proposals, applications, requests and accounts to do its work.",
-     "Files: up to 400 MB per account, 50 MB per file, stored next to the accounts on the Hub's own server in Switzerland. A file is private until you set it public; public files appear on your page and can be downloaded by anyone with the link. Deleting a file removes it; erasing the account removes them all.",
-     "Where it rests, where it is processed: your data rests on our own server in Switzerland, with one encrypted backup copy at Proton Drive (Proton AG, Switzerland). Delivery runs through Cloudflare (USA), our code lives at GitHub (USA), and mail to sygnif@entrosana.com is read by Claude, a language model run by Anthropic (USA), before a person decides. «Swiss/EU» on our pages means the residency of stored data, not the seat of every provider that processes it."
+     "Files: up to 400 MB per account, 50 MB per file, stored next to the accounts on the Hub's server in Switzerland. A file is private until you set it public; public files appear on your page and can be downloaded by anyone with the link. Deleting a file removes it; erasing the account removes them all.",
+     "Where it rests, where it is processed: your data rests on a server in Switzerland, with one encrypted backup copy at Proton Drive (Proton AG, Switzerland). Delivery runs through Cloudflare (USA), our code lives at GitHub (USA), and mail to sygnif@entrosana.com is read by Claude, a language model run by Anthropic (USA), before a person decides. «Swiss/EU» on our pages means the residency of stored data, not the seat of every provider that processes it."
     ].forEach(function (s) { secInfo.appendChild(el("p", "tl__t", s)); });
 
     // Gefahrenzone: was nicht rückgängig zu machen ist, zuletzt und abgesetzt.

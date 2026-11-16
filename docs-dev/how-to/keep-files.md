@@ -1,6 +1,6 @@
 # Keep files in your account
 
-Every account has 400 MB on the Hub's own server in Switzerland: for the files of your modules, for worksheets, for anything you want to link from a proposal.
+Every account has 400 MB on the Hub's server in Switzerland: for the files of your modules, for worksheets, for anything you want to link from a proposal.
 
 ## Steps
 

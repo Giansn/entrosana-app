@@ -21,7 +21,7 @@ Every 5 or 15 minutes, every hour, every 4 hours, once a day. For a check, this 
 
 ## What is checked from where
 
-The Hub checks from its own server in Switzerland. Addresses inside private networks, such as 10.x, 192.168.x, `.local` and tailnet names, are refused for everyone except the owner of the Hub, whose machine sits in such a network.
+The Hub checks from its server in Switzerland. Addresses inside private networks, such as 10.x, 192.168.x, `.local` and tailnet names, are refused for everyone except the owner of the Hub, whose machine sits in such a network.
 
 ## Who sees what
 

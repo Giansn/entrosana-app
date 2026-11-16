@@ -1,6 +1,6 @@
 # Files
 
-Each account holds up to 400 MB on the Hub's own server: up to 200 files of up to 50 MB each. All calls need a bearer token except reading a public file.
+Each account holds up to 400 MB on the Hub's server: up to 200 files of up to 50 MB each. All calls need a bearer token except reading a public file.
 
 ## List
 
@@ -8,7 +8,7 @@ Each account holds up to 400 MB on the Hub's own server: up to 200 files of up t
 
 ```json
 {"ok": true, "items": [{"id": 3, "name": "worksheet-a.pdf", "label": "Worksheet A", "ext": "pdf", "type": "application/pdf", "size": 184220, "public": true, "created": "…", "url": "/api/files/4/3/worksheet-a.pdf"}],
- "used": 184220, "quota": 419430400, "max_file": 52428800, "where": "on the Hub's own server in Switzerland"}
+ "used": 184220, "quota": 419430400, "max_file": 52428800, "where": "on the Hub's server in Switzerland"}
 ```
 
 ## Upload

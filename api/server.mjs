@@ -864,7 +864,7 @@ patterns.push([/^\/api\/profiles\/(\d{1,12})$/, {
 // alles in files.mjs gezählt, hier nur Anbindung.
 patterns.push([/^\/api\/me\/files$/, {
   GET: (ctx) => { if (!ctx.actor) throw new HttpError(401, "no actor");
-    send(ctx.res, 200, { ok: true, items: listFiles(db, ctx.actor.id), used: usedBytes(db, ctx.actor.id), quota: QUOTA, max_file: MAX_FILE, where: "on the Hub's own server in Switzerland" }); },
+    send(ctx.res, 200, { ok: true, items: listFiles(db, ctx.actor.id), used: usedBytes(db, ctx.actor.id), quota: QUOTA, max_file: MAX_FILE, where: "on the Hub's server in Switzerland" }); },
   PUT: async (ctx) => {
     if (!ctx.actor) throw new HttpError(401, "no actor");
     if (limited("files:" + ctx.actor.id, 60)) throw new HttpError(429, "too many uploads this hour");
