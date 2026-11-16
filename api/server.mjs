@@ -91,13 +91,16 @@ function limited(key, limit = RATE.limit) {
 }
 setInterval(() => { const now = Date.now(); for (const [k, v] of hits) { const a = v.filter(t => now - t < RATE.windowMs); a.length ? hits.set(k, a) : hits.delete(k); } }, 600e3).unref();
 
-function mail(to, subject, text) {
+// replyTo (2026-11-16): nur das Kontaktformular setzt es, damit «Antworten» im Postfach zur anfragenden Person führt.
+function mail(to, subject, text, replyTo) {
   return new Promise((resolve) => {
     const p = spawn("python3", [MAIL], { stdio: ["pipe", "pipe", "pipe"] });
     let err = "";
     p.stderr.on("data", d => err += d);
+    p.on("error", e => resolve({ ok: false, code: -1, err: String(e && e.message || e).slice(0, 200) }));
     p.on("close", code => resolve({ ok: code === 0, code, err: err.trim().slice(0, 200) }));
-    p.stdin.end(JSON.stringify({ to, subject, text }));
+    p.stdin.on("error", () => {});
+    p.stdin.end(JSON.stringify(replyTo ? { to, subject, text, reply_to: replyTo } : { to, subject, text }));
   });
 }
 
@@ -794,6 +797,28 @@ routes.set("POST /api/requests", async (ctx) => {
     mail(email, "entrosana: we received your request", `Hello,\n\nyour request #${id} reached entrosana. info@entrosana.com answers within a few days; you can also call ${PHONE}.\n\nIf you sent nothing to entrosana.app, ignore this mail.\n\nentrosana`);
   }
   send(ctx.res, 202, { ok: true, id });
+});
+
+// Kontaktformular von entrosana.com (2026-11-16). Die Seite ist seit dem Umzug statisch; ihr POST /api/contact
+// reicht der Host an diesen Dienst durch. Der Brief geht an info@, «Antworten» führt zur Adresse aus dem
+// Formular. Gespeichert wird nichts: die Kette bekommt eine Zeile ohne Namen, Adresse und Text. Die Antwort
+// wartet auf den Versand, damit die Seite erst «Sent.» zeigt, wenn der Brief wirklich draussen ist.
+routes.set("POST /api/contact", async (ctx) => {
+  const body = await readJson(ctx.req);
+  if (str(body.website, 200)) return send(ctx.res, 200, { ok: true });   // Honigfalle
+  const line = (v, max) => str(v, max).replace(/\s+/g, " ");            // einzeilig, für Betreff und Kopf des Briefs
+  const name = line(body.name, 120), email = String(body.email || "").trim().toLowerCase();
+  const org = line(body.org, 200), interest = line(body.interest, 120), msg = str(body.msg, 4000);
+  if (name.length < 2) throw new HttpError(400, "name missing");
+  if (!EMAIL.test(email) || email.length > 254) throw new HttpError(400, "bad email");
+  if (!interest) throw new HttpError(400, "interest missing");
+  if (limited("ip:" + ctx.ip) || limited("email:" + email)) throw new HttpError(429, "too many requests");
+  if (limited("mail:global", MAIL_CAP)) throw new HttpError(429, "mail cap reached; try again later");
+  const r = await mail(INFO, `Access request: ${interest}`,
+    `Name: ${name}\nOrganisation: ${org || "—"}\nEmail: ${email}\nInterested in: ${interest}\n\n${msg}\n\nReply to ${email}.\n\n(sent by the form on entrosana.com)`, email);
+  auditAppend(db, { kind: "contact.mail", actor_id: null, resource: null, text: r.ok ? "website form relayed to the info inbox" : "website form mail failed: " + (r.err || r.code) });
+  if (!r.ok) throw new HttpError(502, "sending failed");
+  send(ctx.res, 200, { ok: true });
 });
 
 // Verwaltung (Team): Konten mit Profil und Stand, Anfragen mit Erledigt-Marke.

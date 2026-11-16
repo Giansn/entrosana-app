@@ -23,6 +23,23 @@ curl -X POST https://entrosana.app/api/requests -H "Content-Type: application/js
 
 Answers 202 with `{"ok": true, "id": n}`. Requests for a module, track, tool or service go to info@entrosana.com; reports and contribution offers go to sygnif@entrosana.com with a link to the module. The sender gets a short confirmation without the text. Requests are kept 180 days.
 
+## The website's contact form
+
+`POST /api/contact`
+
+The form on entrosana.com sends through this call. The message goes to info@entrosana.com as a mail, with the sender's address as the reply address. Nothing is stored.
+
+| Field | Rule |
+|---|---|
+| `name` | 2 to 120 characters |
+| `email` | an address |
+| `interest` | what the message is about, up to 120 characters |
+| `org` | up to 200, optional |
+| `msg` | up to 4000, optional |
+| `website` | leave empty; a filled field is treated as spam and answered 200 without effect |
+
+Answers 200 with `{"ok": true}` once the mail has been handed over. Refusals: 400 without a name, an address or an interest, 429 after five messages in an hour from one address or one network, 502 when the mail could not be sent.
+
 ## A proposal
 
 `POST /api/contributions`

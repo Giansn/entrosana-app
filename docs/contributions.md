@@ -418,7 +418,7 @@ Begründung → Mail an die Person → Tor (Name, Freigabe als Beitragende, Trai
 Bereich, Titel, Vorschlag, Dateiverweise) → veröffentlichen → Mail an die Person.
 Wer entscheidet: Rolle reviewer oder owner; vergeben mit
 `node api/admin.mjs grant <email> reviewer`. Kettenzeilen `review.mail`,
-`application.mail`, `request.mail`, `decision.mail` halten fest, ob eine Mail
+`application.mail`, `request.mail`, `contact.mail`, `decision.mail` halten fest, ob eine Mail
 hinausging.
 
 ## Betrieb (Phase 7, gebaut am 2026-09-08)
